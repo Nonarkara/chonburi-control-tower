@@ -3,25 +3,23 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>org.nonarkara.chula-api</string>
+    <string>org.nonarkara.chonburi-api</string>
 
     <key>WorkingDirectory</key>
-    <string>/Users/axiom/Projects/dashboards/chula-control-tower/apps/api</string>
+    <string>/Users/nonarkara/Projects/dashboards/Chonburi/apps/api</string>
 
-    <!-- caffeinate keeps the Mac awake while this process runs:
-         -i prevents idle sleep, -s prevents system sleep on AC power. -->
     <key>ProgramArguments</key>
     <array>
         <string>/usr/bin/caffeinate</string>
         <string>-is</string>
-        <string>/Users/axiom/Library/pnpm/pnpm</string>
+        <string>/Users/nonarkara/Library/pnpm/pnpm</string>
         <string>start:node</string>
     </array>
 
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
-        <string>/opt/homebrew/bin:/usr/bin:/bin:/Users/axiom/Library/pnpm:/Users/axiom/.local/bin</string>
+        <string>/opt/homebrew/bin:/usr/bin:/bin:/Users/nonarkara/Library/pnpm:/Users/nonarkara/.local/bin</string>
         <key>HOST</key>
         <string>127.0.0.1</string>
         <key>PORT</key>
@@ -29,7 +27,7 @@
         <key>ENVIRONMENT</key>
         <string>production</string>
         <!-- GEMINI_API_KEY is injected into the live plist at
-             ~/Library/LaunchAgents/org.nonarkara.chula-api.plist (not committed). -->
+             ~/Library/LaunchAgents/org.nonarkara.chonburi-api.plist (not committed). -->
     </dict>
 
     <key>RunAtLoad</key>
@@ -47,9 +45,9 @@
     <integer>10</integer>
 
     <key>StandardOutPath</key>
-    <string>/Users/axiom/Projects/dashboards/chula-control-tower/var/api.out.log</string>
+    <string>/Users/nonarkara/Projects/dashboards/Chonburi/var/api.out.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/axiom/Projects/dashboards/chula-control-tower/var/api.err.log</string>
+    <string>/Users/nonarkara/Projects/dashboards/Chonburi/var/api.err.log</string>
 
     <key>ProcessType</key>
     <string>Background</string>

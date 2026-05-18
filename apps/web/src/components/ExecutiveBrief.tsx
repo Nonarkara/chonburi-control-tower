@@ -1,4 +1,4 @@
-import type { ExecutiveSnapshot } from "@chula/shared";
+import type { ExecutiveSnapshot } from "@chonburi/shared";
 
 interface Props {
   data: ExecutiveSnapshot | null;

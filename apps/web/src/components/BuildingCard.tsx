@@ -18,7 +18,7 @@ export function BuildingCard({ building, onClose }: Props) {
     <aside className="building-card" role="dialog" aria-label={`Building: ${name}`}>
       <header className="building-card-head">
         <div>
-          <span className="eyebrow mono">CHULA · BUILDING</span>
+          <span className="eyebrow mono">CHONBURI · BUILDING</span>
           <h3 className="building-card-title">{name}</h3>
           {altName && <div className="building-card-alt">{altName}</div>}
         </div>

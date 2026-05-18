@@ -1,4 +1,4 @@
-import type { StrategicAlert } from "@chula/shared";
+import type { StrategicAlert } from "@chonburi/shared";
 
 interface Props {
   alerts: StrategicAlert[];

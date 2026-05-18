@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 export type Theme = "light" | "dark";
 
-const STORAGE_KEY = "chula:theme";
+const STORAGE_KEY = "chonburi:theme";
 
 function readSavedTheme(): Theme | null {
   if (typeof window === "undefined") return null;

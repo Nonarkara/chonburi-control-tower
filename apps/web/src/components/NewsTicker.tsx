@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { IntelligenceItem } from "@chula/shared";
+import type { IntelligenceItem } from "@chonburi/shared";
 import { safeUrl } from "../lib/safeUrl";
 
 interface Props {

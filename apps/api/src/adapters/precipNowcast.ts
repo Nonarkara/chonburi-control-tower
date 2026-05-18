@@ -8,8 +8,8 @@
  * Free, no key, 15-min interval, ~24 h horizon (we only need 2 h).
  */
 
-import type { NormalizedFeed, PrecipNowcast } from "@chula/shared";
-import { CHULA } from "@chula/shared";
+import type { NormalizedFeed, PrecipNowcast } from "@chonburi/shared";
+import { CHONBURI } from "@chonburi/shared";
 import { cacheAgeMinutes, cached } from "../lib/cache.js";
 import { fetchJsonOrNull } from "./common.js";
 
@@ -28,7 +28,7 @@ const POINTS_IN_2H = 8; // 8 × 15 min
 export async function fetchPrecipNowcast(): Promise<NormalizedFeed<PrecipNowcast>> {
   return cached("precip-nowcast", TTL_SECONDS, async () => {
     const fetchedAt = new Date().toISOString();
-    const [lng, lat] = CHULA.center;
+    const [lng, lat] = CHONBURI.center;
     const url =
       `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
       `&minutely_15=precipitation,precipitation_probability` +

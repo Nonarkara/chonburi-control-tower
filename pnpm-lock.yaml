@@ -10,7 +10,7 @@ importers:
 
   apps/api:
     dependencies:
-      '@chula/shared':
+      '@chonburi/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@hono/node-server':
@@ -41,7 +41,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@chula/shared':
+      '@chonburi/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@deck.gl/aggregation-layers':

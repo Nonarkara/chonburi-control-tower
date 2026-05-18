@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { MarketSnapshot } from "@chula/shared";
+import type { MarketSnapshot } from "@chonburi/shared";
 
 interface Props {
   snapshot: MarketSnapshot | null;

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCustomClocks, searchCities, type ClockSpec } from "../hooks/useCustomClocks";
-import type { PrecipNowcast } from "@chula/shared";
+import type { PrecipNowcast } from "@chonburi/shared";
 
 interface TrendPoint { at: string; aqi: number; pm25: number }
 

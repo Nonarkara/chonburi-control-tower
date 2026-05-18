@@ -1,23 +1,7 @@
 import { useMemo } from "react";
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
 import type { CuLandProperties } from "../map/layers";
-import type { IncidentFeature } from "@chula/shared";
-
-/**
- * PMCU operational brief — left-rail content focused on the pain points the
- * Vice President of Property Management actually owns:
- *
- *   1. Traffic and parking pressure on the campus arterials
- *   2. PM2.5 vs WHO guidance (Centenary Park study showed 2–3× exceedance)
- *   3. Shared-mobility fleet utilisation (Samyan Smart City partners)
- *   4. Active development pipeline (Blocks 28X / 33 / 34)
- *   5. Live incidents on or near PMCU-managed land
- *
- * Numbers tagged "live" come from the API; "modeled" come from the time-of-day
- * traffic simulator; "Samyan Smart City" are headline fleet sizes from
- * samyansmartcity.com/en/7-smarts/mobility. Replace with sensor feeds when
- * PMCU exposes them.
- */
+import type { IncidentFeature } from "@chonburi/shared";
 
 interface Props {
   hour: number;
@@ -28,24 +12,18 @@ interface Props {
   cuLands: FeatureCollection<Polygon | MultiPolygon, CuLandProperties> | null;
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-// Modeled mobility data — wired to swap with real feeds when PMCU exposes them
-// ────────────────────────────────────────────────────────────────────────────
-
 interface Corridor {
   id: string;
   name: string;
-  // base congestion floor (0-1) at 03:00; multiplied by hourly profile.
   base: number;
 }
 const CORRIDORS: Corridor[] = [
-  { id: "rama-1",       name: "Rama I",        base: 0.55 },
-  { id: "rama-4",       name: "Rama IV",       base: 0.60 },
-  { id: "phaya-thai",   name: "Phaya Thai",    base: 0.50 },
-  { id: "henri-dunant", name: "Henri Dunant",  base: 0.45 },
+  { id: "sukhumvit",  name: "Sukhumvit Hwy",   base: 0.60 },
+  { id: "coastal",    name: "Coastal Road",     base: 0.50 },
+  { id: "klang",      name: "Klang Mueang Rd",  base: 0.45 },
+  { id: "phanat",     name: "Pha Nat Road",     base: 0.42 },
 ];
 
-// Time-of-day profile: idle overnight, two commute peaks, gentle midday floor.
 function hourlyLoad(hour: number, isWeekend: boolean): number {
   const morningPeak = Math.exp(-((hour - 8) ** 2) / 1.8);
   const eveningPeak = Math.exp(-((hour - 17.5) ** 2) / 2.4);
@@ -54,22 +32,20 @@ function hourlyLoad(hour: number, isWeekend: boolean): number {
   return Math.min(1.15, overnight + weekendFactor * 0.95 * Math.max(morningPeak, eveningPeak));
 }
 
-interface ParkingLot {
+interface ParkingZone {
   id: string;
   name: string;
   capacity: number;
 }
-const PARKING_LOTS: ParkingLot[] = [
-  { id: "PA", name: "Block A · Henri Dunant SE",  capacity: 720 },
-  { id: "PB", name: "Block B · Henri Dunant NE",  capacity: 640 },
-  { id: "PC", name: "Block C · Phaya Thai NE",    capacity: 580 },
-  { id: "PD", name: "Block D · Phaya Thai SW",    capacity: 510 },
+const PARKING_ZONES: ParkingZone[] = [
+  { id: "P1", name: "Municipal Hall · North",   capacity: 320 },
+  { id: "P2", name: "Market District · East",   capacity: 480 },
+  { id: "P3", name: "Coastal Park · West",      capacity: 260 },
+  { id: "P4", name: "Hospital Complex · South", capacity: 410 },
 ];
 
-// Mock occupancy curve — full near peaks, near-empty overnight. Each lot lags
-// the next by ~25 minutes so we don't paint identical bars.
-function lotOccupancy(lot: ParkingLot, hour: number, isWeekend: boolean): number {
-  const offset = (lot.id.charCodeAt(1) - 65) * 0.35;
+function zoneOccupancy(zone: ParkingZone, hour: number, isWeekend: boolean): number {
+  const offset = (zone.id.charCodeAt(1) - 49) * 0.35;
   const adjusted = hour + offset;
   const morning = Math.exp(-((adjusted - 9.5) ** 2) / 4);
   const afternoon = Math.exp(-((adjusted - 14) ** 2) / 7);
@@ -79,10 +55,6 @@ function lotOccupancy(lot: ParkingLot, hour: number, isWeekend: boolean): number
   return Math.min(0.98, base);
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-// Samyan Smart City fleet (samyansmartcity.com/en/7-smarts/mobility)
-// ────────────────────────────────────────────────────────────────────────────
-
 interface FleetEntry {
   id: string;
   label: string;
@@ -91,17 +63,11 @@ interface FleetEntry {
   note: string;
 }
 const FLEET: FleetEntry[] = [
-  { id: "cu-pop",   label: "CU POP Bus",      count: 20,  unit: "EV buses",  note: "5 routes · free" },
-  { id: "muvmi",    label: "MuvMi",           count: 30,  unit: "EV tuk-tuks", note: "≈ 700 trips/day" },
-  { id: "beam",     label: "Beam scooters",   count: 180, unit: "scooters",  note: "40 parking stations" },
-  { id: "anywheel", label: "Anywheel bikes",  count: 350, unit: "bikes",     note: "40 + stations" },
-  { id: "haupcar",  label: "Haupcar EVs",     count: 10,  unit: "cars",      note: "6 stations · hourly" },
-  { id: "ev-chg",   label: "EV charging",     count: 87,  unit: "terminals", note: "27 stations" },
+  { id: "muni-bus",  label: "Municipal Bus",   count: 12, unit: "buses",   note: "3 routes · scheduled" },
+  { id: "songthaew", label: "Songthaew",       count: 45, unit: "vehicles", note: "city centre routes" },
+  { id: "tuk-tuk",   label: "Tuk-tuk",         count: 80, unit: "vehicles", note: "market + tourist areas" },
+  { id: "moto-taxi", label: "Moto-taxi",        count: 120, unit: "drivers", note: "licensed stands" },
 ];
-
-// ────────────────────────────────────────────────────────────────────────────
-// PMCU development pipeline (pmcu.co.th; Newswise Block 28X; Chula Sustain Block 33)
-// ────────────────────────────────────────────────────────────────────────────
 
 interface Development {
   id: string;
@@ -110,10 +76,10 @@ interface Development {
   describe: string;
 }
 const DEVELOPMENTS: Development[] = [
-  { id: "block-28x", name: "Block 28X",     status: "open",        describe: "Samyan workshops · young entrepreneurs" },
-  { id: "block-33",  name: "Block 33",      status: "in-progress", describe: "Suan Luang–Samyan · residential + wellness" },
-  { id: "block-34",  name: "Block 34",      status: "planned",     describe: "Suan Luang–Samyan · mixed-use" },
-  { id: "walk-st",   name: "Siam Walk St.", status: "in-progress", describe: "Pedestrianised retail corridor" },
+  { id: "smart-city",    name: "Smart City Hub",       status: "in-progress", describe: "DEPA-backed IoT + open data infrastructure" },
+  { id: "flood-infra",   name: "Flood Retention Basin",status: "in-progress", describe: "Urban drainage upgrade · coastal flood mitigation" },
+  { id: "digital-svc",   name: "Digital Services",     status: "open",        describe: "Online permits, payments, citizen reporting" },
+  { id: "eec-link",      name: "EEC Last-Mile Link",   status: "planned",     describe: "Bus rapid transit to EEC industrial zones" },
 ];
 const DEV_COLOR: Record<Development["status"], string> = {
   open: "var(--good)",
@@ -121,14 +87,9 @@ const DEV_COLOR: Record<Development["status"], string> = {
   planned: "var(--text-3)",
 };
 
-// ────────────────────────────────────────────────────────────────────────────
-// Component
-// ────────────────────────────────────────────────────────────────────────────
-
 export function PmcuBrief({ hour, isWeekend, iticEvents, cityReports, trafficSampleCount, cuLands }: Props) {
   const load = hourlyLoad(hour, isWeekend);
 
-  // Portfolio stats from cu-lands.geojson — properties we can locate today.
   const portfolio = useMemo(() => {
     if (!cuLands) return { resolved: 0, byKind: new Map<string, number>() };
     const byKind = new Map<string, number>();
@@ -139,24 +100,24 @@ export function PmcuBrief({ hour, isWeekend, iticEvents, cityReports, trafficSam
     return { resolved: cuLands.features.length, byKind };
   }, [cuLands]);
 
-  const totalParkingCapacity = PARKING_LOTS.reduce((s, l) => s + l.capacity, 0);
-  const totalOccupied = PARKING_LOTS.reduce((s, l) => s + Math.round(l.capacity * lotOccupancy(l, hour, isWeekend)), 0);
+  const totalParkingCapacity = PARKING_ZONES.reduce((s, z) => s + z.capacity, 0);
+  const totalOccupied = PARKING_ZONES.reduce((s, z) => s + Math.round(z.capacity * zoneOccupancy(z, hour, isWeekend)), 0);
   const totalOccupancyPct = Math.round((totalOccupied / totalParkingCapacity) * 100);
 
   const openIncidents = cityReports.filter((r) => r.status !== "resolved").length + iticEvents.length;
 
   return (
     <div className="pmcu-brief">
-      {/* ── Portfolio rollup ── */}
+      {/* ── Municipality overview ── */}
       <section className="pmcu-section">
         <header className="pmcu-h">
-          <span className="eyebrow mono">PMCU portfolio</span>
-          <span className="mono caption">~ 1,153 rai</span>
+          <span className="eyebrow mono">Municipality overview</span>
+          <span className="mono caption">เทศบาลเมืองชลบุรี</span>
         </header>
         <div className="pmcu-kv-grid">
           <div className="pmcu-kv">
-            <div className="num">{portfolio.resolved}</div>
-            <div className="lbl">PROPERTIES MAPPED</div>
+            <div className="num">{portfolio.resolved || "—"}</div>
+            <div className="lbl">ZONES MAPPED</div>
           </div>
           <div className="pmcu-kv">
             <div className="num">{openIncidents}</div>
@@ -165,7 +126,7 @@ export function PmcuBrief({ hour, isWeekend, iticEvents, cityReports, trafficSam
         </div>
       </section>
 
-      {/* ── Mobility — campus arterials ── */}
+      {/* ── Arterial load ── */}
       <section className="pmcu-section">
         <header className="pmcu-h">
           <span className="eyebrow mono">Arterial load</span>
@@ -192,36 +153,36 @@ export function PmcuBrief({ hour, isWeekend, iticEvents, cityReports, trafficSam
         </div>
       </section>
 
-      {/* ── 4-corner parking ── */}
+      {/* ── Parking zones ── */}
       <section className="pmcu-section">
         <header className="pmcu-h">
-          <span className="eyebrow mono">Parking — 4 corners</span>
+          <span className="eyebrow mono">Parking zones</span>
           <span className="mono caption">{totalOccupied}/{totalParkingCapacity} · {totalOccupancyPct}%</span>
         </header>
         <ul className="pmcu-rows">
-          {PARKING_LOTS.map((lot) => {
-            const occ = lotOccupancy(lot, hour, isWeekend);
-            const filled = Math.round(lot.capacity * occ);
+          {PARKING_ZONES.map((zone) => {
+            const occ = zoneOccupancy(zone, hour, isWeekend);
+            const filled = Math.round(zone.capacity * occ);
             const colour = occ > 0.9 ? "var(--bad)" : occ > 0.75 ? "var(--warn)" : "var(--good)";
             return (
-              <li key={lot.id} className="pmcu-row">
-                <span className="pmcu-row-name" title={lot.name}>{lot.id}</span>
+              <li key={zone.id} className="pmcu-row">
+                <span className="pmcu-row-name" title={zone.name}>{zone.id}</span>
                 <span className="pmcu-row-bar">
                   <span className="pmcu-row-fill" style={{ width: `${Math.round(occ * 100)}%`, background: colour }} />
                 </span>
-                <span className="pmcu-row-val mono">{filled}/{lot.capacity}</span>
+                <span className="pmcu-row-val mono">{filled}/{zone.capacity}</span>
               </li>
             );
           })}
         </ul>
-        <div className="pmcu-foot mono">modeled · sensor feed pending PMCU integration</div>
+        <div className="pmcu-foot mono">modeled · sensor feed pending integration</div>
       </section>
 
-      {/* ── Shared-mobility fleet ── */}
+      {/* ── Transport fleet ── */}
       <section className="pmcu-section">
         <header className="pmcu-h">
-          <span className="eyebrow mono">Shared fleet · Samyan Smart City</span>
-          <span className="mono caption">≈ 3M trips/yr</span>
+          <span className="eyebrow mono">Transport fleet</span>
+          <span className="mono caption">Chonburi city area</span>
         </header>
         <ul className="pmcu-fleet">
           {FLEET.map((f) => (
@@ -239,7 +200,7 @@ export function PmcuBrief({ hour, isWeekend, iticEvents, cityReports, trafficSam
       <section className="pmcu-section">
         <header className="pmcu-h">
           <span className="eyebrow mono">Active developments</span>
-          <span className="mono caption">PMCU pipeline</span>
+          <span className="mono caption">municipal pipeline</span>
         </header>
         <ul className="pmcu-rows">
           {DEVELOPMENTS.map((d) => (
@@ -247,12 +208,17 @@ export function PmcuBrief({ hour, isWeekend, iticEvents, cityReports, trafficSam
               <span className="pmcu-dev-dot" style={{ background: DEV_COLOR[d.status] }} />
               <span className="pmcu-row-name">{d.name}</span>
               <span className="pmcu-row-val mono caption" style={{ color: DEV_COLOR[d.status] }}>
-                {d.status.toUpperCase()}
+                {d.status}
               </span>
             </li>
           ))}
         </ul>
-        <div className="pmcu-foot mono">Block 28X · 33 · 34 · Siam Walk St.</div>
+        <ul className="pmcu-rows" style={{ marginTop: 4 }}>
+          {DEVELOPMENTS.map((d) => (
+            <li key={`${d.id}-desc`} className="pmcu-dev-desc caption">{d.describe}</li>
+          ))}
+        </ul>
+        <div className="pmcu-foot mono">municipal pipeline · data: official comms</div>
       </section>
     </div>
   );

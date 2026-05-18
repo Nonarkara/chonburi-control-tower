@@ -1,4 +1,4 @@
-import type { IntelligenceItem, NormalizedFeed } from "@chula/shared";
+import type { IntelligenceItem, NormalizedFeed } from "@chonburi/shared";
 import { cacheAgeMinutes, cached } from "../lib/cache.js";
 import { fetchTextOrNull } from "./common.js";
 // Archive is Node-only (uses fs). Dynamic import keeps Workers happy.
@@ -12,7 +12,7 @@ async function tryArchive(items: IntelligenceItem[]): Promise<void> {
   }
 }
 
-const TTL_SECONDS = 180; // 3 min — quicker refresh for the right-rail panel.
+const TTL_SECONDS = 180; // 3 min
 
 interface Feed {
   id: string;
@@ -21,35 +21,32 @@ interface Feed {
   trust: number; // 0..1
 }
 
-// Multi-language search — covers EN / TH / ZH-CN so we capture how Chinese
-// outlets cover Chula too (collaborations, students, exchange programs).
 const FEEDS: Feed[] = [
   {
-    id: "google-news-chula-en",
+    id: "google-news-chonburi-en",
     label: "Google News (EN)",
     url:
-      "https://news.google.com/rss/search?q=%22Chulalongkorn+University%22+OR+%22Siam+Square%22+OR+%22Samyan%22&hl=en-TH&gl=TH&ceid=TH:en",
+      "https://news.google.com/rss/search?q=%22Chonburi+Municipality%22+OR+%22Eastern+Economic+Corridor%22+OR+%22EEC+Thailand%22&hl=en-TH&gl=TH&ceid=TH:en",
     trust: 0.75,
   },
   {
-    id: "google-news-chula-th",
+    id: "google-news-chonburi-th",
     label: "Google News (TH)",
     url:
-      "https://news.google.com/rss/search?q=%E0%B8%88%E0%B8%B8%E0%B8%AC%E0%B8%B2%E0%B8%A5%E0%B8%87%E0%B8%81%E0%B8%A3%E0%B8%93%E0%B9%8C+OR+%E0%B8%AA%E0%B8%A2%E0%B8%B2%E0%B8%A1%E0%B8%AA%E0%B9%81%E0%B8%84%E0%B8%A7%E0%B8%A3%E0%B9%8C&hl=th&gl=TH&ceid=TH:th",
+      "https://news.google.com/rss/search?q=%E0%B9%80%E0%B8%97%E0%B8%A8%E0%B8%9A%E0%B8%B2%E0%B8%A5%E0%B9%80%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%87%E0%B8%8A%E0%B8%A5%E0%B8%9A%E0%B8%B8%E0%B8%A3%E0%B8%B5+OR+%E0%B8%AD%E0%B8%B5%E0%B8%AD%E0%B8%B5%E0%B8%8B%E0%B8%B5+OR+%E0%B8%8A%E0%B8%A5%E0%B8%9A%E0%B8%B8%E0%B8%A3%E0%B8%B5&hl=th&gl=TH&ceid=TH:th",
     trust: 0.78,
   },
   {
-    id: "google-news-chula-zh",
+    id: "google-news-chonburi-zh",
     label: "Google News (中文)",
-    // "朱拉隆功" = Chulalongkorn in Chinese; HK + TW + SG coverage.
     url:
-      "https://news.google.com/rss/search?q=%E6%9C%B1%E6%8B%89%E9%9A%86%E5%8A%9F&hl=zh-CN&gl=US&ceid=US:zh-CN",
+      "https://news.google.com/rss/search?q=%E6%98%A5%E6%AD%A6%E9%87%8C+OR+EEC%E4%B8%9C%E9%83%A8%E7%BB%8F%E6%B5%8E%E8%B5%B0%E5%BB%8A&hl=zh-CN&gl=TH&ceid=TH:zh-CN",
     trust: 0.72,
   },
   {
-    id: "bangkok-post-education",
+    id: "bangkok-post-thailand",
     label: "Bangkok Post",
-    url: "https://www.bangkokpost.com/rss/data/education.xml",
+    url: "https://www.bangkokpost.com/rss/data/thailand.xml",
     trust: 0.85,
   },
 ];
@@ -91,7 +88,11 @@ function parseDate(raw: string, now: Date): Date {
 function scoreItem(item: { title: string; summary: string }, trust: number): number {
   const text = `${item.title} ${item.summary}`.toLowerCase();
   let s = trust * 50;
-  for (const kw of ["chula", "จุฬา", "siam", "สยาม", "samyan", "สามย่าน", "rama i", "rama iv", "phaya thai", "ราชดำริ"]) {
+  for (const kw of [
+    "chonburi", "ชลบุรี", "eec", "อีอีซี",
+    "ban saen", "บ้านแสน", "laem chabang", "แหลมฉบัง",
+    "si racha", "ศรีราชา", "municipality", "เทศบาล",
+  ]) {
     if (text.includes(kw)) s += 8;
   }
   for (const kw of ["accident", "อุบัติเหตุ", "flood", "น้ำท่วม", "protest", "ประท้วง", "haze", "ฝุ่น"]) {
@@ -103,7 +104,6 @@ function scoreItem(item: { title: string; summary: string }, trust: number): num
 async function parseFeed(feed: Feed): Promise<IntelligenceItem[]> {
   const xml = await fetchTextOrNull(feed.url);
   if (!xml) return [];
-  // Create a local RegExp so concurrent feeds don't race on lastIndex
   const itemRe = /<item>([\s\S]*?)<\/item>/g;
   const items: IntelligenceItem[] = [];
   const now = new Date();
@@ -166,16 +166,11 @@ export async function fetchNews(): Promise<NormalizedFeed<IntelligenceItem>> {
           ageMinutes: cacheAgeMinutes(fetchedAt),
           fallbackTier: top.length > 0 ? "live" : "scenario",
         },
-        // Stash the full deduped set for the archive — kept on the cached
-        // payload so we can run dedup-archive on every request, not only
-        // on cache miss.
         _dedup: dedup,
       };
     },
   );
 
-  // Archive on every call. Dedup-by-url-hash inside the archiver makes
-  // this O(1) once an item is known, so repeated cache hits cost nothing.
   void tryArchive(result._dedup ?? result.features);
 
   return {

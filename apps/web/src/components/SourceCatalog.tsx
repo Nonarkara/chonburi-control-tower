@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { SOURCE_CATALOG, type SourceCategory, type SourceEntry, type SourceStatus } from "@chula/shared";
+import { SOURCE_CATALOG, type SourceCategory, type SourceEntry, type SourceStatus } from "@chonburi/shared";
 
 const STATUS_COLOR: Record<SourceStatus, string> = {
   live: "var(--good)",

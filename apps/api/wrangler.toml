@@ -1,4 +1,4 @@
-name = "chula-control-tower-api"
+name = "chonburi-control-tower-api"
 main = "src/index.ts"
 compatibility_date = "2025-11-01"
 compatibility_flags = ["nodejs_compat"]

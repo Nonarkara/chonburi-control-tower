@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { FallbackTier, NormalizedFeed } from "@chula/shared";
+import type { FallbackTier, NormalizedFeed } from "@chonburi/shared";
 
 interface FeedState<T> {
   data: T[];

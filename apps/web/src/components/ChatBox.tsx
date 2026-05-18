@@ -11,15 +11,15 @@ interface Props {
 }
 
 const SUGGESTED_PROMPTS = [
-  "What's PM2.5 around campus right now and what should we tell students?",
-  "Summarise PMCU's commercial portfolio in 4 bullets.",
-  "Which Bangkok open datasets matter most for campus operations?",
-  "How busy is Henri Dunant Rd at 8:30 am on a weekday?",
-  "Compare Centenary Park's flood-sponge design to similar parks.",
-  "Where would I find live CCTV near the Engineering faculty?",
+  "What's the current PM2.5 in Chonburi and what should the municipality advise residents?",
+  "Summarise Chonburi's EEC position in 4 bullets.",
+  "Which open datasets matter most for Chonburi municipal operations?",
+  "How bad is traffic on Sukhumvit Rd through Chonburi at 8:30 am?",
+  "What flood risks does Chonburi face and how are other coastal cities managing them?",
+  "Where can I find live CCTV feeds near the Chonburi town hall?",
 ];
 
-const STORAGE_KEY = "chula:chat-history-v1";
+const STORAGE_KEY = "chonburi:chat-history-v1";
 const MAX_HISTORY_TURNS = 16;
 
 function loadHistory(): ChatMessage[] {
@@ -220,9 +220,9 @@ export function ChatBox({ apiBase }: Props) {
         >
           <span className="chat-handle-dot" />
           <span className="chat-handle-label">
-            <strong>Ask CCT</strong>
+            <strong>Ask CTM</strong>
             <span className="mono">
-              Concierge for Chula campus · PMCU · datasets · ops
+              Concierge for Chonburi · EEC · municipal ops · data
             </span>
           </span>
           <span className="chat-handle-cta mono">[ASK →]</span>
@@ -233,7 +233,7 @@ export function ChatBox({ apiBase }: Props) {
         <div className="chat-panel" role="dialog" aria-label="Chula concierge chat">
           <header className="chat-head">
             <div className="col">
-              <span className="eyebrow mono">CCT-Concierge · Gemini 2.5 Flash</span>
+              <span className="eyebrow mono">CTM-Concierge · Gemini 2.5 Flash</span>
               <h2 className="chat-title">Ask anything about Chula</h2>
             </div>
             <div className="chat-head-tools">
@@ -278,7 +278,7 @@ export function ChatBox({ apiBase }: Props) {
             {messages.map((m, i) => (
               <div key={i} className={`chat-msg chat-msg-${m.role}`}>
                 <span className="chat-msg-role mono">
-                  {m.role === "user" ? "YOU" : "CCT"}
+                  {m.role === "user" ? "YOU" : "CTM"}
                 </span>
                 <div className="chat-msg-body">
                   {m.role === "model" ? renderMarkdownLite(m.content) : <p>{m.content}</p>}
@@ -288,7 +288,7 @@ export function ChatBox({ apiBase }: Props) {
 
             {busy && (
               <div className="chat-msg chat-msg-model chat-msg-busy">
-                <span className="chat-msg-role mono">CCT</span>
+                <span className="chat-msg-role mono">CTM</span>
                 <div className="chat-msg-body">
                   <span className="chat-typing">
                     <span /><span /><span />
@@ -309,7 +309,7 @@ export function ChatBox({ apiBase }: Props) {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about campus traffic, PMCU lands, air quality, datasets…"
+              placeholder="Ask about Chonburi traffic, EEC, air quality, municipal data…"
               maxLength={1200}
               disabled={busy}
               aria-label="Your message"

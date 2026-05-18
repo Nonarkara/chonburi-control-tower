@@ -1,4 +1,4 @@
-import type { PeerSnapshot } from "@chula/shared";
+import type { PeerSnapshot } from "@chonburi/shared";
 
 interface Props {
   peers: PeerSnapshot[];

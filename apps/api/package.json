@@ -1,5 +1,5 @@
 {
-  "name": "@chula/api",
+  "name": "@chonburi/api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@chula/shared": "workspace:*",
+    "@chonburi/shared": "workspace:*",
     "@hono/node-server": "^1.13.7",
     "google-trends-api": "^4.9.2",
     "hono": "^4.6.10"

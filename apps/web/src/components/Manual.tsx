@@ -29,7 +29,7 @@ export function Manual({ open, onClose }: Props) {
       >
         <header className="manual-head">
           <div className="col">
-            <span className="eyebrow mono">Manual · CCT-01</span>
+            <span className="eyebrow mono">Manual · CTM-01</span>
             <h2 className="manual-title">How to read this dashboard</h2>
           </div>
           <button onClick={onClose} className="mono manual-close" aria-label="Close manual">
@@ -52,7 +52,7 @@ export function Manual({ open, onClose }: Props) {
               <li><span className="mono">①</span> Top bar — brand, live-feed health, controls (2D/3D, theme, sources, manual)</li>
               <li><span className="mono">②</span> World strip — Bangkok weather + 6 user-set city clocks</li>
               <li><span className="mono">③</span> News ticker — top headlines, scrolls horizontally; hover to pause</li>
-              <li><span className="mono">④</span> Left rail — device check-in, speed test, PMCU brief, KPIs</li>
+              <li><span className="mono">④</span> Left rail — device check-in, speed test, municipal brief, KPIs</li>
               <li><span className="mono">⑤</span> Map — the campus twin (2D, 3D, or 3DS substructure)</li>
               <li><span className="mono">⑥</span> Right rail — Google Trends + full news desk</li>
               <li><span className="mono">⑦</span> Bottom — version pill, traffic hour slider, counts</li>
@@ -84,7 +84,7 @@ export function Manual({ open, onClose }: Props) {
               <thead><tr><th>Mode</th><th>What changes</th></tr></thead>
               <tbody>
                 <tr><td className="mono">2D</td><td>Top-down. Pitch 0°, bearing 0°. Building footprints flat.</td></tr>
-                <tr><td className="mono">3D</td><td>Tilted (pitch 50°, bearing −18°). Buildings extruded to their real heights — 339 across campus + Siam Square + MBK + Samyan + Stadium One, plus 461 neighborhood towers ≥30 m (Pathumwan / Silom / Ratchaprasong skyline) when "Skyline" layer is on.</td></tr>
+                <tr><td className="mono">3D</td><td>Tilted (pitch 50°, bearing −18°). Buildings extruded to their real heights — buildings across Chonburi city + EEC industrial zones, plus neighborhood towers ≥30 m (Pathumwan / Silom / Ratchaprasong skyline) when "Skyline" layer is on.</td></tr>
                 <tr><td className="mono">3DS</td><td>Substructure (SimCity-2000-style). Superstructure ghosts to 35 % opacity; utility pipes drop to burial depth (electricity ≈ 2 m, water ≈ 3 m, storm drains ≈ 4 m). Pitch 62°.</td></tr>
               </tbody>
             </table>
@@ -158,8 +158,8 @@ export function Manual({ open, onClose }: Props) {
             <h3 className="manual-h3">Acronyms</h3>
             <div className="manual-grid-2 manual-acro">
               <dl>
-                <dt>CCT-01</dt><dd>Chula Control Tower v1 — this dashboard.</dd>
-                <dt>PMCU</dt><dd>Property Management of Chulalongkorn University — pmcu.co.th, the entity that holds Siam Square, Samyan Mitrtown, MBK, Stadium One, etc.</dd>
+                <dt>CTM-01</dt><dd>Chonburi Town Center v1 — this dashboard.</dd>
+                <dt>BRIEF</dt><dd>Municipal brief panel — Chonburi arterial load, parking zones, transport fleet, active development pipeline.</dd>
                 <dt>BMA</dt><dd>Bangkok Metropolitan Administration — city government. Source of POIs, parks, AQ stations, drainage.</dd>
                 <dt>MEA</dt><dd>Metropolitan Electricity Authority — owns the substations that feed campus.</dd>
                 <dt>MWA</dt><dd>Metropolitan Waterworks Authority — owns the water mains.</dd>
@@ -177,7 +177,7 @@ export function Manual({ open, onClose }: Props) {
                 <dt>LST</dt><dd>Land Surface Temperature — satellite-derived ground temp; shows urban heat islands.</dd>
                 <dt>AOD</dt><dd>Aerosol Optical Depth — satellite proxy for haze + PM.</dd>
                 <dt>OMI / VIIRS / MODIS / IMERG</dt><dd>NASA satellite instruments. OMI → NO₂; VIIRS → night lights, true-color; MODIS → daily Earth observation; IMERG → half-hourly rainfall.</dd>
-                <dt>BESS</dt><dd>Battery Energy Storage System — 4 MWh unit colocated with Samyan substation.</dd>
+                <dt>BESS</dt><dd>Battery Energy Storage System — 4 MWh unit colocated with EEC substation.</dd>
                 <dt>HV / MV / LV</dt><dd>High / Medium / Low Voltage — 115 kV transmission, 22 kV distribution, 230/400 V service.</dd>
                 <dt>RTT</dt><dd>Round-Trip Time — how long a network packet takes to bounce. Lower = snappier.</dd>
                 <dt>Mbps</dt><dd>Megabits per second — network download speed.</dd>
@@ -214,7 +214,7 @@ export function Manual({ open, onClose }: Props) {
             <p>
               Every panel labels what's modeled and what's live. Tags like "approx",
               "modeled", "indicative", "sensor feed pending" mean we're rendering a
-              plausible placeholder until PMCU / MEA / MWA send the real shapefile.
+              plausible placeholder until municipal GIS data is connected.
               Anything tagged "live" came from an upstream API this minute. The
               Source Catalog (<span className="mono">SOURCES</span> button) shows the
               exact endpoint + cache age + status tier for every feed.

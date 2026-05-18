@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { CHULA } from "@chula/shared";
-import type { AcademicSnapshot, FallbackTier } from "@chula/shared";
+import { CHONBURI } from "@chonburi/shared";
+import type { AcademicSnapshot, FallbackTier } from "@chonburi/shared";
 import { useTheme } from "../hooks/useTheme";
 
 interface FeedHealth {
@@ -66,9 +66,9 @@ export function TopBar({ feeds, onOpenCatalog, catalogCount, viewMode, onCycleVi
         </a>
         <span className="brand-sep" aria-hidden />
         <div className="brand-stack">
-          <strong>Chula Control Tower</strong>
+          <strong>Chonburi Town Center</strong>
           <span className="brand-sub mono">
-            CCT-01 · {CHULA.name.en} · Bangkok
+            CTM-01 · {CHONBURI.name.en} · Chonburi
           </span>
         </div>
       </div>

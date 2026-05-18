@@ -1,4 +1,4 @@
-import type { IncidentCategory, IncidentFeature, IncidentSeverity, IncidentStatus, NormalizedFeed } from "@chula/shared";
+import type { IncidentCategory, IncidentFeature, IncidentSeverity, IncidentStatus, NormalizedFeed } from "@chonburi/shared";
 import { cacheAgeMinutes, cached } from "../lib/cache.js";
 import { inBbox } from "../lib/bbox.js";
 import { fetchJsonOrNull } from "./common.js";

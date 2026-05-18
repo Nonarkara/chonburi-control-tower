@@ -1,9 +1,8 @@
-// Google Trends adapter — uses the unofficial google-trends-api package
-// (Node only; not Workers-compatible). Returns interest-over-time +
-// related-queries for a set of Chula keywords across three languages.
+// Google Trends adapter — Node only; not Workers-compatible.
+// Returns interest-over-time + related-queries for Chonburi / EEC keywords.
 // Cached 15 min to stay under Google's soft rate limits.
 
-import type { NormalizedFeed } from "@chula/shared";
+import type { NormalizedFeed } from "@chonburi/shared";
 import { cacheAgeMinutes, cached } from "../lib/cache.js";
 
 interface TrendPoint { time: string; value: number }
@@ -12,7 +11,6 @@ interface RelatedQuery { query: string; value: number; link?: string | null }
 export interface TrendsSnapshot {
   lang: "en" | "th" | "zh-CN";
   keyword: string;
-  /** ISO 3166 region passed to the trends API (TH for Thai, "" for global). */
   geo: string;
   interestOverTime: TrendPoint[];
   relatedTop: RelatedQuery[];
@@ -23,8 +21,6 @@ export interface TrendsSnapshot {
 
 const TTL_SECONDS = 15 * 60;
 
-// Lazy-load the Node-only google-trends-api so Cloudflare Workers builds
-// don't fail at module evaluation time.
 let trendsModule: unknown = null;
 async function getTrendsModule() {
   if (trendsModule) return trendsModule;
@@ -41,9 +37,9 @@ interface TrendsApi {
 type Lang = "en" | "th" | "zh-CN";
 
 const KEYWORDS: Record<Lang, { keyword: string; geo: string; hl: string }> = {
-  en:      { keyword: "Chulalongkorn",  geo: "TH",  hl: "en-US" },
-  th:      { keyword: "จุฬาลงกรณ์",       geo: "TH",  hl: "th-TH" },
-  "zh-CN": { keyword: "朱拉隆功",          geo: "",    hl: "zh-CN" },
+  en:      { keyword: "Chonburi EEC",   geo: "TH",  hl: "en-US" },
+  th:      { keyword: "ชลบุรี อีอีซี",    geo: "TH",  hl: "th-TH" },
+  "zh-CN": { keyword: "春武里 EEC",       geo: "",    hl: "zh-CN" },
 };
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -62,10 +58,9 @@ async function fetchOneLang(lang: Lang): Promise<TrendsSnapshot> {
     fetchedAt, err,
   });
 
-  // Common request shape — Google Trends "explore" defaults to past 12 months.
   const opts = {
     keyword: cfg.keyword,
-    startTime: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // past 90 days
+    startTime: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
     geo: cfg.geo,
     hl: cfg.hl,
   } as const;
@@ -88,7 +83,6 @@ async function fetchOneLang(lang: Lang): Promise<TrendsSnapshot> {
     return empty((e as Error).message);
   }
 
-  // interestOverTime payload: { default: { timelineData: [{ time, value: [n], formattedValue, formattedAxisTime }] } }
   let interest: TrendPoint[] = [];
   try {
     const p = JSON.parse(iotJson) as {
@@ -133,7 +127,7 @@ async function fetchOneLang(lang: Lang): Promise<TrendsSnapshot> {
 }
 
 export async function fetchTrends(): Promise<NormalizedFeed<TrendsSnapshot>> {
-  return cached("trends-chula", TTL_SECONDS, async () => {
+  return cached("trends-chonburi", TTL_SECONDS, async () => {
     const fetchedAt = new Date().toISOString();
     const settled = await Promise.allSettled<TrendsSnapshot>([
       fetchOneLang("en"),

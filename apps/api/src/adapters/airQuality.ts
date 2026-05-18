@@ -1,5 +1,5 @@
-import type { AirQualityPoint, NormalizedFeed } from "@chula/shared";
-import { CHULA } from "@chula/shared";
+import type { AirQualityPoint, NormalizedFeed } from "@chonburi/shared";
+import { CHONBURI } from "@chonburi/shared";
 import { cacheAgeMinutes, cached } from "../lib/cache.js";
 import { fetchJsonOrNull } from "./common.js";
 
@@ -39,7 +39,7 @@ function aqiCategory(aqi: number): AirQualityPoint["category"] {
 export async function fetchAirQuality(): Promise<NormalizedFeed<AirQualityPoint>> {
   return cached("air-quality", TTL_SECONDS, async () => {
     const fetchedAt = new Date().toISOString();
-    const [lng, lat] = CHULA.center;
+    const [lng, lat] = CHONBURI.center;
     const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lng}&current=us_aqi,pm2_5,pm10&hourly=us_aqi,pm2_5&forecast_hours=8&timezone=Asia%2FBangkok`;
     const payload = await fetchJsonOrNull<OpenMeteoAQ>(url);
     const c = payload?.current;
@@ -47,7 +47,7 @@ export async function fetchAirQuality(): Promise<NormalizedFeed<AirQualityPoint>
       ? [{
           lat,
           lng,
-          station: "Chula (Open-Meteo grid)",
+          station: "Chonburi Town (Open-Meteo grid)",
           aqi: c.us_aqi ?? null,
           pm25: c.pm2_5 ?? null,
           category: c.us_aqi != null ? aqiCategory(c.us_aqi) : null,
@@ -71,7 +71,7 @@ export async function fetchAirQuality(): Promise<NormalizedFeed<AirQualityPoint>
 export async function fetchAirQualityTrend(): Promise<NormalizedFeed<AirQualityTrend>> {
   return cached("air-quality-trend", TTL_SECONDS, async () => {
     const fetchedAt = new Date().toISOString();
-    const [lng, lat] = CHULA.center;
+    const [lng, lat] = CHONBURI.center;
     const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lng}&current=us_aqi,pm2_5&hourly=us_aqi,pm2_5&forecast_hours=8&timezone=Asia%2FBangkok`;
     const payload = await fetchJsonOrNull<OpenMeteoAQ>(url);
     const c = payload?.current;
@@ -93,7 +93,7 @@ export async function fetchAirQualityTrend(): Promise<NormalizedFeed<AirQualityT
       }
     }
     const trend: AirQualityTrend = {
-      station: "Chula (Open-Meteo grid)",
+      station: "Chonburi Town (Open-Meteo grid)",
       category: aqiCategory(c.us_aqi ?? 0),
       current: { aqi: c.us_aqi ?? null, pm25: c.pm2_5 ?? null, observedAt: c.time ?? fetchedAt },
       next8h,

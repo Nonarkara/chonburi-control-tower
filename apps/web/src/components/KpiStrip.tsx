@@ -1,4 +1,4 @@
-import type { AirQualityPoint, IncidentFeature, WeatherSnapshot } from "@chula/shared";
+import type { AirQualityPoint, IncidentFeature, WeatherSnapshot } from "@chonburi/shared";
 
 interface Props {
   cityReports: IncidentFeature[];

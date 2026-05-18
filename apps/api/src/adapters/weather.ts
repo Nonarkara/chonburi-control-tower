@@ -1,5 +1,5 @@
-import type { NormalizedFeed, WeatherSnapshot } from "@chula/shared";
-import { CHULA } from "@chula/shared";
+import type { NormalizedFeed, WeatherSnapshot } from "@chonburi/shared";
+import { CHONBURI } from "@chonburi/shared";
 import { cacheAgeMinutes, cached } from "../lib/cache.js";
 import { fetchJsonOrNull } from "./common.js";
 
@@ -36,7 +36,7 @@ const WEATHER_CODE: Record<number, string> = {
 export async function fetchWeather(): Promise<NormalizedFeed<WeatherSnapshot>> {
   return cached("weather", TTL_SECONDS, async () => {
     const fetchedAt = new Date().toISOString();
-    const [lng, lat] = CHULA.center;
+    const [lng, lat] = CHONBURI.center;
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,precipitation,weather_code&timezone=Asia%2FBangkok&wind_speed_unit=kmh`;
     const payload = await fetchJsonOrNull<OpenMeteoCurrent>(url);
     const c = payload?.current;

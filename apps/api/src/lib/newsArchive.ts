@@ -18,7 +18,7 @@ import { appendFile, readFile, mkdir, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { createHash } from "node:crypto";
-import type { IntelligenceItem } from "@chula/shared";
+import type { IntelligenceItem } from "@chonburi/shared";
 
 const ARCHIVE = resolve(process.cwd(), "var", "news-archive.jsonl");
 const seen = new Set<string>();

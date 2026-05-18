@@ -1,4 +1,4 @@
-import type { IntelligenceItem } from "@chula/shared";
+import type { IntelligenceItem } from "@chonburi/shared";
 import { safeUrl } from "../lib/safeUrl";
 
 function ago(iso: string): string {

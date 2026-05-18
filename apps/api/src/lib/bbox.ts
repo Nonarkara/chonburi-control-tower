@@ -1,10 +1,10 @@
-import { CHULA } from "@chula/shared";
+import { CHONBURI } from "@chonburi/shared";
 
 export const OUTER_BBOX = {
-  minLng: CHULA.outerBounds[0][0],
-  minLat: CHULA.outerBounds[0][1],
-  maxLng: CHULA.outerBounds[1][0],
-  maxLat: CHULA.outerBounds[1][1],
+  minLng: CHONBURI.outerBounds[0][0],
+  minLat: CHONBURI.outerBounds[0][1],
+  maxLng: CHONBURI.outerBounds[1][0],
+  maxLat: CHONBURI.outerBounds[1][1],
 };
 
 export function inBbox(lng: number, lat: number): boolean {

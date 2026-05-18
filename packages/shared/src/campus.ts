@@ -16,34 +16,37 @@ export interface CampusConfig {
   };
 }
 
-export const CHULA: CampusConfig = {
-  id: "chula-main",
+export const CHONBURI: CampusConfig = {
+  id: "chonburi-town",
   name: {
-    en: "Chulalongkorn University",
-    th: "จุฬาลงกรณ์มหาวิทยาลัย",
-    zh: "朱拉隆功大学",
+    en: "Chonburi Town Municipality",
+    th: "เทศบาลเมืองชลบุรี",
+    zh: "春武里市镇市政府",
   },
-  center: [100.5328, 13.7395],
+  center: [100.9847, 13.3611],
   innerBounds: [
-    [100.522, 13.733],
-    [100.540, 13.749],
+    [100.968, 13.348],
+    [101.000, 13.375],
   ],
   outerBounds: [
-    [100.515, 13.728],
-    [100.548, 13.756],
+    [100.940, 13.320],
+    [101.030, 13.410],
   ],
   surroundingRoads: [
-    "Rama I",
-    "Rama IV",
-    "Phaya Thai",
-    "Henri Dunant",
-    "Chula Soi 5/12/64",
+    "Sukhumvit Highway",
+    "Coastal Road",
+    "Klang Mueang Road",
+    "Pha Nat Road",
+    "Si Racha Road",
   ],
   defaultView: {
-    longitude: 100.5328,
-    latitude: 13.7395,
-    zoom: 15.2,
+    longitude: 100.9847,
+    latitude: 13.3611,
+    zoom: 13.5,
     pitch: 0,
     bearing: 0,
   },
 };
+
+// Legacy alias — keeps any stray CHULA references building during migration.
+export const CHULA = CHONBURI;

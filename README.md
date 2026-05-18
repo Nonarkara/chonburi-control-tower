@@ -1,8 +1,8 @@
-# Chula Control Tower
+# Chonburi Town Center
 
-![Dr Non's Chulalongkorn University Super Dashboard — unifying data, revolutionising the campus](docs/hero.png)
+![Dr Non's Chonburi Town Municipality Super Dashboard — unifying data, revolutionising the campus](docs/hero.png)
 
-Single-area control-tower dashboard for **Chulalongkorn University main campus** and the surrounding CU lands in Bangkok (Siam Square, Samyan Mitrtown, Chamchuri Square, Stadium One, MBK, Suan Luang, Centenary Park, Chula Hospital).
+Single-area control-tower dashboard for **Chonburi Town Municipality main campus** and the surrounding CU lands in Bangkok (Siam Square, Samyan Mitrtown, Chamchuri Square, Stadium One, MBK, Suan Luang, Centenary Park, Chula Hospital).
 
 Pulls real-time traffic, citizen reports, news, satellite imagery, air quality, CCTV, transit, and BMA points-of-interest. Designed for a Bauhaus + LCARS engineer aesthetic.
 
@@ -18,7 +18,7 @@ That meant:
 
 - **One screen, one campus.** Not a portfolio, not a tour, not a slide deck. A single live surface that says *"this is Chula right now."* Traffic, citizen complaints, air quality, hospital flows, CCTV, BMA points-of-interest, transit, satellite — everything Chula's footprint actually intersects with, on one map, talking to each other.
 - **Real data only.** No mockups. BMA ArcGIS, BMA Open Data, Open-Meteo, iTIC/Longdo traffic, Traffy Fondue, Longdo CCTV — 35+ live sources stitched together. If something can't be wired to a real endpoint, it doesn't ship.
-- **Run it from my Mac.** Cloudflare tunnel to `chula-api.nonarkara.org`, web statically hosted on Cloudflare Pages, launchd keeping the API alive 24/7 on the M3. Zero-cost infra, zero excuses, zero "let me get back to you on procurement."
+- **Run it from my Mac.** Cloudflare tunnel to `chonburi-api.nonarkara.org`, web statically hosted on Cloudflare Pages, launchd keeping the API alive 24/7 on the M3. Zero-cost infra, zero excuses, zero "let me get back to you on procurement."
 - **Bauhaus + LCARS.** No corporate chrome, no rounded gradient cards. Modular grid, monospace labels, route colours, honest information design. The aesthetic of someone who actually wants you to read the screen.
 
 The image at the top is the dream of it — Dr Non in front of the wall of glass, the campus laid out like a circuit, every data source feeding in. The code in this repo is the working version of that picture. Same campus, same intent, fewer comic-book sparks.
@@ -30,7 +30,7 @@ That's the pitch. The rest of this README is how it's wired.
 ## Repo layout
 
 ```
-chula-control-tower/
+chonburi-control-tower/
 ├── apps/
 │   ├── web/      # Vite + React 19 + Deck.gl + MapLibre (static, deploys to Cloudflare Pages)
 │   └── api/      # Hono (dual-runtime: Cloudflare Workers + Node)
@@ -46,8 +46,8 @@ chula-control-tower/
 |---|---|---|
 | **Web** (static) | Cloudflare Pages | `pnpm --filter @chula/web build && wrangler pages deploy dist` |
 | **API** (live data) | This Mac, port 8787 | launchd `org.nonarkara.chula-api` → `tsx src/node.ts` |
-| **Public API URL** | `https://chula-api.nonarkara.org` | Cloudflare Tunnel (PM2 `city-reporter-tunnel`) → localhost:8787 |
-| **Public web URL** | `https://chula.nonarkara.org` | Cloudflare Pages custom domain |
+| **Public API URL** | `https://chonburi-api.nonarkara.org` | Cloudflare Tunnel (PM2 `city-reporter-tunnel`) → localhost:8787 |
+| **Public web URL** | `https://chonburi.nonarkara.org` | Cloudflare Pages custom domain |
 
 The API runs as Node (not Workers) because workerd's BoringSSL TLS rejects some Thai gov endpoints (bmagis.bangkok.go.th, data.bangkok.go.th). Node uses OpenSSL and reaches them cleanly. Same Hono code works in both runtimes; Workers entry is `src/index.ts`, Node entry is `src/node.ts`.
 
@@ -92,8 +92,8 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/org.nonarkara.chula-api.
 cd apps/web
 pnpm exec wrangler login         # one-time, browser flow
 pnpm build
-pnpm exec wrangler pages deploy dist --project-name chula-control-tower
-# Then attach custom domain chula.nonarkara.org in the Pages dashboard or via:
+pnpm exec wrangler pages deploy dist --project-name chonburi-control-tower
+# Then attach custom domain chonburi.nonarkara.org in the Pages dashboard or via:
 # pnpm exec wrangler pages deployment tail
 ```
 

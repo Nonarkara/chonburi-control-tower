@@ -1,21 +1,21 @@
-import type { ExecutiveSnapshot, NormalizedFeed } from "@chula/shared";
+import type { ExecutiveSnapshot, NormalizedFeed } from "@chonburi/shared";
 
 /**
- * Executive adapter — strategic data for the university president and
- * leadership team.
+ * Executive adapter — strategic data for Chonburi Town Municipality mayor
+ * and leadership team.
  *
  * Data policy:
- *   - Rankings: public QS / THE data, updated annually.
- *   - Enrollment / research: public aggregates from Chula website + Scopus.
- *   - Finance: PLACEHOLDER — marked clearly. Wire to internal ERP.
- *   - Initiatives: public projects from Chula / PMCU comms.
- *   - Peers: public data for context.
+ *   - Rankings: public liveability / smart city indices.
+ *   - Population / area: public DLA / NSO data.
+ *   - Finance: PLACEHOLDER — wire to municipal ERP.
+ *   - Initiatives: public municipal projects from official comms.
+ *   - Peers: comparable municipalities for context.
  *   - Alerts: derived from live feeds (AQ, incidents, news sentiment).
  */
 
 function meta(): NormalizedFeed<ExecutiveSnapshot>["meta"] {
   return {
-    source: "chula-executive-compendium",
+    source: "chonburi-municipality-compendium",
     fetchedAt: new Date().toISOString(),
     ageMinutes: 0,
     fallbackTier: "reference",
@@ -28,170 +28,116 @@ const SNAPSHOT: ExecutiveSnapshot = {
   rankings: [
     {
       system: "qs-world",
-      label: "QS World",
-      rank: 229,
-      total: 1500,
+      label: "SLIC Smart City Index",
+      rank: 0,
+      total: 163,
       year: 2025,
-      previousRank: 211,
-      trend: "down",
-    },
-    {
-      system: "qs-asia",
-      label: "QS Asia",
-      rank: 44,
-      total: 856,
-      year: 2025,
-      previousRank: 43,
-      trend: "down",
-    },
-    {
-      system: "the-world",
-      label: "THE World",
-      rank: 601,
-      total: 2092,
-      year: 2025,
-      previousRank: 601,
+      previousRank: 0,
       trend: "stable",
     },
     {
-      system: "the-asia",
-      label: "THE Asia",
-      rank: 126,
-      total: 739,
-      year: 2024,
-      previousRank: 119,
-      trend: "down",
+      system: "qs-asia",
+      label: "EEC Readiness Score",
+      rank: 0,
+      total: 77,
+      year: 2025,
+      previousRank: 0,
+      trend: "stable",
     },
   ],
 
   enrollment: {
-    total: 38500,
-    undergraduate: 25700,
-    graduate: 12800,
-    international: 3100,
-    internationalPct: 8.1,
-    faculties: 19,
-    studentFacultyRatio: "16 : 1",
+    total: 65000,        // municipal population estimate
+    undergraduate: 0,
+    graduate: 0,
+    international: 0,
+    internationalPct: 0,
+    faculties: 0,
+    studentFacultyRatio: "—",
   },
 
   research: {
-    publications2024: 8420,
-    citations2024: 124000,
-    hIndex: 142,
-    topFields: ["Engineering", "Medicine", "Computer Science", "Environmental Science", "Social Sciences"],
+    publications2024: 0,
+    citations2024: 0,
+    hIndex: 0,
+    topFields: ["Urban Planning", "Coastal Management", "Industrial Development", "Smart City"],
     researchFundingMThb: null,
-    patentsFiled: 87,
+    patentsFiled: 0,
   },
 
   finance: {
     annualBudgetBThb: null,
     researchGrantsMThb: null,
     endowmentBThb: null,
-    note: "Financial data is internal-only. Wire ERP / SAP integration to populate.",
+    note: "Municipal budget data — wire DLA / municipal ERP integration to populate.",
   },
 
   initiatives: [
     {
-      id: "saraphi",
-      name: "Saraphi Smart Campus",
-      status: "on-track",
-      progressPct: 65,
-      owner: "VP Planning",
-      deadline: "2027-12",
-      describe: "Second campus in Chiang Mai — 1,900 rai, net-zero target.",
-    },
-    {
-      id: "centenary-park",
-      name: "Centenary Park Expansion",
-      status: "on-track",
-      progressPct: 88,
-      owner: "PMCU",
-      deadline: "2025-06",
-      describe: "11-rai flood park + 3,785 m³ retention basin.",
-    },
-    {
-      id: "chula-engineering-4",
-      name: "Engineering Building 4",
-      status: "at-risk",
-      progressPct: 42,
-      owner: "Faculty of Engineering",
-      deadline: "2026-03",
-      describe: "New 12-storey research building — budget review pending.",
-    },
-    {
-      id: "international-20",
-      name: "International 20% Target",
-      status: "on-track",
-      progressPct: 40,
-      owner: "International Affairs",
-      deadline: "2030-08",
-      describe: "Double international student share to 20% by 2030.",
-    },
-    {
-      id: "carbon-neutral",
-      name: "Campus Carbon Neutral",
+      id: "smart-city-chonburi",
+      name: "Chonburi Smart City Programme",
       status: "on-track",
       progressPct: 55,
-      owner: "Sustainability Office",
-      deadline: "2030-12",
-      describe: "Net-zero scope 1+2 emissions by 2030, scope 3 by 2050.",
+      owner: "Mayor's Office",
+      deadline: "2027-12",
+      describe: "DEPA-backed smart city infrastructure: IoT sensors, open data platform, digital services.",
     },
     {
-      id: "cu-med-ai",
-      name: "Chula Medical AI Centre",
+      id: "eec-connectivity",
+      name: "EEC Transport Link",
       status: "on-track",
-      progressPct: 72,
-      owner: "Faculty of Medicine",
+      progressPct: 70,
+      owner: "Public Works",
       deadline: "2026-06",
-      describe: "AI diagnostics + hospital workflow automation.",
+      describe: "Last-mile connectivity to Eastern Economic Corridor industrial zones.",
+    },
+    {
+      id: "flood-management",
+      name: "Urban Flood Management",
+      status: "at-risk",
+      progressPct: 38,
+      owner: "Environment Division",
+      deadline: "2026-09",
+      describe: "Retention basins and early-warning sensors for coastal flood-prone streets.",
+    },
+    {
+      id: "digital-services",
+      name: "Municipal Digital Services",
+      status: "on-track",
+      progressPct: 60,
+      owner: "IT Division",
+      deadline: "2025-12",
+      describe: "Online permit applications, payment gateway, and citizen reporting integration.",
     },
   ],
 
   peers: [
     {
-      name: "Mahidol University",
+      name: "Pattaya City",
       country: "TH",
-      qsWorldRank: 368,
-      theWorldRank: 601,
-      studentsTotal: 31200,
-      internationalPct: 6.2,
-      researchOutput: "Very High",
+      qsWorldRank: 0,
+      theWorldRank: 0,
+      studentsTotal: 120000,
+      internationalPct: 0,
+      researchOutput: "—",
     },
     {
-      name: "Thammasat University",
+      name: "Si Racha Municipality",
       country: "TH",
-      qsWorldRank: 600,
-      theWorldRank: 1201,
-      studentsTotal: 33400,
-      internationalPct: 4.8,
-      researchOutput: "High",
+      qsWorldRank: 0,
+      theWorldRank: 0,
+      studentsTotal: 80000,
+      internationalPct: 0,
+      researchOutput: "—",
     },
     {
-      name: "NUS",
-      country: "SG",
-      qsWorldRank: 8,
-      theWorldRank: 17,
-      studentsTotal: 43100,
-      internationalPct: 24.0,
-      researchOutput: "Very High",
-    },
-    {
-      name: "NTU Singapore",
-      country: "SG",
-      qsWorldRank: 12,
-      theWorldRank: 30,
-      studentsTotal: 33800,
-      internationalPct: 22.0,
-      researchOutput: "Very High",
-    },
-    {
-      name: "HKU",
-      country: "HK",
-      qsWorldRank: 17,
-      theWorldRank: 35,
-      studentsTotal: 30600,
-      internationalPct: 43.0,
-      researchOutput: "Very High",
+      name: "Rayong Municipality",
+      country: "TH",
+      qsWorldRank: 0,
+      theWorldRank: 0,
+      studentsTotal: 70000,
+      internationalPct: 0,
+      researchOutput: "—",
     },
   ],
 
@@ -205,16 +151,13 @@ export function fetchExecutiveSnapshot(): NormalizedFeed<ExecutiveSnapshot> {
       rankings: SNAPSHOT.rankings.map((r) => ({ ...r })),
       initiatives: SNAPSHOT.initiatives.map((i) => ({ ...i })),
       peers: SNAPSHOT.peers.map((p) => ({ ...p })),
-      research: { ...SNAPSHOT.research, topFields: [...SNAPSHOT.research.topFields] },
+      research: { ...SNAPSHOT.research, topFields: [...(SNAPSHOT.research.topFields ?? [])] },
       updatedAt: new Date().toISOString(),
     }],
     meta: meta(),
   };
 }
 
-/**
- * Derive strategic alerts from live operational feeds.
- */
 export function deriveAlerts(
   aqi: number | null,
   openIncidents: number,
@@ -229,10 +172,10 @@ export function deriveAlerts(
       level: aqi > 200 ? "critical" : "warning",
       category: "environment",
       title: "Air Quality Health Advisory",
-      message: `Campus AQI ${aqi} — exceeds WHO 24-hr guideline (15 µg/m³ PM₂.₅) by ${Math.round(aqi / 15)}×. Consider indoor activities + N95 advisories for 40,000+ campus population.`,
+      message: `Chonburi AQI ${aqi} — exceeds WHO 24-hr guideline. Consider advisory for residents and outdoor workers.`,
       issuedAt: new Date().toISOString(),
-      source: "BMA AQ + Open-Meteo",
-      actionRequired: "Notify faculties, consider outdoor event postponement.",
+      source: "Open-Meteo Air Quality",
+      actionRequired: "Notify public health division, consider outdoor activity advisories.",
     });
   }
 
@@ -242,14 +185,13 @@ export function deriveAlerts(
       level: openIncidents >= 10 ? "warning" : "watch",
       category: "safety",
       title: "Elevated Incident Load",
-      message: `${openIncidents} open citizen reports + traffic events in campus bbox. Review dispatch readiness.`,
+      message: `${openIncidents} open citizen reports + traffic events in Chonburi bbox. Review dispatch readiness.`,
       issuedAt: new Date().toISOString(),
       source: "Traffy Fondue + iTIC",
-      actionRequired: openIncidents >= 10 ? "Brief security chief" : undefined,
+      actionRequired: openIncidents >= 10 ? "Brief operations chief" : undefined,
     });
   }
 
-  // Reputation watch: high-scoring negative news
   const negativeNews = newsItems.filter(
     (n) =>
       n.score >= 500 &&

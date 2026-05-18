@@ -4,7 +4,7 @@ import { ScatterplotLayer } from "@deck.gl/layers";
 import { TileLayer } from "@deck.gl/geo-layers";
 import { BitmapLayer } from "@deck.gl/layers";
 import type { Feature, FeatureCollection, Polygon, MultiPolygon, LineString, Point } from "geojson";
-import type { IncidentFeature, CampusZoneProperties } from "@chula/shared";
+import type { IncidentFeature, CampusZoneProperties } from "@chonburi/shared";
 import type { HeatPoint } from "../sim/trafficSim";
 
 export interface CctvCamera {
@@ -149,7 +149,7 @@ export function shuttleRoutesLayer(collection: FeatureCollection<LineString, Rou
 /**
  * Render a single CU shuttle route (one line of the 5). Per-line toggles let
  * the user isolate a route to read it; the colour comes from the route's own
- * `color` property (matches PMCU's printed legend).
+ * `color` property (color-codes municipal land zones).
  */
 export function shuttleRouteLineLayer(
   routeId: string,

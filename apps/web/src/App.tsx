@@ -4,7 +4,7 @@ import type { Layer } from "@deck.gl/core";
 import { Map as MapLibreMap } from "react-map-gl/maplibre";
 import maplibregl from "maplibre-gl";
 import type { FeatureCollection, Geometry, LineString, Point, Polygon, MultiPolygon } from "geojson";
-import { CHULA } from "@chula/shared";
+import { CHONBURI } from "@chonburi/shared";
 import type {
   AcademicSnapshot,
   AirQualityPoint,
@@ -15,7 +15,7 @@ import type {
   MarketSnapshot,
   PrecipNowcast,
   WeatherSnapshot,
-} from "@chula/shared";
+} from "@chonburi/shared";
 
 import { useFeed } from "./hooks/useFeed";
 import { useBmaStatic } from "./hooks/useBmaStatic";
@@ -242,7 +242,7 @@ export default function App() {
 
   // Controlled map viewState — needed so building-search and click can fly the camera.
   const [viewState, setViewState] = useState({
-    ...CHULA.defaultView,
+    ...CHONBURI.defaultView,
     minZoom: 12,
     maxZoom: 20,
     transitionDuration: 0,
@@ -497,13 +497,14 @@ export default function App() {
   const weather = useFeed<WeatherSnapshot>(`${API_BASE}/api/weather`, 30 * 60_000);
   const airQuality = useFeed<AirQualityPoint>(`${API_BASE}/api/air-quality`, 15 * 60_000);
   const cctv = useFeed<CctvCamera>(`${API_BASE}/api/cctv/longdo`, 10 * 60_000);
-  const shuttle = useFeed<ShuttleVehicle>(`${API_BASE}/api/transit/cu-shuttle`, 30_000);
   const aqiTrend = useFeed<AqiTrend>(`${API_BASE}/api/air-quality/trend`, 15 * 60_000);
   const trends = useFeed<TrendsSnapshot>(`${API_BASE}/api/trends`, 15 * 60_000);
   const executive = useFeed<ExecutiveSnapshot>(`${API_BASE}/api/executive`, 15 * 60_000);
   const markets = useFeed<MarketSnapshot>(`${API_BASE}/api/markets`, 10 * 60_000);
   const precip = useFeed<PrecipNowcast>(`${API_BASE}/api/precip-nowcast`, 5 * 60_000);
-  const academic = useFeed<AcademicSnapshot>(`${API_BASE}/api/academic-calendar`, 30 * 60_000);
+  // Shuttle and academic calendar not available in this deployment
+  const shuttle = { data: [] as ShuttleVehicle[], fallbackTier: "unavailable" as const, ageMinutes: 0 };
+  const academic = { data: [] as AcademicSnapshot[] };
   const worldWeather = useWorldWeather();
   const bangkokWeather = useMemo(() => {
     const city = worldWeather.find((c) => c.city.id === "bkk");

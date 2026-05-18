@@ -70,7 +70,7 @@ export function SheetsPanel({ open, onClose }: Props) {
         <header className="manual-head">
           <div className="col">
             <span className="eyebrow mono">Live Data Export · Google Sheets</span>
-            <h2 className="manual-title">CCT-01 Live Data Feed</h2>
+            <h2 className="manual-title">CTM-01 Live Data Feed</h2>
           </div>
           <button onClick={onClose} className="mono manual-close" aria-label="Close">
             [ESC] CLOSE
@@ -86,7 +86,7 @@ export function SheetsPanel({ open, onClose }: Props) {
                   <span className="sheets-num mono">01</span>
                   <div>
                     <strong>Open a new Google Sheet</strong>
-                    <p>Go to <a href="https://sheets.new" target="_blank" rel="noopener noreferrer">sheets.new</a> and rename the file <span className="mono">"CCT-01 · Chula Control Tower · Live Data"</span>. No need to add tabs by hand — the script creates everything.</p>
+                    <p>Go to <a href="https://sheets.new" target="_blank" rel="noopener noreferrer">sheets.new</a> and rename the file <span className="mono">"CTM-01 · Chonburi Town Center · Live Data"</span>. No need to add tabs by hand — the script creates everything.</p>
                   </div>
                 </div>
                 <div className="sheets-step">
@@ -186,12 +186,12 @@ export function SheetsPanel({ open, onClose }: Props) {
                     ["Enrollment",     "Registrar — students per faculty / level / year"],
                     ["Faculty",        "HR — academic + admin headcount"],
                     ["Energy",         "CU SMART CITY + MEA — kWh, solar, BESS"],
-                    ["Water",          "PMCU + MWA — m³ per building"],
+                    ["Water",          "Municipal waterworks — m³ by zone"],
                     ["Waste",          "Sustainability Office — stream + recycling"],
                     ["Access",         "Security — gate card-reader counts"],
                     ["Rooms",          "myCourseville / CU-NEX — utilization"],
                     ["Library",        "CU Office of Academic Resources"],
-                    ["Parking",        "PMCU lots PA / PB / PC / PD"],
+                    ["Parking",        "Municipal parking zones P1/P2/P3/P4"],
                     ["Ridership",      "CU POP Bus onboard counters"],
                     ["Hospital",       "KCMH — ED wait, OPD volume"],
                     ["Sustainability", "Carbon, water reuse, UI GreenMetric"],

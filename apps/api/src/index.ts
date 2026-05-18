@@ -13,22 +13,17 @@ async function tryArchiveApi() {
 }
 import { fetchWeather } from "./adapters/weather.js";
 import { fetchPrecipNowcast } from "./adapters/precipNowcast.js";
-import { fetchAcademicSnapshot } from "./adapters/academicCalendar.js";
 import { fetchAirQuality, fetchAirQualityTrend } from "./adapters/airQuality.js";
 import { fetchCctv } from "./adapters/cctv.js";
-import { fetchShuttle } from "./adapters/cuShuttle.js";
-import { fetchBmaPois } from "./adapters/bmaGis.js";
-import { fetchBmaCkanDatasets } from "./adapters/bmaCkan.js";
 import { fetchTrends } from "./adapters/trends.js";
 import { fetchExecutiveSnapshot, deriveAlerts } from "./adapters/executive.js";
 import { fetchMarkets } from "./adapters/markets.js";
 import { chat, ChatError, type ChatMessage } from "./adapters/chat.js";
-import { SOURCE_CATALOG } from "@chula/shared";
-import type { NormalizedFeed, AirQualityPoint, IncidentFeature, IntelligenceItem, ExecutiveSnapshot, MarketSnapshot } from "@chula/shared";
+import { SOURCE_CATALOG } from "@chonburi/shared";
+import type { NormalizedFeed, AirQualityPoint, IncidentFeature, IntelligenceItem, ExecutiveSnapshot, MarketSnapshot } from "@chonburi/shared";
 
 type Bindings = {
   ENVIRONMENT?: string;
-  CU_SHUTTLE_TOKEN?: string;
   GEMINI_API_KEY?: string;
   OLLAMA_BASE_URL?: string;
   FMP_API_KEY?: string;
@@ -40,11 +35,9 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// CORS: only allow known origins in production, reflect in dev.
 const ALLOWED_ORIGINS = new Set([
-  "https://chula.nonarkara.org",
-  "https://chula-control-tower.pages.dev",
-  "https://chula-control-tower-b0r.pages.dev",
+  "https://chonburi.nonarkara.org",
+  "https://chonburi-control-tower.pages.dev",
   "http://localhost:5173",
   "http://localhost:8787",
 ]);
@@ -55,10 +48,8 @@ app.use(
     origin: (origin) => {
       if (!origin) return "*";
       if (ALLOWED_ORIGINS.has(origin)) return origin;
-      // Allow localhost for dev
       if (origin.startsWith("http://localhost:")) return origin;
-      // Cloudflare Pages preview deployments (any subdomain of either project name)
-      if (/^https:\/\/(?:[a-z0-9-]+\.)?chula-control-tower(?:-b0r)?\.pages\.dev$/.test(origin)) return origin;
+      if (/^https:\/\/(?:[a-z0-9-]+\.)?chonburi-control-tower\.pages\.dev$/.test(origin)) return origin;
       return "";
     },
     allowMethods: ["GET", "POST", "OPTIONS"],
@@ -69,7 +60,7 @@ app.use(
 
 app.get("/", (c) =>
   c.json({
-    service: "chula-control-tower-api",
+    service: "chonburi-control-tower-api",
     routes: [
       "/api/health",
       "/api/sources",
@@ -81,13 +72,9 @@ app.get("/", (c) =>
       "/api/news/stats",
       "/api/weather",
       "/api/precip-nowcast",
-      "/api/academic-calendar",
       "/api/air-quality",
       "/api/air-quality/trend",
       "/api/cctv/longdo",
-      "/api/transit/cu-shuttle",
-      "/api/bma/pois",
-      "/api/bma/datasets",
       "/api/trends",
       "/api/markets",
       "/api/executive",
@@ -116,12 +103,10 @@ function setMetaHeaders(c: { header: (k: string, v: string) => void }, feed: Fee
   c.header("x-fallback-tier", feed.meta.fallbackTier);
 }
 
-// Simple per-IP rate limiting (in-memory, per-isolate)
 const rateLimiter = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT = 120; // requests per minute per IP
+const RATE_LIMIT = 120;
 
 function getClientIp(c: { req: { header: (k: string) => string | undefined }; env: Bindings }): string {
-  // Prefer Cloudflare's authenticated header; fall back to x-forwarded-for only locally.
   return c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 }
 
@@ -134,7 +119,6 @@ function cleanupStaleLimiters() {
 
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
-  // Periodic cleanup to prevent unbounded growth under spoofed IPs
   if (rateLimiter.size > 1000) cleanupStaleLimiters();
   const entry = rateLimiter.get(ip);
   if (!entry || now > entry.resetAt) {
@@ -154,7 +138,6 @@ app.use("/api/*", async (c, next) => {
   await next();
 });
 
-// Wrap adapters so unexpected throws return 500 without leaking stack traces.
 async function safeFeed<T>(
   c: { header: (k: string, v: string) => void; json: (obj: unknown, status?: number) => Response },
   fetcher: () => Promise<NormalizedFeed<T>>,
@@ -173,10 +156,6 @@ app.get("/api/incidents/city-reports", async (c) => safeFeed(c, fetchCityReports
 app.get("/api/incidents/itic", async (c) => safeFeed(c, fetchItic));
 app.get("/api/news", async (c) => safeFeed(c, fetchNews));
 
-// ── PR-facing archive endpoints (Node-only; Workers will 503) ────────
-// Persistent, append-only log of every unique Chula-related story this
-// server has ever seen. Survives launchd restarts. The PR office can poll
-// these directly without going through the live-news endpoint.
 app.get("/api/news/archive", async (c) => {
   const mod = await tryArchiveApi();
   if (!mod) return c.json({ error: "Archive only available on Node runtime" }, 503);
@@ -210,17 +189,12 @@ app.get("/api/news/stats", async (c) => {
   c.header("Cache-Control", "public, max-age=60");
   return c.json(await mod.newsArchiveStats());
 });
+
 app.get("/api/weather", async (c) => safeFeed(c, fetchWeather));
 app.get("/api/precip-nowcast", async (c) => safeFeed(c, fetchPrecipNowcast));
-app.get("/api/academic-calendar", async (c) => safeFeed(c, fetchAcademicSnapshot));
 app.get("/api/air-quality", async (c) => safeFeed(c, fetchAirQuality));
-app.get("/api/cctv/longdo", async (c) => safeFeed(c, fetchCctv));
-app.get("/api/transit/cu-shuttle", async (c) =>
-  safeFeed(c, () => fetchShuttle({ CU_SHUTTLE_TOKEN: c.env.CU_SHUTTLE_TOKEN })),
-);
 app.get("/api/air-quality/trend", async (c) => safeFeed(c, fetchAirQualityTrend));
-app.get("/api/bma/pois", async (c) => safeFeed(c, fetchBmaPois));
-app.get("/api/bma/datasets", async (c) => safeFeed(c, fetchBmaCkanDatasets));
+app.get("/api/cctv/longdo", async (c) => safeFeed(c, fetchCctv));
 app.get("/api/trends", async (c) => safeFeed(c, fetchTrends));
 app.get("/api/markets", async (c) =>
   safeFeed(c, () => fetchMarkets({ FMP_API_KEY: c.env.FMP_API_KEY, FRED_API_KEY: c.env.FRED_API_KEY })),
@@ -229,7 +203,6 @@ app.get("/api/markets", async (c) =>
 app.get("/api/executive", async (c) => {
   try {
     const snapshot = fetchExecutiveSnapshot();
-    // Derive live alerts from operational feeds (parallel)
     const [aq, cr, itic, newsFeed] = await Promise.allSettled([
       fetchAirQuality().catch(() => ({ features: [] as AirQualityPoint[], meta: { source: "", fetchedAt: "", ageMinutes: 0, fallbackTier: "unavailable" as const } })),
       fetchCityReports().catch(() => ({ features: [] as IncidentFeature[], meta: { source: "", fetchedAt: "", ageMinutes: 0, fallbackTier: "unavailable" as const } })),
@@ -257,11 +230,8 @@ app.get("/api/executive", async (c) => {
   }
 });
 
-// ── Chat (Gemini free tier, server-proxied) ────────────────────────────
-// Tighter per-IP budget than the rest of the API so a single demo tab
-// can't blow the daily Gemini quota.
 const chatLimiter = new Map<string, { count: number; resetAt: number }>();
-const CHAT_RATE_LIMIT = 20; // per IP per minute
+const CHAT_RATE_LIMIT = 20;
 
 function isChatRateLimited(ip: string): boolean {
   const now = Date.now();
