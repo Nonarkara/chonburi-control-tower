@@ -182,6 +182,36 @@ export const LAYER_GROUP_LABEL: Record<LayerGroup, string> = {
   environment:  "Environment",
 };
 
+// ─── Satellite freshness ───────────────────────────────────────────────
+// NASA GIBS products have different latency between the satellite pass
+// and tile publication. Numbers below are the typical "delay in days"
+// from the user's local now → the publicly served tile.
+const SATELLITE_DELAY_DAYS: Partial<Record<LayerId, number>> = {
+  "satellite-true-color":         1,    // MODIS Terra ~24-36 h
+  "satellite-viirs-truecolor":    1,    // VIIRS NOAA-20 ~24 h
+  "satellite-night":              1,    // VIIRS Day/Night Band ~24 h
+  "satellite-himawari":           0,    // Himawari Band 13 — 10 min
+  "satellite-imerg":              0,    // IMERG half-hourly, ~6 h delay
+  "satellite-ndvi":               8,    // MODIS NDVI 8-day composite
+  "satellite-lst":                1,    // MODIS LST day ~36 h
+  "satellite-aerosol":            1,    // MAIAC AOD ~24 h
+  "satellite-no2":                1,    // OMI NO2 ~24 h
+  "satellite-flood":              3,    // MODIS 3-day combined flood
+  "satellite-esri":               0,    // Esri mosaic — not date-specific
+  "satellite-terrain":            0,    // OpenTopoMap — vector, static
+};
+
+export function satelliteFreshness(id: LayerId): { label: string; date: string } | null {
+  const d = SATELLITE_DELAY_DAYS[id];
+  if (d == null) return null;
+  const t = new Date();
+  t.setUTCDate(t.getUTCDate() - d);
+  const date = t.toISOString().slice(0, 10);
+  if (d === 0) return { label: "LIVE", date };
+  if (d === 1) return { label: "Y’DAY", date };
+  return { label: `${d}D AGO`, date };
+}
+
 export const ALL_LAYERS: {
   id: LayerId;
   label: string;

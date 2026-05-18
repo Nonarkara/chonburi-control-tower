@@ -43,7 +43,7 @@ function ago(iso: string): string {
 export function FacebookPanel({ posts, loading }: Props) {
   const embedSrc = `https://www.facebook.com/plugins/page.php?` +
     `href=${encodeURIComponent(PAGE_URL)}` +
-    `&tabs=timeline&width=340&height=420` +
+    `&tabs=timeline&width=320&height=420` +
     `&small_header=true&adapt_container_width=true&hide_cover=true&show_facepile=false`;
 
   return (
@@ -85,16 +85,20 @@ export function FacebookPanel({ posts, loading }: Props) {
         </div>
       )}
 
-      {/* Meta's free page-plugin iframe — always works, no token needed */}
+      {/* Meta's free page-plugin iframe — always works, no token needed.
+          Width sized to column minus a 12 px right gutter so it never
+          bleeds past the right edge of the news rail. */}
       <iframe
         src={embedSrc}
-        width="100%"
         height="420"
         style={{
           border: "1px solid var(--line)",
           background: "var(--bg-2)",
-          maxWidth: 340,
           display: "block",
+          width: "calc(100% - 12px)",
+          maxWidth: 320,
+          marginLeft: 0,
+          marginRight: "auto",
         }}
         scrolling="no"
         title="Mueang Chonburi Facebook page timeline"

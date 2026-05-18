@@ -441,6 +441,15 @@
 .layer-toggle:hover { background: var(--bg-2); color: var(--text); }
 .layer-toggle.on  { border-left-color: var(--accent); color: var(--text-1); }
 .layer-toggle.off { color: var(--text-3); }
+.layer-age {
+  color: var(--brand);
+  letter-spacing: 0.06em;
+  font-size: 0.6rem;
+  padding: 1px 4px;
+  border: 1px solid var(--brand);
+  opacity: 0.75;
+}
+.layer-toggle.off .layer-age { opacity: 0.45; }
 .layer-toggle .swatch { width: 10px; height: 10px; display: inline-block; opacity: 0.9; }
 .layer-toggle .mono { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.08em; }
 

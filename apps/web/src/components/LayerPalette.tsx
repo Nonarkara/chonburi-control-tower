@@ -3,6 +3,7 @@ import {
   ALL_LAYERS,
   LAYER_GROUP_LABEL,
   LENSES,
+  satelliteFreshness,
   type LayerGroup,
   type LayerId,
   type LensId,
@@ -90,6 +91,10 @@ export function LayerPalette({ lens, onLensChange, enabled, onToggleLayer }: Pro
                   <div className="layer-toggles">
                     {list.map((l) => {
                       const isOn = enabled.has(l.id);
+                      const freshness = satelliteFreshness(l.id);
+                      const fullTitle = freshness
+                        ? `${l.describe}\n\nImagery date: ${freshness.date} (${freshness.label})`
+                        : l.describe;
                       return (
                         <div
                           key={l.id}
@@ -97,7 +102,7 @@ export function LayerPalette({ lens, onLensChange, enabled, onToggleLayer }: Pro
                           role="checkbox"
                           aria-checked={isOn}
                           tabIndex={0}
-                          title={l.describe}
+                          title={fullTitle}
                           aria-label={`${l.label} — ${l.describe}`}
                           onClick={() => onToggleLayer(l.id)}
                           onKeyDown={(e) => {
@@ -111,7 +116,14 @@ export function LayerPalette({ lens, onLensChange, enabled, onToggleLayer }: Pro
                             <span className="swatch" style={{ background: l.swatch }} />
                             <span>{l.label}</span>
                           </span>
-                          <span className="mono caption">{isOn ? "on" : "off"}</span>
+                          <span className="row" style={{ gap: 6 }}>
+                            {freshness && (
+                              <span className="mono caption layer-age" title={`Imagery date: ${freshness.date}`}>
+                                {freshness.label}
+                              </span>
+                            )}
+                            <span className="mono caption">{isOn ? "on" : "off"}</span>
+                          </span>
                         </div>
                       );
                     })}
