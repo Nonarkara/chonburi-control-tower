@@ -188,9 +188,9 @@ export const ALL_LAYERS: {
   describe: string;
 }[] = [
   // ─── Municipality ──────────────────────────────────────────────────────
-  { id: "municipality-boundary",  label: "Municipal boundary",        swatch: "#B7307A", group: "municipality",
+  { id: "municipality-boundary",  label: "Municipal boundary",        swatch: "#0EA5E9", group: "municipality",
     describe: "Chonburi Town Municipality outer boundary (เทศบาลเมืองชลบุรี)." },
-  { id: "municipality-buildings", label: "Buildings (OSM, 3D)",       swatch: "#B7307A", group: "municipality",
+  { id: "municipality-buildings", label: "Buildings (OSM, 3D)",       swatch: "#0EA5E9", group: "municipality",
     describe: "All ~5,000 building footprints inside the municipality with height inferred from OSM tags or area heuristics. Click any building for name + levels; 3D mode extrudes them as boxes." },
   { id: "neighborhood-buildings", label: "Skyline (tall ≥30 m)",      swatch: "#7DD3FC", group: "municipality",
     describe: "Tall buildings (≥ 30 m) in and around the municipality. Renders flat in 2D, extrudes in 3D for the skyline silhouette." },

@@ -37,9 +37,9 @@ const ZONE_COLORS: Record<string, [number, number, number]> = {
   residential: [167, 139, 250],
   athletic: [245, 158, 11],
   park: [52, 211, 153],
-  commercial: [183, 48, 122],
+  commercial: [14, 165, 233],
   service: [122, 132, 151],
-  perimeter: [183, 48, 122],
+  perimeter: [14, 165, 233],
 };
 
 type ZoneFeature = Feature<Polygon | MultiPolygon, CampusZoneProperties>;
@@ -293,13 +293,14 @@ export function buildingsLayer(
   // half so the campus reads warmer than the surrounding city.
   const colorFor = (h: number, named: boolean): [number, number, number, number] => {
     if (extruded) {
-      if (h >= 50) return [240, 200, 130, ghosted ? fillAlpha : 235];
-      if (h >= 30) return [220, 130, 150, ghosted ? fillAlpha : 220];
-      if (h >= 15) return [180, 70, 130,  ghosted ? fillAlpha : 205];
-      return       [120, 60, 110,  ghosted ? fillAlpha : 195];
+      // Maritime blue palette — taller buildings glow brighter cerulean.
+      if (h >= 50) return [125, 211, 252, ghosted ? fillAlpha : 235]; // sky-300
+      if (h >= 30) return [56, 189, 248,  ghosted ? fillAlpha : 220]; // sky-400
+      if (h >= 15) return [14, 165, 233,  ghosted ? fillAlpha : 205]; // sky-500
+      return       [3, 105, 161,         ghosted ? fillAlpha : 195]; // sky-700
     }
     return named
-      ? [183, 48, 122, ghosted ? fillAlpha : 110]
+      ? [14, 165, 233, ghosted ? fillAlpha : 110]
       : [148, 163, 184, ghosted ? fillAlpha : 80];
   };
 
@@ -317,7 +318,7 @@ export function buildingsLayer(
       colorFor(buildingHeightMeters(f.properties), !!f.properties.name)) as unknown as [number, number, number, number],
     getLineColor: ((f: Feature<Polygon | MultiPolygon, BuildingProperties>) =>
       f.properties.name
-        ? ([183, 48, 122, lineAlpha] as [number, number, number, number])
+        ? ([14, 165, 233, lineAlpha] as [number, number, number, number])
         : ([148, 163, 184, lineAlpha] as [number, number, number, number])) as unknown as [number, number, number, number],
     getLineWidth: 0.8,
     lineWidthMinPixels: 0.5,

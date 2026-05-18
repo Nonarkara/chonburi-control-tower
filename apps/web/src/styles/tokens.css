@@ -10,9 +10,9 @@
 */
 
 :root {
-  /* ── Identity — Chulalongkorn pink. Used only on the mark + version pill. ── */
-  --brand:      #B7307A;
-  --brand-soft: #8a3367;
+  /* ── Identity — Chonburi maritime cerulean. City-by-the-sea corporate identity. ── */
+  --brand:      #0EA5E9;
+  --brand-soft: #0369A1;
   /* ── Operational accent — amber. Always active metrics. ── */
   --accent:     #F5A623;
   --accent-dim: #A06B0F;
@@ -96,7 +96,7 @@
   --text-3: #888c92;
 
   /* Tone data accents down slightly for white surface */
-  --brand:      #9c2867;
+  --brand:      #0284C7;
   --accent:     #c87600;
   --data: #006a96;
   --good: #097b3f;
