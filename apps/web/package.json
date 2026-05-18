@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --port 5173",
     "typecheck": "tsc -b",
-    "deploy": "wrangler pages deploy dist --project-name chula-control-tower"
+    "deploy": "wrangler pages deploy dist --project-name chonburi-control-tower"
   },
   "dependencies": {
     "@chonburi/shared": "workspace:*",

@@ -189,7 +189,7 @@ export default function App() {
     "/geo/chula-campus.geojson",
   );
   const buildings = useGeoJson<FeatureCollection<Polygon | MultiPolygon, BuildingProperties>>(
-    "/geo/chula-buildings.geojson",
+    "/geo/chonburi-buildings.geojson",
   );
   const surroundingBuildings = useGeoJson<FeatureCollection<Polygon | MultiPolygon, SurroundingBuildingProperties>>(
     "/geo/surrounding-buildings.geojson",
@@ -203,7 +203,7 @@ export default function App() {
   const cuLands = useGeoJson<FeatureCollection<Polygon | MultiPolygon, CuLandProperties>>(
     "/geo/cu-lands.geojson",
   );
-  const roads = useGeoJson<FeatureCollection<LineString, RoadProps>>("/geo/chula-roads.geojson");
+  const roads = useGeoJson<FeatureCollection<LineString, RoadProps>>("/geo/chonburi-roads.geojson");
   const shuttleRoutes = useGeoJson<FeatureCollection<LineString, RouteProps>>("/geo/cu-shuttle-routes.geojson");
   const shuttleStops = useGeoJson<FeatureCollection<Point, StopProps>>("/geo/cu-shuttle-stops.geojson");
   const transitStations = useGeoJson<FeatureCollection<Point, StationProps>>("/geo/transit-stations.geojson");
