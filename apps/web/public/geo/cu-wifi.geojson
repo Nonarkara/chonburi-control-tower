@@ -1,0 +1,22 @@
+{
+  "type": "FeatureCollection",
+  "_attribution": "ChulaWiFi-2 coverage survey points. Mbps values are baseline targets per the OIT service spec; live measurements are written into localStorage via the Run-speedtest button and replace the baseline for points within ~150 m.",
+  "_units": "mbps down · ms latency",
+  "features": [
+    { "type": "Feature", "properties": { "id": "wifi-engineering",    "name": "Faculty of Engineering",     "mbps": 142, "rttMs": 14, "ssid": "ChulaWiFi-2", "source": "baseline" }, "geometry": { "type": "Point", "coordinates": [100.53350, 13.73830] } },
+    { "type": "Feature", "properties": { "id": "wifi-science",        "name": "Faculty of Science",         "mbps": 128, "rttMs": 17, "ssid": "ChulaWiFi-2", "source": "baseline" }, "geometry": { "type": "Point", "coordinates": [100.53400, 13.73690] } },
+    { "type": "Feature", "properties": { "id": "wifi-library",        "name": "Central Library (Maha Maku)","mbps": 168, "rttMs":  9, "ssid": "ChulaWiFi-2", "source": "baseline" }, "geometry": { "type": "Point", "coordinates": [100.53180, 13.74030] } },
+    { "type": "Feature", "properties": { "id": "wifi-arts",           "name": "Faculty of Arts",            "mbps":  95, "rttMs": 22, "ssid": "ChulaWiFi-2", "source": "baseline" }, "geometry": { "type": "Point", "coordinates": [100.53700, 13.73970] } },
+    { "type": "Feature", "properties": { "id": "wifi-political-sci",  "name": "Faculty of Political Science","mbps": 112, "rttMs": 16, "ssid": "ChulaWiFi-2", "source": "baseline" }, "geometry": { "type": "Point", "coordinates": [100.54000, 13.73460] } },
+    { "type": "Feature", "properties": { "id": "wifi-economics",      "name": "Faculty of Economics",       "mbps": 116, "rttMs": 15, "ssid": "ChulaWiFi-2", "source": "baseline" }, "geometry": { "type": "Point", "coordinates": [100.53620, 13.73270] } },
+    { "type": "Feature", "properties": { "id": "wifi-law",            "name": "Faculty of Law",             "mbps": 102, "rttMs": 18, "ssid": "ChulaWiFi-2", "source": "baseline" }, "geometry": { "type": "Point", "coordinates": [100.53080, 13.73250] } },
+    { "type": "Feature", "properties": { "id": "wifi-communication",  "name": "Faculty of Communication Arts","mbps": 90, "rttMs": 21, "ssid": "ChulaWiFi-2", "source": "baseline" }, "geometry": { "type": "Point", "coordinates": [100.52900, 13.73370] } },
+    { "type": "Feature", "properties": { "id": "wifi-pharmacy",       "name": "Faculty of Pharmacy",        "mbps": 122, "rttMs": 14, "ssid": "ChulaWiFi-2", "source": "baseline" }, "geometry": { "type": "Point", "coordinates": [100.53520, 13.74330] } },
+    { "type": "Feature", "properties": { "id": "wifi-architecture",   "name": "Faculty of Architecture",    "mbps": 134, "rttMs": 12, "ssid": "ChulaWiFi-2", "source": "baseline" }, "geometry": { "type": "Point", "coordinates": [100.53080, 13.73950] } },
+    { "type": "Feature", "properties": { "id": "wifi-i-house",        "name": "CU iHouse",                  "mbps":  86, "rttMs": 24, "ssid": "ChulaWiFi-2", "source": "baseline" }, "geometry": { "type": "Point", "coordinates": [100.52650, 13.73570] } },
+    { "type": "Feature", "properties": { "id": "wifi-sports-complex", "name": "CU Sports Complex",          "mbps":  74, "rttMs": 28, "ssid": "ChulaWiFi-2", "source": "baseline" }, "geometry": { "type": "Point", "coordinates": [100.52800, 13.74280] } },
+    { "type": "Feature", "properties": { "id": "wifi-stadium",        "name": "Suphachalasai Stadium",      "mbps":  62, "rttMs": 33, "ssid": "ChulaWiFi-2", "source": "baseline" }, "geometry": { "type": "Point", "coordinates": [100.52800, 13.74660] } },
+    { "type": "Feature", "properties": { "id": "wifi-samyan-mitr",    "name": "Samyan Mitrtown",            "mbps": 156, "rttMs": 11, "ssid": "ChulaWiFi-2-Mitr", "source": "baseline" }, "geometry": { "type": "Point", "coordinates": [100.52960, 13.73330] } },
+    { "type": "Feature", "properties": { "id": "wifi-chamchuri",      "name": "Chamchuri Square",           "mbps": 148, "rttMs": 13, "ssid": "ChulaWiFi-2", "source": "baseline" }, "geometry": { "type": "Point", "coordinates": [100.53150, 13.73310] } }
+  ]
+}

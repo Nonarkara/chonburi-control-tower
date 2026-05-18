@@ -1,0 +1,209 @@
+/* Design tokens.
+   Typography  → IBM Plex family. Sans is the body workhorse, Condensed is for
+                 tight display labels, Mono is for every readout, Sans Thai
+                 handles Thai with matching rhythm. No Helvetica, no Inter —
+                 those read templated. Plex has personality and is highly
+                 readable across EN / TH / ZH.
+   Theming     → data-theme="dark" (default) and data-theme="light".
+                 Every surface, line, and ink token has both values. The
+                 component layer reads only the semantic var, never raw hex.
+*/
+
+:root {
+  /* ── Identity — Chulalongkorn pink. Used only on the mark + version pill. ── */
+  --brand:      #B7307A;
+  --brand-soft: #8a3367;
+  /* ── Operational accent — amber. Always active metrics. ── */
+  --accent:     #F5A623;
+  --accent-dim: #A06B0F;
+  /* ── Data accents — meaning-encoded, identical across themes ── */
+  --data: #00B4FF;   /* cold cyan — generic data */
+  --good: #00C168;   /* emerald — live / healthy */
+  --warn: #F5A623;   /* amber — same as accent */
+  --bad:  #E53939;   /* coral — alert */
+  --crit: #C81E1E;   /* danger */
+  --info: #8B5CF6;   /* violet — informational */
+
+  /* ── Type system — IBM Plex ────────────────────────────────────────── */
+  --font-sans:
+    "IBM Plex Sans", "IBM Plex Sans Thai",
+    "Noto Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display:
+    "IBM Plex Sans Condensed", "IBM Plex Sans", "IBM Plex Sans Thai",
+    system-ui, sans-serif;
+  --font-mono:
+    "IBM Plex Mono", ui-monospace, "SF Mono", "Cascadia Code", monospace;
+  /* legacy alias for components that hard-coded var(--font-thai) */
+  --font-thai:
+    "IBM Plex Sans Thai", "IBM Plex Sans", "Noto Sans Thai", sans-serif;
+
+  --size-eyebrow: 0.66rem;
+  --size-caption: 0.78rem;
+  --size-body:    0.92rem;
+  --size-h3:      1.06rem;
+  --size-h2:      1.32rem;
+  --size-h1:      1.84rem;
+  --size-display: 2.5rem;
+
+  --tracking-eyebrow: 0.10em;
+
+  /* Spacing — 4 px grid */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-12: 48px;
+
+  /* defaults to dark; light theme overrides below */
+  color-scheme: dark;
+}
+
+/* ── Dark theme (default) ──────────────────────────────────────────────── */
+:root,
+[data-theme="dark"] {
+  --bg:    #05060a;
+  --bg-1:  #090b12;
+  --bg-2:  #0e1120;
+  --bg-3:  #141828;
+  --line:  #1a2030;
+  --line-2:#242e42;
+
+  --text:   #eaeef5;
+  --text-1: #b0bac9;
+  --text-2: #68788f;
+  --text-3: #384055;
+  color-scheme: dark;
+}
+
+/* ── Light theme ────────────────────────────────────────────────────────
+   Warm off-white background, deep ink. Contrast >= 4.5:1 against text on
+   --bg (#fafaf7 vs #111315 ≈ 17.4:1). Hairlines visible without being
+   industrial. Brand pink + amber stay readable on both surfaces.
+*/
+[data-theme="light"] {
+  --bg:    #fafaf7;
+  --bg-1:  #ffffff;
+  --bg-2:  #f3f3ef;
+  --bg-3:  #ebebe6;
+  --line:  #d8d8d0;
+  --line-2:#b6b6ad;
+
+  --text:   #111315;
+  --text-1: #2c2f33;
+  --text-2: #56595e;
+  --text-3: #888c92;
+
+  /* Tone data accents down slightly for white surface */
+  --brand:      #9c2867;
+  --accent:     #c87600;
+  --data: #006a96;
+  --good: #097b3f;
+  --warn: #b35200;
+  --bad:  #b81e1e;
+  --crit: #8c0e0e;
+  --info: #5b3fb8;
+  color-scheme: light;
+}
+
+/* No rounding, no blur, no shadow — keeps the surface honest. */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+  box-shadow: none;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--size-body);
+  line-height: 1.5;
+  font-feature-settings: "ss03", "ss05", "cv11"; /* IBM Plex stylistic alts: rounded a, single-storey g */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body, #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.005em;
+  color: var(--text);
+}
+h1 { font-size: var(--size-h1); }
+h2 { font-size: var(--size-h2); }
+h3 { font-size: var(--size-h3); }
+
+.eyebrow {
+  font-size: var(--size-eyebrow);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.caption {
+  font-size: var(--size-caption);
+  color: var(--text-2);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "ss01"; /* zero with slash */
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  background: transparent;
+  border: 1px solid var(--line-2);
+  color: var(--text-1);
+  padding: 6px 10px;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+button:hover { color: var(--text); border-color: var(--text-2); }
+button[aria-pressed="true"], button.active {
+  color: var(--bg);
+  background: var(--text);
+  border-color: var(--text);
+}
+
+a { color: var(--data); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Skeleton shimmer — neutral both themes */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-1) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: var(--line); }
+::-webkit-scrollbar-thumb:hover { background: var(--line-2); }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* Accessibility focus ring */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

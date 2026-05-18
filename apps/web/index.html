@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="canonical" href="https://chula.nonarkara.org/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5" />
+    <meta name="theme-color" content="#0a0e14" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="description" content="Chula Control Tower — real-time campus operations dashboard for Chulalongkorn University. Live traffic, incidents, news, satellite, air quality, CU Shuttle, and 47+ data feeds for Bangkok's Siam–Samyan district." />
+
+    <!-- Open Graph / Facebook / LINE preview -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Chula Control Tower" />
+    <meta property="og:title" content="CCT-01 · Chula Control Tower" />
+    <meta property="og:description" content="Real-time campus operations for Chulalongkorn University — 47 live data feeds, 7 operational lenses, 3D buildings, underground utilities, presidential strategic view." />
+    <meta property="og:url" content="https://chula.nonarkara.org/" />
+    <meta property="og:image" content="https://chula.nonarkara.org/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="th_TH" />
+    <meta property="og:locale:alternate" content="en_US" />
+
+    <!-- Twitter / X card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="CCT-01 · Chula Control Tower" />
+    <meta name="twitter:description" content="Real-time campus operations dashboard — traffic, incidents, satellite, AQ, shuttle, news. 7 lenses, 3D buildings, underground utilities." />
+    <meta name="twitter:image" content="https://chula.nonarkara.org/og.png" />
+
+    <!-- JSON-LD: WebApplication describing the dashboard -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Chula Control Tower",
+        "alternateName": ["CCT-01", "ศูนย์ควบคุมจุฬาฯ"],
+        "url": "https://chula.nonarkara.org/",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "browserRequirements": "Requires JavaScript and WebGL2",
+        "creator": { "@type": "Organization", "name": "SLIC Index x depa" },
+        "about": {
+          "@type": "EducationalOrganization",
+          "name": "Chulalongkorn University",
+          "sameAs": "https://en.wikipedia.org/wiki/Chulalongkorn_University",
+          "address": { "@type": "PostalAddress", "addressLocality": "Bangkok", "addressCountry": "TH" }
+        },
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "THB" }
+      }
+    </script>
+
+    <title>CCT-01 · Chula Control Tower</title>
+    <link rel="preconnect" href="https://chula-api.nonarkara.org" />
+    <link rel="preconnect" href="https://api.open-meteo.com" />
+    <link rel="preconnect" href="https://cartodb-basemaps-a.global.ssl.fastly.net" />
+    <link rel="preconnect" href="https://gibs.earthdata.nasa.gov" />
+    <link rel="preconnect" href="https://services.arcgisonline.com" />
+
+    <!-- CSP: explicit allowlist for tile + API origins -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://chula-api.nonarkara.org https://api.open-meteo.com https://*.basemaps.cartocdn.com https://cartodb-basemaps-a.global.ssl.fastly.net https://cartodb-basemaps-b.global.ssl.fastly.net https://cartodb-basemaps-c.global.ssl.fastly.net https://services.arcgisonline.com https://gibs.earthdata.nasa.gov https://*.tile.openstreetmap.org https://*.googleapis.com https://cloudflareinsights.com; img-src 'self' data: blob: https:; font-src 'self' data:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+    />
+    <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "0da324da0e204440a172088c0fafc92c"}' ></script>
+</head>
+  <body>
+    <!-- Boot the theme before React hydrates to avoid a flash. -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("chula:theme");
+          var prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+          var theme = stored === "light" || stored === "dark" ? stored : (prefersLight ? "light" : "dark");
+          document.documentElement.setAttribute("data-theme", theme);
+          document.documentElement.style.colorScheme = theme;
+        } catch (e) {}
+      })();
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

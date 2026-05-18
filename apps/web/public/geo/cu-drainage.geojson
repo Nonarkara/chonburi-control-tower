@@ -1,0 +1,116 @@
+{
+  "type": "FeatureCollection",
+  "_attribution": "Storm drainage routed under campus arterials and collected by Centenary Park (1 M-gallon retention basin, 3° gradient, opened 2017 — Landprocess / Kotchakorn Voraakhom). Overflow discharges to BMA mains under Rama IV. Diameters indicative; replace with BMA Drainage as-built when supplied.",
+  "_flow": "arrow direction indicates downhill discharge",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "retention-centenary",
+        "kind": "retention-basin",
+        "name": "Centenary Park retention basin",
+        "nameTh": "อุทยาน 100 ปี จุฬาฯ — แก้มลิง",
+        "capacityM3": 3785,
+        "status": "live",
+        "describe": "1 M-gallon (≈ 3,785 m³) detention pond + bioswale wetland filtering campus runoff before discharge to BMA drainage."
+      },
+      "geometry": { "type": "Point", "coordinates": [100.53800, 13.74180] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "outfall-rama4", "kind": "outfall", "name": "BMA outfall — Rama IV", "diameter": 800, "status": "live", "describe": "Discharge to BMA combined sewer under Rama IV." },
+      "geometry": { "type": "Point", "coordinates": [100.53050, 13.72860] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "outfall-rama1", "kind": "outfall", "name": "Storm outfall — Rama I / Sanam Luang", "diameter": 600, "status": "live", "describe": "Secondary outfall toward Klong Saen Saep tributary." },
+      "geometry": { "type": "Point", "coordinates": [100.53050, 13.74720] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "pump-centenary", "kind": "pump-station", "name": "Centenary Park pumps", "status": "live", "describe": "Pumps assist when retention basin reaches overflow threshold during monsoon storms." },
+      "geometry": { "type": "Point", "coordinates": [100.53820, 13.74050] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": { "id": "main-collector-phayathai", "kind": "main", "diameter": 900, "status": "live", "name": "Phaya Thai main 900 mm", "flow": "south", "describe": "West perimeter storm main, conveys west-side runoff toward Rama IV outfall." },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [100.52320, 13.74700],
+          [100.52380, 13.74100],
+          [100.52380, 13.73600],
+          [100.52400, 13.73100],
+          [100.52720, 13.72900],
+          [100.53050, 13.72860]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "main-collector-henri", "kind": "main", "diameter": 1000, "status": "live", "name": "Henri Dunant main 1000 mm", "flow": "south", "describe": "East perimeter main; oversized for monsoon peak runoff from the Faculty of Medicine block." },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [100.54080, 13.74570],
+          [100.54080, 13.74000],
+          [100.54100, 13.73450],
+          [100.54050, 13.73020],
+          [100.53850, 13.72950],
+          [100.53050, 13.72860]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "feeder-centenary-in", "kind": "feeder", "diameter": 600, "status": "live", "name": "Centenary inflow culvert", "flow": "east", "describe": "Routes northeast quadrant runoff into the retention basin." },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [100.53350, 13.74245],
+          [100.53600, 13.74230],
+          [100.53800, 13.74180]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "feeder-centenary-out", "kind": "feeder", "diameter": 700, "status": "live", "name": "Centenary overflow", "flow": "south", "describe": "Filtered overflow from retention basin → Henri Dunant main." },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [100.53800, 13.74180],
+          [100.53950, 13.74080],
+          [100.54080, 13.74000]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "feeder-soi12", "kind": "feeder", "diameter": 500, "status": "live", "name": "Soi 12 storm feeder", "flow": "east", "describe": "Routes academic-core runoff toward Centenary." },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [100.52380, 13.74230],
+          [100.52900, 13.74240],
+          [100.53350, 13.74245]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "feeder-soi5", "kind": "feeder", "diameter": 500, "status": "live", "name": "Soi 5 storm feeder", "flow": "east", "describe": "Engineering/Science storm collector." },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [100.52380, 13.73830],
+          [100.52900, 13.73840],
+          [100.53400, 13.73830],
+          [100.53870, 13.73830],
+          [100.54080, 13.73830]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,232 @@
+{
+  "type": "FeatureCollection",
+  "_attribution": "Substation locations confirmed by CU-MEA cooperation announcement (samyansmartcity.com / Chula Smart City). HV backbone + LV feeders are realistic approximations following the road network — to be overwritten with PMCU's authoritative as-built when supplied.",
+  "_units": "voltage in kV; status: live/planned/standby",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "subs-pathumwan",
+        "kind": "substation",
+        "name": "Pathumwan Substation",
+        "nameTh": "สถานีไฟฟ้าย่อยปทุมวัน",
+        "voltage": 115,
+        "capacityMva": 30,
+        "operator": "MEA × Chulalongkorn",
+        "status": "live",
+        "describe": "Northern campus MEA substation, anchor for CU SMART CITY microgrid + solar PV uptake."
+      },
+      "geometry": { "type": "Point", "coordinates": [100.52480, 13.74560] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "subs-samyan",
+        "kind": "substation",
+        "name": "Samyan Substation",
+        "nameTh": "สถานีไฟฟ้าย่อยสามย่าน",
+        "voltage": 115,
+        "capacityMva": 30,
+        "operator": "MEA × Chulalongkorn",
+        "status": "live",
+        "describe": "Southern campus MEA substation, anchor for energy storage system + Samyan Mitrtown / Chamchuri load."
+      },
+      "geometry": { "type": "Point", "coordinates": [100.52910, 13.73340] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ring-feeder-se",
+        "kind": "ring-feeder",
+        "name": "Henri Dunant SE ring feeder",
+        "voltage": 22,
+        "status": "live",
+        "describe": "22 kV distribution feeder serving parking + Faculty of Medicine cluster."
+      },
+      "geometry": { "type": "Point", "coordinates": [100.54000, 13.73020] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ring-feeder-ne",
+        "kind": "ring-feeder",
+        "name": "Henri Dunant NE ring feeder",
+        "voltage": 22,
+        "status": "live",
+        "describe": "22 kV distribution feeder serving Siam Square + Faculty of Arts cluster."
+      },
+      "geometry": { "type": "Point", "coordinates": [100.53980, 13.74560] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "delivery-rama4",
+        "kind": "delivery",
+        "name": "MEA delivery — Rama IV",
+        "voltage": 115,
+        "status": "live",
+        "describe": "Bulk-supply entry from the MEA grid south of campus."
+      },
+      "geometry": { "type": "Point", "coordinates": [100.52720, 13.72850] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "hv-backbone-pathumwan",
+        "kind": "hv-backbone",
+        "voltage": 115,
+        "status": "live",
+        "name": "Pathumwan ↔ Samyan 115 kV link",
+        "describe": "Underground 115 kV between the two campus substations, running south along Phaya Thai Rd then east into the Samyan Substation site."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [100.52480, 13.74560],
+          [100.52450, 13.74300],
+          [100.52400, 13.74050],
+          [100.52380, 13.73800],
+          [100.52380, 13.73600],
+          [100.52400, 13.73420],
+          [100.52650, 13.73370],
+          [100.52910, 13.73340]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "hv-backbone-delivery",
+        "kind": "hv-backbone",
+        "voltage": 115,
+        "status": "live",
+        "name": "MEA Rama IV ↔ Samyan",
+        "describe": "Bulk supply from Rama IV into Samyan Substation."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [100.52720, 13.72850],
+          [100.52720, 13.73050],
+          [100.52800, 13.73200],
+          [100.52910, 13.73340]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "mv-feeder-east",
+        "kind": "mv-feeder",
+        "voltage": 22,
+        "status": "live",
+        "name": "Henri Dunant 22 kV ring (east)",
+        "describe": "MV ring feeder along Henri Dunant Rd, ties Pathumwan + Samyan via the eastern corner feeders."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [100.52480, 13.74560],
+          [100.53000, 13.74660],
+          [100.53980, 13.74560],
+          [100.54050, 13.74000],
+          [100.54050, 13.73500],
+          [100.54000, 13.73020],
+          [100.53450, 13.73020],
+          [100.52910, 13.73340]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "mv-feeder-soi12",
+        "kind": "mv-feeder",
+        "voltage": 22,
+        "status": "live",
+        "name": "Soi Chula 12 — 22 kV spine",
+        "describe": "MV feeder running east-west through the academic core."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [100.52480, 13.74200],
+          [100.52900, 13.74230],
+          [100.53250, 13.74250],
+          [100.53700, 13.74240],
+          [100.54050, 13.74000]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "mv-feeder-soi5",
+        "kind": "mv-feeder",
+        "voltage": 22,
+        "status": "live",
+        "name": "Soi Chula 5 — 22 kV",
+        "describe": "Cross-feeder for Engineering + Science cluster."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [100.52400, 13.73800],
+          [100.52900, 13.73820],
+          [100.53400, 13.73830],
+          [100.53850, 13.73830],
+          [100.54050, 13.73850]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "solar-pv-engineering",
+        "kind": "solar-pv",
+        "capacityKw": 1200,
+        "status": "live",
+        "name": "Engineering / Sci PV cluster",
+        "describe": "Largest rooftop PV cluster on campus — part of the 20 MW CU SMART CITY microgrid target."
+      },
+      "geometry": { "type": "Point", "coordinates": [100.53420, 13.73850] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "solar-pv-sports",
+        "kind": "solar-pv",
+        "capacityKw": 800,
+        "status": "live",
+        "name": "Sports Complex PV",
+        "describe": "Stadium / sports complex rooftop PV; high midday solar yield."
+      },
+      "geometry": { "type": "Point", "coordinates": [100.52800, 13.74300] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "solar-pv-samyan-mitrtown",
+        "kind": "solar-pv",
+        "capacityKw": 600,
+        "status": "live",
+        "name": "Samyan Mitrtown PV",
+        "describe": "Mixed-use rooftop PV near Samyan Substation."
+      },
+      "geometry": { "type": "Point", "coordinates": [100.52960, 13.73330] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "bess-samyan",
+        "kind": "battery-storage",
+        "capacityMwh": 4,
+        "status": "live",
+        "name": "Samyan BESS",
+        "describe": "Battery energy storage system colocated with Samyan Substation, part of microgrid frequency support."
+      },
+      "geometry": { "type": "Point", "coordinates": [100.52940, 13.73360] }
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "type": "FeatureCollection",
+  "_attribution": "Realistic approximation: MWA mains follow the BMA arterial network, lateral feeders branch into campus blocks. Authoritative shapefile from MWA / PMCU pending; geometry sourced from OSM road centerlines.",
+  "_units": "diameter mm; pressure indicative",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "id": "mwa-supply-rama4", "kind": "supply-point", "name": "MWA supply — Rama IV", "diameter": 600, "status": "live", "describe": "Primary MWA potable supply, 600 mm trunk entering campus from Rama IV." },
+      "geometry": { "type": "Point", "coordinates": [100.53050, 13.72880] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "mwa-supply-phayathai", "kind": "supply-point", "name": "MWA supply — Phaya Thai", "diameter": 400, "status": "live" },
+      "geometry": { "type": "Point", "coordinates": [100.52320, 13.74700] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "main-loop", "kind": "main", "diameter": 400, "status": "live", "name": "Campus 400 mm potable loop", "describe": "Distribution loop around campus perimeter — Phaya Thai → Rama I → Henri Dunant → Rama IV → close." },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [100.52320, 13.74700],
+          [100.52400, 13.74660],
+          [100.53000, 13.74660],
+          [100.53700, 13.74660],
+          [100.54080, 13.74570],
+          [100.54080, 13.74000],
+          [100.54100, 13.73450],
+          [100.54050, 13.73020],
+          [100.53050, 13.72880],
+          [100.52720, 13.72900],
+          [100.52400, 13.73100],
+          [100.52380, 13.73600],
+          [100.52380, 13.74100],
+          [100.52320, 13.74700]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "lateral-soi12", "kind": "lateral", "diameter": 250, "status": "live", "name": "Soi 12 lateral 250 mm" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [100.52380, 13.74230],
+          [100.52900, 13.74240],
+          [100.53350, 13.74245],
+          [100.53800, 13.74240],
+          [100.54080, 13.74230]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "lateral-soi5", "kind": "lateral", "diameter": 200, "status": "live", "name": "Soi 5 lateral 200 mm" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [100.52380, 13.73830],
+          [100.52900, 13.73840],
+          [100.53400, 13.73830],
+          [100.53870, 13.73830],
+          [100.54090, 13.73830]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "lateral-centenary", "kind": "lateral", "diameter": 200, "status": "live", "name": "Centenary Park irrigation" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [100.53700, 13.74240],
+          [100.53800, 13.74220],
+          [100.53800, 13.74050],
+          [100.53750, 13.74000]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "lateral-hospital", "kind": "lateral", "diameter": 300, "status": "live", "name": "Chula Hospital service 300 mm", "describe": "Higher-capacity lateral for hospital sanitary + cooling demand." },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [100.54050, 13.73020],
+          [100.53850, 13.73020],
+          [100.53700, 13.73000],
+          [100.53700, 13.72850]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "hydrant-cluster-engineering", "kind": "fire-hydrant", "status": "live", "name": "Engineering fire-main cluster" },
+      "geometry": { "type": "Point", "coordinates": [100.53350, 13.73830] }
+    }
+  ]
+}

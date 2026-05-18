@@ -1,0 +1,79 @@
+{
+  "type": "FeatureCollection",
+  "name": "flood-prone-areas-chula",
+  "description": "Historical flood-prone areas around Chula campus based on known Bangkok flood patterns, Saen Saep canal overflows, and low-lying intersections. Approximate polygons for awareness layer.",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "id": "saen-saep-east", "nameTh": "คลองแสนแสบตะวันออก", "nameEn": "Saen Saep Canal East", "risk": "high", "cause": "Canal overflow during monsoon", "frequency": "annual", "lastMajor": "2022-09" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[100.5400,13.7400],[100.5400,13.7420],[100.5420,13.7420],[100.5420,13.7405],[100.5410,13.7400],[100.5400,13.7400]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "samyan-intersection", "nameTh": "สี่แยกสามย่าน", "nameEn": "Samyan Intersection", "risk": "medium", "cause": "Poor drainage + tidal backflow", "frequency": "2-3x per year", "lastMajor": "2023-10" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[100.5280,13.7305],[100.5280,13.7320],[100.5300,13.7320],[100.5300,13.7305],[100.5280,13.7305]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "rama-iv-henri", "nameTh": "แยกพระราม 4 / อินทรีย์ดูนันท์", "nameEn": "Rama IV / Henri Dunant Junction", "risk": "medium", "cause": "Low-lying intersection, flash flood", "frequency": "2-3x per year", "lastMajor": "2023-08" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[100.5320,13.7300],[100.5320,13.7315],[100.5340,13.7315],[100.5340,13.7300],[100.5320,13.7300]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "hua-lamphong-low", "nameTh": "พื้นที่ต่ำหัวลำโพง", "nameEn": "Hua Lamphong Lowlands", "risk": "high", "cause": "Low elevation + basin effect", "frequency": "annual", "lastMajor": "2022-09" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[100.5140,13.7370],[100.5140,13.7405],[100.5175,13.7405],[100.5175,13.7370],[100.5140,13.7370]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "chula-soi-5", "nameTh": "ซอยจุฬาฯ 5", "nameEn": "Chula Soi 5", "risk": "low", "cause": "Localized poor drainage", "frequency": "1-2x per year", "lastMajor": "2023-07" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[100.5250,13.7340],[100.5250,13.7355],[100.5265,13.7355],[100.5265,13.7340],[100.5250,13.7340]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "ratchadamri-underpass", "nameTh": "อุโมงค์ราชดำริ", "nameEn": "Ratchadamri Underpass", "risk": "high", "cause": "Underpass + pump failure", "frequency": "3-5x per year", "lastMajor": "2024-08" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[100.5390,13.7385],[100.5390,13.7400],[100.5405,13.7400],[100.5405,13.7385],[100.5390,13.7385]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "siam-square-soi", "nameTh": "ซอยสยามสแควร์", "nameEn": "Siam Square Sois", "risk": "low", "cause": "Flash flooding in narrow sois", "frequency": "1-2x per year", "lastMajor": "2023-09" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[100.5295,13.7430],[100.5295,13.7445],[100.5310,13.7445],[100.5310,13.7430],[100.5295,13.7430]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "si-lom-rama4", "nameTh": "แยกสีลม / พระราม 4", "nameEn": "Silom / Rama IV Junction", "risk": "medium", "cause": "Tidal backflow from Khlong Toei", "frequency": "2-3x per year", "lastMajor": "2023-10" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[100.5350,13.7275],[100.5350,13.7290],[100.5370,13.7290],[100.5370,13.7275],[100.5350,13.7275]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "lumphini-basin", "nameTh": "พื้นที่ต่ำสวนลุมพินี", "nameEn": "Lumphini Park Basin", "risk": "medium", "cause": "Park basin + surrounding runoff", "frequency": "2-3x per year", "lastMajor": "2022-09" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[100.5380,13.7240],[100.5380,13.7270],[100.5410,13.7270],[100.5410,13.7240],[100.5380,13.7240]]]
+      }
+    }
+  ]
+}

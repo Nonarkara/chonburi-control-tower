@@ -1,0 +1,23 @@
+{
+  "name": "Chula Control Tower",
+  "short_name": "CCT-01",
+  "description": "Real-time campus operations dashboard for Chulalongkorn University — Bangkok",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0e14",
+  "theme_color": "#0a0e14",
+  "lang": "th",
+  "dir": "ltr",
+  "categories": ["productivity", "government", "education"],
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Executive", "short_name": "EXEC", "description": "Strategic view", "url": "/?lens=executive" },
+    { "name": "Operations", "short_name": "OPS",  "description": "Day-to-day view", "url": "/?lens=operations" },
+    { "name": "Safety",     "short_name": "SAF",  "description": "Incidents + flood + CCTV", "url": "/?lens=safety" }
+  ]
+}

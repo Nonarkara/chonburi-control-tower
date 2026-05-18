@@ -1,0 +1,21 @@
+node_modules
+dist
+.wrangler
+.dev.vars
+.env
+.env.*
+!.env.example
+.env.local
+.DS_Store
+*.log
+.vite
+.turbo
+.cache
+.vercel
+var/
+*.tsbuildinfo
+.claude/
+
+
+# OSM Overpass raw cache (regenerate via apps/web/scripts/fetch-osm-chula.mjs)
+apps/web/public/geo/osm/

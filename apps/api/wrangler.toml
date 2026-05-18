@@ -1,0 +1,16 @@
+name = "chula-control-tower-api"
+main = "src/index.ts"
+compatibility_date = "2025-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+# Bindings (KV cache for adapter responses, persists across requests)
+# Create with: wrangler kv namespace create CACHE
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "<fill-after-create>"
+
+[vars]
+ENVIRONMENT = "dev"

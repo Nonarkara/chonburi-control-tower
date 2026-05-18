@@ -1,0 +1,19 @@
+{
+  "name": "chula-control-tower",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --parallel -r dev",
+    "dev:web": "pnpm --filter @chula/web dev",
+    "dev:api": "pnpm --filter @chula/api dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "deploy:web": "pnpm --filter @chula/web build && pnpm --filter @chula/web deploy",
+    "deploy:api": "pnpm --filter @chula/api deploy"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20"
+  }
+}

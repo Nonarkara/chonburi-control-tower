@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>org.nonarkara.chula-api</string>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/axiom/Projects/dashboards/chula-control-tower/apps/api</string>
+
+    <!-- caffeinate keeps the Mac awake while this process runs:
+         -i prevents idle sleep, -s prevents system sleep on AC power. -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/caffeinate</string>
+        <string>-is</string>
+        <string>/Users/axiom/Library/pnpm/pnpm</string>
+        <string>start:node</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/bin:/bin:/Users/axiom/Library/pnpm:/Users/axiom/.local/bin</string>
+        <key>HOST</key>
+        <string>127.0.0.1</string>
+        <key>PORT</key>
+        <string>8787</string>
+        <key>ENVIRONMENT</key>
+        <string>production</string>
+        <!-- GEMINI_API_KEY is injected into the live plist at
+             ~/Library/LaunchAgents/org.nonarkara.chula-api.plist (not committed). -->
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+        <key>Crashed</key>
+        <true/>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/axiom/Projects/dashboards/chula-control-tower/var/api.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/axiom/Projects/dashboards/chula-control-tower/var/api.err.log</string>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>
