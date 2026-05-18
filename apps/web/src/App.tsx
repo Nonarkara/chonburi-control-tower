@@ -123,49 +123,54 @@ import { StrategicAlerts } from "./components/StrategicAlerts";
 import { useDevicePresence } from "./hooks/useDevicePresence";
 import { useIsMobile } from "./hooks/useMediaQuery";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
+import { useTheme } from "./hooks/useTheme";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
 
 /**
- * Basemap — CARTO dark_nolabels at the bottom. Labels (CARTO dark_only_labels)
- * are rendered on TOP of all deck.gl context layers via a separate Mapbox/Maplibre
- * raster source registered as the last style layer. This matches the
- * city-reporter-v2 pane stack: base → satellite (deck.gl) → labels.
+ * Basemap — CARTO no-labels at the bottom, labels rendered on TOP via a
+ * separate raster source so deck.gl context layers can interleave between
+ * them. Theme-aware: dark → carto dark + deep navy ocean tint;
+ * light → carto positron-light + pale sky-blue ocean tint.
  */
-const BASEMAP_STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  sources: {
-    "carto-dark-base": {
-      type: "raster",
-      tiles: [
-        "https://cartodb-basemaps-a.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}.png",
-        "https://cartodb-basemaps-b.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}.png",
-        "https://cartodb-basemaps-c.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}.png",
-      ],
-      tileSize: 256,
-      attribution: "© OpenStreetMap, © CARTO",
-      maxzoom: 20,
+function basemapStyle(theme: "dark" | "light"): maplibregl.StyleSpecification {
+  const baseSlug = theme === "dark" ? "dark_nolabels" : "light_nolabels";
+  const labelsSlug = theme === "dark" ? "dark_only_labels" : "light_only_labels";
+  const oceanBg = theme === "dark" ? "#031730" : "#E0F2FE";
+  const baseOpacity = theme === "dark" ? 0.78 : 0.92;
+  const labelOpacity = theme === "dark" ? 0.85 : 0.90;
+  return {
+    version: 8,
+    sources: {
+      "carto-base": {
+        type: "raster",
+        tiles: [
+          `https://cartodb-basemaps-a.global.ssl.fastly.net/${baseSlug}/{z}/{x}/{y}.png`,
+          `https://cartodb-basemaps-b.global.ssl.fastly.net/${baseSlug}/{z}/{x}/{y}.png`,
+          `https://cartodb-basemaps-c.global.ssl.fastly.net/${baseSlug}/{z}/{x}/{y}.png`,
+        ],
+        tileSize: 256,
+        attribution: "© OpenStreetMap, © CARTO",
+        maxzoom: 20,
+      },
+      "carto-labels": {
+        type: "raster",
+        tiles: [
+          `https://cartodb-basemaps-a.global.ssl.fastly.net/${labelsSlug}/{z}/{x}/{y}.png`,
+          `https://cartodb-basemaps-b.global.ssl.fastly.net/${labelsSlug}/{z}/{x}/{y}.png`,
+          `https://cartodb-basemaps-c.global.ssl.fastly.net/${labelsSlug}/{z}/{x}/{y}.png`,
+        ],
+        tileSize: 256,
+        maxzoom: 20,
+      },
     },
-    "carto-dark-labels": {
-      type: "raster",
-      tiles: [
-        "https://cartodb-basemaps-a.global.ssl.fastly.net/dark_only_labels/{z}/{x}/{y}.png",
-        "https://cartodb-basemaps-b.global.ssl.fastly.net/dark_only_labels/{z}/{x}/{y}.png",
-        "https://cartodb-basemaps-c.global.ssl.fastly.net/dark_only_labels/{z}/{x}/{y}.png",
-      ],
-      tileSize: 256,
-      maxzoom: 20,
-    },
-  },
-  // Maritime tint: deep navy ocean base, raster carto tiles dropped to 78%
-  // opacity so the cerulean undertone bleeds through. Reads as "city by the
-  // sea" at a glance — instantly distinct from Chula's neutral charcoal.
-  layers: [
-    { id: "ocean-bg", type: "background", paint: { "background-color": "#031730" } },
-    { id: "basemap", type: "raster", source: "carto-dark-base", paint: { "raster-opacity": 0.78 } },
-    { id: "labels-top", type: "raster", source: "carto-dark-labels", paint: { "raster-opacity": 0.85 } },
-  ],
-};
+    layers: [
+      { id: "ocean-bg", type: "background", paint: { "background-color": oceanBg } },
+      { id: "basemap", type: "raster", source: "carto-base", paint: { "raster-opacity": baseOpacity } },
+      { id: "labels-top", type: "raster", source: "carto-labels", paint: { "raster-opacity": labelOpacity } },
+    ],
+  };
+}
 
 function normalizeProperties<T extends { features?: Array<{ properties?: object | null }> }>(data: T): T {
   if (data && Array.isArray(data.features)) {
@@ -205,6 +210,8 @@ function escapeHtml(s: string): string {
 }
 
 export default function App() {
+  const { theme } = useTheme();
+  const mapStyle = useMemo(() => basemapStyle(theme), [theme]);
   const campus = useGeoJson<FeatureCollection<Polygon | MultiPolygon, CampusZoneProperties>>(
     "/geo/chula-campus.geojson",
   );
@@ -902,7 +909,7 @@ export default function App() {
             onClick={handleMapClick}
           >
             <MapLibreMap
-              mapStyle={BASEMAP_STYLE}
+              mapStyle={mapStyle}
               mapLib={maplibregl as unknown as typeof maplibregl}
               attributionControl={false}
               renderWorldCopies={false}
