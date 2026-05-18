@@ -60,15 +60,15 @@
   color-scheme: dark;
 }
 
-/* ── Dark theme (default) ──────────────────────────────────────────────── */
+/* ── Dark theme (default) — Chonburi maritime navy ───────────────────── */
 :root,
 [data-theme="dark"] {
-  --bg:    #05060a;
-  --bg-1:  #090b12;
-  --bg-2:  #0e1120;
-  --bg-3:  #141828;
-  --line:  #1a2030;
-  --line-2:#242e42;
+  --bg:    #03101f;
+  --bg-1:  #061830;
+  --bg-2:  #0a2240;
+  --bg-3:  #112d4f;
+  --line:  #1a3a5e;
+  --line-2:#264a73;
 
   --text:   #eaeef5;
   --text-1: #b0bac9;

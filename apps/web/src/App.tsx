@@ -147,10 +147,12 @@ const BASEMAP_STYLE: maplibregl.StyleSpecification = {
       maxzoom: 20,
     },
   },
+  // Maritime tint: deep navy ocean base, raster carto tiles dropped to 78%
+  // opacity so the cerulean undertone bleeds through. Reads as "city by the
+  // sea" at a glance — instantly distinct from Chula's neutral charcoal.
   layers: [
-    { id: "basemap", type: "raster", source: "carto-dark-base" },
-    // Labels-on-top: this layer renders ABOVE the basemap; deck.gl draws between
-    // basemap and this layer via the mapbox-overlay interleave behaviour.
+    { id: "ocean-bg", type: "background", paint: { "background-color": "#031730" } },
+    { id: "basemap", type: "raster", source: "carto-dark-base", paint: { "raster-opacity": 0.78 } },
     { id: "labels-top", type: "raster", source: "carto-dark-labels", paint: { "raster-opacity": 0.85 } },
   ],
 };

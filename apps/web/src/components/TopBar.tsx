@@ -64,11 +64,16 @@ export function TopBar({ feeds, onOpenCatalog, catalogCount, viewMode, onCycleVi
         >
           <img src="/logos/depa.jpg" alt="depa" />
         </a>
-        <span className="brand-sep" aria-hidden />
+        <svg className="brand-wave" width="42" height="22" viewBox="0 0 42 22" aria-hidden>
+          <path d="M0 11 Q 5 4, 10 11 T 20 11 T 30 11 T 42 11"
+                fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.95"/>
+          <path d="M0 17 Q 5 10, 10 17 T 20 17 T 30 17 T 42 17"
+                fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.5"/>
+        </svg>
         <div className="brand-stack">
           <strong>Chonburi Town Center</strong>
           <span className="brand-sub mono">
-            CTM-01 · {CHONBURI.name.en} · Chonburi
+            CTM-01 ⌑ {CHONBURI.name.en} ⌑ Eastern Seaboard
           </span>
         </div>
       </div>
