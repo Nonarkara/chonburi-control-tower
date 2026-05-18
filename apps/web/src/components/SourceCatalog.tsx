@@ -15,6 +15,8 @@ const CATEGORY_LABEL: Record<SourceCategory, string> = {
   imagery: "IMG",
   vibes: "VIB",
   infrastructure: "INF",
+  maritime: "MAR",
+  "open-data": "OPN",
   campus: "CMP",
 };
 
