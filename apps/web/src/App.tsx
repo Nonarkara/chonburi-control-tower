@@ -66,6 +66,8 @@ import {
   navigationAidsLayer,
   aisVesselsLayer,
   datagoPointsLayer,
+  distanceGridLayer,
+  distanceGridLabelsLayer,
   type AisVessel,
   type DatagoPoint,
   type AqStation,
@@ -92,6 +94,7 @@ import { LayerPalette } from "./components/LayerPalette";
 import { KpiStrip } from "./components/KpiStrip";
 import { PmcuBrief } from "./components/PmcuBrief";
 import { NewsDesk } from "./components/NewsDesk";
+import { FacebookPanel } from "./components/FacebookPanel";
 import { SourceCatalog } from "./components/SourceCatalog";
 import { Manual } from "./components/Manual";
 import { SheetsPanel, loadSheetsUrl } from "./components/SheetsPanel";
@@ -515,6 +518,7 @@ export default function App() {
   const precip = useFeed<PrecipNowcast>(`${API_BASE}/api/precip-nowcast`, 5 * 60_000);
   const ais = useFeed<AisVessel>(`${API_BASE}/api/maritime/ais`, 60_000);
   const datago = useFeed<DatagoPoint>(`${API_BASE}/api/datago/points`, 30 * 60_000);
+  const facebook = useFeed<{ id: string; message: string; permalink: string; createdAt: string; reactions?: number; comments?: number; shares?: number }>(`${API_BASE}/api/social/facebook`, 10 * 60_000);
   // Shuttle and academic calendar not available in this deployment
   const shuttle = { data: [] as ShuttleVehicle[], fallbackTier: "unavailable" as const, ageMinutes: 0 };
   const academic = { data: [] as AcademicSnapshot[] };
@@ -657,6 +661,11 @@ export default function App() {
     if (enabledLayers.has("ais-vessels") && ais.data.length > 0) out.push(aisVesselsLayer(ais.data) as Layer);
     // Open data
     if (enabledLayers.has("datago-points") && datago.data.length > 0) out.push(datagoPointsLayer(datago.data) as Layer);
+    // Distance grid (1·5·10 km)
+    if (enabledLayers.has("distance-grid")) {
+      out.push(distanceGridLayer(CHONBURI.center, [1, 5, 10]) as Layer);
+      out.push(distanceGridLabelsLayer(CHONBURI.center, [1, 5, 10]) as Layer);
+    }
 
     // Underground utilities. In 3DS we force-enable them and render the lines
     // as PathLayer at burial depth so they sit visibly under the ghosted
@@ -712,14 +721,14 @@ export default function App() {
     { label: "NEWS", tier: news.fallbackTier, ageMinutes: news.ageMinutes },
     { label: "CR", tier: cityReports.fallbackTier, ageMinutes: cityReports.ageMinutes },
     { label: "iTIC", tier: iticEvents.fallbackTier, ageMinutes: iticEvents.ageMinutes },
-    { label: "BMA", tier: (bma ? "cache" : "loading") as "cache" | "loading", ageMinutes: 0 },
     { label: "CCTV", tier: cctv.fallbackTier, ageMinutes: cctv.ageMinutes },
-    { label: "BUS", tier: shuttle.fallbackTier, ageMinutes: shuttle.ageMinutes },
+    { label: "AIS", tier: ais.fallbackTier, ageMinutes: ais.ageMinutes },
+    { label: "DATA", tier: datago.fallbackTier, ageMinutes: datago.ageMinutes },
     { label: "AQ", tier: aqiTrend.fallbackTier, ageMinutes: aqiTrend.ageMinutes },
     { label: "WX", tier: weather.fallbackTier, ageMinutes: weather.ageMinutes },
     { label: "EX", tier: executive.fallbackTier, ageMinutes: executive.ageMinutes },
     { label: "MK", tier: markets.fallbackTier, ageMinutes: markets.ageMinutes },
-  ], [news.fallbackTier, news.ageMinutes, cityReports.fallbackTier, cityReports.ageMinutes, iticEvents.fallbackTier, iticEvents.ageMinutes, bma, cctv.fallbackTier, cctv.ageMinutes, shuttle.fallbackTier, shuttle.ageMinutes, aqiTrend.fallbackTier, aqiTrend.ageMinutes, weather.fallbackTier, weather.ageMinutes, executive.fallbackTier, executive.ageMinutes, markets.fallbackTier, markets.ageMinutes]);
+  ], [news.fallbackTier, news.ageMinutes, cityReports.fallbackTier, cityReports.ageMinutes, iticEvents.fallbackTier, iticEvents.ageMinutes, cctv.fallbackTier, cctv.ageMinutes, ais.fallbackTier, ais.ageMinutes, datago.fallbackTier, datago.ageMinutes, aqiTrend.fallbackTier, aqiTrend.ageMinutes, weather.fallbackTier, weather.ageMinutes, executive.fallbackTier, executive.ageMinutes, markets.fallbackTier, markets.ageMinutes]);
 
   return (
     <div
@@ -868,6 +877,12 @@ export default function App() {
             ageMinutes={news.ageMinutes}
             onRefresh={news.refetch}
           />
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
+            <FacebookPanel
+              posts={facebook.data}
+              loading={facebook.fallbackTier === "loading"}
+            />
+          </div>
         </div>
         <div className="right-layers">
           <LayerPalette

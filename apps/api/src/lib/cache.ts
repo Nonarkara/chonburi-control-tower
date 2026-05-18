@@ -80,6 +80,34 @@ export function cacheAgeMinutes(fetchedAt: string): number {
 }
 
 /**
+ * Stale-tolerant variant: if compute throws, fall back to the previously
+ * cached value (even if expired). Use for upstream APIs with tight rate
+ * limits so the dashboard keeps showing the last known value.
+ */
+export async function cachedWithStale<T>(
+  key: string,
+  ttlSeconds: number,
+  compute: () => Promise<T>,
+  staleTtlSeconds: number = 86400,
+): Promise<T> {
+  const entry = store.get(key);
+  if (entry && Date.now() <= entry.expiresAt) return entry.data as T;
+
+  try {
+    const fresh = await compute();
+    setCache(key, fresh, ttlSeconds);
+    return fresh;
+  } catch (err) {
+    if (entry) {
+      // Reinstate stale entry briefly so subsequent reads don't re-fail
+      setCache(key, entry.data, staleTtlSeconds);
+      return entry.data as T;
+    }
+    throw err;
+  }
+}
+
+/**
  * Snapshot of the live in-memory cache, used by the Node persistence layer
  * to flush to disk. Returns a JSON-serialisable plain object.
  */

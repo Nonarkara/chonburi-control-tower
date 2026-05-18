@@ -14,6 +14,7 @@ export type LayerId =
   | "ferry-terminals"
   | "ais-vessels"
   | "navigation-aids"
+  | "distance-grid"
   // Transit
   | "transit-stations"
   | "transit-lines"
@@ -122,7 +123,7 @@ export const LENSES: Lens[] = [
   {
     id: "maritime",
     label: "MAR",
-    describe: "Maritime — Gulf of Thailand maritime infrastructure. OpenSeaMap overlay, Laem Chabang port, ferry terminals, navigation aids, live AIS vessels.",
+    describe: "Maritime — Gulf of Thailand maritime infrastructure. OpenSeaMap overlay, Laem Chabang port, ferry terminals, navigation aids, live AIS vessels, 1·5·10 km reach grid.",
     layers: [
       "municipality-boundary",
       "satellite-esri",
@@ -131,6 +132,7 @@ export const LENSES: Lens[] = [
       "ferry-terminals",
       "navigation-aids",
       "ais-vessels",
+      "distance-grid",
     ],
   },
   {
@@ -210,6 +212,8 @@ export const ALL_LAYERS: {
     describe: "Lighthouses, beacons, navigation buoys around the Eastern Seaboard." },
   { id: "ais-vessels",            label: "AIS vessels (live)",         swatch: "#10B981", group: "maritime",
     describe: "Live vessel positions from AIS (Automatic Identification System) — cargo, tanker, fishing, passenger. Requires AISSTREAM_TOKEN; placeholder otherwise." },
+  { id: "distance-grid",          label: "Distance grid (1·5·10 km)",  swatch: "#0EA5E9", group: "municipality",
+    describe: "Concentric rings at 1 km / 5 km / 10 km from the municipal centroid. Reads as 'how far can the mayor / fire / ambulance get to'." },
 
   // ─── Mobility ──────────────────────────────────────────────────────────
   { id: "road-network",      label: "Road network (classified)", swatch: "#FB7185", group: "mobility",

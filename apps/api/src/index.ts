@@ -21,6 +21,7 @@ import { fetchMarkets } from "./adapters/markets.js";
 import { chat, ChatError, type ChatMessage } from "./adapters/chat.js";
 import { fetchAisVessels } from "./adapters/ais.js";
 import { fetchDatagoPoints, fetchDatagoDatasets } from "./adapters/datago.js";
+import { fetchFacebookPosts } from "./adapters/facebook.js";
 import { SOURCE_CATALOG } from "@chonburi/shared";
 import type { NormalizedFeed, AirQualityPoint, IncidentFeature, IntelligenceItem, ExecutiveSnapshot, MarketSnapshot } from "@chonburi/shared";
 
@@ -34,6 +35,8 @@ type Bindings = {
   VIABUS_BASE_URL?: string;
   AQICN_TOKEN?: string;
   AISSTREAM_TOKEN?: string;
+  FACEBOOK_PAGE_ID?: string;
+  FACEBOOK_PAGE_TOKEN?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -84,6 +87,7 @@ app.get("/", (c) =>
       "/api/maritime/ais",
       "/api/datago/points",
       "/api/datago/datasets",
+      "/api/social/facebook",
       "/api/chat",
     ],
   }),
@@ -213,6 +217,9 @@ app.get("/api/datago/points", (c) => {
   return c.json(feed);
 });
 app.get("/api/datago/datasets", async (c) => safeFeed(c, fetchDatagoDatasets));
+app.get("/api/social/facebook", async (c) =>
+  safeFeed(c, () => fetchFacebookPosts({ FACEBOOK_PAGE_ID: c.env.FACEBOOK_PAGE_ID, FACEBOOK_PAGE_TOKEN: c.env.FACEBOOK_PAGE_TOKEN })),
+);
 app.get("/api/markets", async (c) =>
   safeFeed(c, () => fetchMarkets({ FMP_API_KEY: c.env.FMP_API_KEY, FRED_API_KEY: c.env.FRED_API_KEY })),
 );

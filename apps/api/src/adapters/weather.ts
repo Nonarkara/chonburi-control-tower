@@ -3,7 +3,7 @@ import { CHONBURI } from "@chonburi/shared";
 import { cacheAgeMinutes, cached } from "../lib/cache.js";
 import { fetchJsonOrNull } from "./common.js";
 
-const TTL_SECONDS = 1800; // 30 min
+const TTL_SECONDS = 10800; // 3h — Open-Meteo daily quota friendly // 30 min
 
 interface OpenMeteoCurrent {
   current?: {

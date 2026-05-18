@@ -1528,3 +1528,97 @@ export function datagoPointsLayer(points: DatagoPoint[]) {
     lineWidthMinPixels: 1,
   });
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// DISTANCE GRID (1 / 5 / 10 km rings from municipality centroid)
+// Useful for: response-time radii, evacuation planning, ferry reach, AIS
+// proximity, mayor's "I can be there in X minutes" framing.
+// ═══════════════════════════════════════════════════════════════════════
+
+import { PolygonLayer } from "@deck.gl/layers";
+
+const KM_RING_COLORS: Record<number, [number, number, number, number]> = {
+  1:  [14, 165, 233, 220],  // cerulean
+  5:  [56, 189, 248, 180],  // sky-400
+  10: [125, 211, 252, 140], // sky-300
+};
+
+/** Build a ring polygon at `radiusKm` from [lng, lat]. 64-segment circle. */
+function ringAt(lng: number, lat: number, radiusKm: number): [number, number][] {
+  const segs = 96;
+  const earthR = 6371;
+  const out: [number, number][] = [];
+  for (let i = 0; i <= segs; i++) {
+    const brg = (i * 2 * Math.PI) / segs;
+    const dr = radiusKm / earthR;
+    const lat1 = (lat * Math.PI) / 180;
+    const lng1 = (lng * Math.PI) / 180;
+    const lat2 = Math.asin(Math.sin(lat1) * Math.cos(dr) + Math.cos(lat1) * Math.sin(dr) * Math.cos(brg));
+    const lng2 = lng1 + Math.atan2(
+      Math.sin(brg) * Math.sin(dr) * Math.cos(lat1),
+      Math.cos(dr) - Math.sin(lat1) * Math.sin(lat2),
+    );
+    out.push([(lng2 * 180) / Math.PI, (lat2 * 180) / Math.PI]);
+  }
+  return out;
+}
+
+export function distanceGridLayer(
+  center: [number, number],
+  radiiKm: number[] = [1, 5, 10],
+) {
+  const rings = radiiKm.map((km) => ({
+    km,
+    contour: ringAt(center[0], center[1], km),
+  }));
+  return new PolygonLayer<{ km: number; contour: [number, number][] }>({
+    id: "distance-grid",
+    data: rings,
+    pickable: false,
+    filled: false,
+    stroked: true,
+    getPolygon: (d) => d.contour,
+    getLineColor: (d) => KM_RING_COLORS[d.km] ?? [148, 163, 184, 160],
+    getLineWidth: (d) => (d.km === 10 ? 2.5 : d.km === 5 ? 2 : 1.5),
+    lineWidthUnits: "pixels",
+    lineWidthMinPixels: 1,
+  });
+}
+
+// Text labels for each ring
+export function distanceGridLabelsLayer(
+  center: [number, number],
+  radiiKm: number[] = [1, 5, 10],
+) {
+  // Place each label slightly north-east of the centroid at radius
+  const labels = radiiKm.map((km) => {
+    const earthR = 6371;
+    const dr = km / earthR;
+    const brg = Math.PI / 4; // 45° NE
+    const lat1 = (center[1] * Math.PI) / 180;
+    const lng1 = (center[0] * Math.PI) / 180;
+    const lat2 = Math.asin(Math.sin(lat1) * Math.cos(dr) + Math.cos(lat1) * Math.sin(dr) * Math.cos(brg));
+    const lng2 = lng1 + Math.atan2(
+      Math.sin(brg) * Math.sin(dr) * Math.cos(lat1),
+      Math.cos(dr) - Math.sin(lat1) * Math.sin(lat2),
+    );
+    return { km, position: [(lng2 * 180) / Math.PI, (lat2 * 180) / Math.PI] as [number, number] };
+  });
+  return new TextLayer<{ km: number; position: [number, number] }>({
+    id: "distance-grid-labels",
+    data: labels,
+    pickable: false,
+    getPosition: (d) => d.position,
+    getText: (d) => `${d.km} km`,
+    getSize: 11,
+    sizeUnits: "pixels",
+    getColor: (d) => KM_RING_COLORS[d.km] ?? [200, 220, 240, 220],
+    fontFamily: "IBM Plex Mono, monospace",
+    fontWeight: 600,
+    getTextAnchor: "start",
+    getAlignmentBaseline: "bottom",
+    background: true,
+    backgroundPadding: [4, 2],
+    getBackgroundColor: [3, 16, 31, 220],
+  });
+}

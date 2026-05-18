@@ -101,6 +101,67 @@ function scoreItem(item: { title: string; summary: string }, trust: number): num
   return Math.min(100, Math.round(s));
 }
 
+/**
+ * Mayor's Action classifier — tag news items with the action the mayor
+ * should consider taking. Each tag is a 2-char code shown in the news desk
+ * so the mayor can scan headlines for "do I need to do something?".
+ *
+ * Tags (priority order):
+ *   FU = funeral · attend or send wreath / representative
+ *   EM = emergency · flood, fire, accident — go to scene / coordinate response
+ *   PO = police-citizen friction · consider mediation on behalf of citizens
+ *   HO = honor · congratulate, award presentation, achievement
+ *   FE = festival / celebration · attend opening
+ *   IN = infrastructure issue · road, drainage, lighting — chase the dept
+ *   BZ = business / EEC milestone · attend signing / open ceremony
+ *   PU = public-health · congratulate hospital staff, visit patients
+ *
+ * Pattern uses both TH + EN. Multiple tags allowed per item.
+ */
+const ACTION_PATTERNS: Array<{ tag: string; patterns: RegExp[] }> = [
+  { tag: "FU", patterns: [
+    /\b(funeral|cremation|wake|condolence|memorial)\b/i,
+    /(งานศพ|ฌาปนกิจ|พระราชทานเพลิง|รดน้ำศพ|สวดอภิธรรม|ไว้อาลัย)/,
+  ]},
+  { tag: "EM", patterns: [
+    /\b(flood|fire|earthquake|landslide|tsunami|drown|collapse|explosion|chemical leak|oil spill)\b/i,
+    /(น้ำท่วม|ไฟไหม้|เพลิงไหม้|พังถล่ม|แผ่นดินไหว|จมน้ำ|สึนามิ|รั่วไหล|ดินถล่ม|พายุ|น้ำขัง)/,
+  ]},
+  { tag: "PO", patterns: [
+    /\b(arrested|raid|crackdown|protest|complaint against|police violence|brutality)\b/i,
+    /(จับกุม|ตำรวจรวบ|ร้องเรียนตำรวจ|ปะทะ|ปราบปราม|กวาดล้าง|กระทำเกินกว่าเหตุ|ประท้วง)/,
+  ]},
+  { tag: "HO", patterns: [
+    /\b(award|prize|honour|honored|graduate|champion|win|recognition|distinguished)\b/i,
+    /(รางวัล|สำเร็จการศึกษา|ปริญญา|ได้รับการยกย่อง|แชมป์|ชนะเลิศ|เกียรติยศ|ยกย่อง)/,
+  ]},
+  { tag: "FE", patterns: [
+    /\b(festival|opening ceremony|inauguration|grand opening|celebration|anniversary|new year|songkran|loy krathong)\b/i,
+    /(เทศกาล|พิธีเปิด|พิธีวางศิลาฤกษ์|ครบรอบ|ฉลอง|สงกรานต์|ลอยกระทง|วันชาติ)/,
+  ]},
+  { tag: "IN", patterns: [
+    /\b(road damage|pothole|sewer|drainage|lighting|water supply|outage|sinkhole|blackout)\b/i,
+    /(ถนนชำรุด|ท่อระบายน้ำ|น้ำประปา|ไฟดับ|ไฟฟ้าดับ|หลุมยุบ|ซ่อมแซมถนน|ปรับปรุง)/,
+  ]},
+  { tag: "BZ", patterns: [
+    /\b(eec|investment|factory|signing ceremony|mou|industrial|laem chabang|port)\b/i,
+    /(อีอีซี|EEC|การลงทุน|โรงงาน|พิธีลงนาม|MOU|นิคมอุตสาหกรรม|แหลมฉบัง|ท่าเรือ)/,
+  ]},
+  { tag: "PU", patterns: [
+    /\b(hospital|doctor|nurse|patient|outbreak|vaccination|public health)\b/i,
+    /(โรงพยาบาล|แพทย์|พยาบาล|ผู้ป่วย|วัคซีน|สาธารณสุข|ระบาด)/,
+  ]},
+];
+
+function actionTags(item: { title: string; summary: string }): string[] {
+  const text = `${item.title} ${item.summary}`;
+  const tags: string[] = [];
+  for (const { tag, patterns } of ACTION_PATTERNS) {
+    if (patterns.some((p) => p.test(text))) tags.push(tag);
+  }
+  return tags;
+}
+
 async function parseFeed(feed: Feed): Promise<IntelligenceItem[]> {
   const xml = await fetchTextOrNull(feed.url);
   if (!xml) return [];
@@ -118,6 +179,7 @@ async function parseFeed(feed: Feed): Promise<IntelligenceItem[]> {
 
     if (!title || !link) continue;
 
+    const tags = actionTags({ title, summary: description });
     const it: IntelligenceItem = {
       id: `${feed.id}-${link}`,
       title,
@@ -125,11 +187,13 @@ async function parseFeed(feed: Feed): Promise<IntelligenceItem[]> {
       source,
       sourceUrl: link,
       publishedAt: parseDate(pubDate, now).toISOString(),
-      tags: [],
+      tags,
       score: 0,
       kind: "news",
     };
     it.score = scoreItem(it, feed.trust);
+    // Boost actionable items so they float to the top of the news desk
+    if (tags.includes("EM") || tags.includes("FU") || tags.includes("PO")) it.score += 15;
     items.push(it);
   }
   return items;

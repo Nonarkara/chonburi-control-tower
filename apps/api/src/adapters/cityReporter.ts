@@ -6,8 +6,12 @@ import { fetchJsonOrNull } from "./common.js";
 // Traffy Fondue is the de facto public citizen-report feed for Bangkok.
 // City Reporter v2 (bots/city-reporter-v2) writes to the same shape.
 
-const ENDPOINT = "https://publicapi.traffy.in.th/dump-csv-stat-bma/bangkok_traffy.json";
-// Documented public endpoint pattern; fallback to dump search if shape differs.
+// Nationwide search endpoint — bangkok_traffy.json is BMA-only and excludes
+// every Chonburi report. The search API returns latest-first across all of
+// Thailand; we filter to FEED_BBOX OR org field containing ชลบุรี.
+// Bangkok dominates volume, so we fetch a wide page (2000) to catch a few
+// Chonburi entries within the recency window.
+const ENDPOINT = "https://publicapi.traffy.in.th/share/teamchadchart/search?limit=2000";
 
 const TTL_SECONDS = 300; // 5 min
 
@@ -20,6 +24,7 @@ interface TraffyRaw {
   coords?: unknown;
   address?: string;
   district?: string;
+  org?: string;
   photo_url?: string;
   timestamp?: string;
   description?: string;
@@ -32,8 +37,9 @@ function parseCoords(r: TraffyRaw): [number, number] | null {
     if (Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0) return [lng, lat];
   }
   if (Array.isArray(r.coords) && r.coords.length >= 2) {
-    const lat = Number(r.coords[0]);
-    const lng = Number(r.coords[1]);
+    // Traffy returns [lng, lat] as stringified numbers
+    const lng = Number(r.coords[0]);
+    const lat = Number(r.coords[1]);
     if (Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0) return [lng, lat];
   }
   return null;
@@ -81,7 +87,11 @@ export async function fetchCityReports(): Promise<NormalizedFeed<IncidentFeature
       const coords = parseCoords(r);
       if (!coords) continue;
       const [lng, lat] = coords;
-      if (!inBbox(lng, lat)) continue;
+      // Accept if inside Eastern-Seaboard bbox OR if org/address mentions Chonburi
+      const inArea = inBbox(lng, lat);
+      const orgMatch = (r.org ?? r.address ?? "").includes("ชลบุรี") ||
+                       (r.org ?? r.address ?? "").toLowerCase().includes("chonburi");
+      if (!inArea && !orgMatch) continue;
 
       const { category, title } = mapCategory(r.type);
       const status = mapStatus(r.state);
