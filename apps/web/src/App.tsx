@@ -68,6 +68,12 @@ import {
   datagoPointsLayer,
   distanceGridLayer,
   distanceGridLabelsLayer,
+  civicPointsLayer,
+  waterwaysLayer,
+  fisheriesLayer,
+  floodRiskLayer,
+  CIVIC_PALETTE,
+  type CivicKind,
   type AisVessel,
   type DatagoPoint,
   type AqStation,
@@ -95,6 +101,7 @@ import { KpiStrip } from "./components/KpiStrip";
 import { PmcuBrief } from "./components/PmcuBrief";
 import { NewsDesk } from "./components/NewsDesk";
 import { FacebookPanel } from "./components/FacebookPanel";
+import { MarineBrief, type MarineSnapshot } from "./components/MarineBrief";
 import { SourceCatalog } from "./components/SourceCatalog";
 import { Manual } from "./components/Manual";
 import { SheetsPanel, loadSheetsUrl } from "./components/SheetsPanel";
@@ -412,6 +419,44 @@ export default function App() {
         title = pick("name") ?? "Transit station";
         sub = `${pick("system") ?? ""} · ${pick("line") ?? ""}`;
         break;
+      case "civic-points": {
+        const kind = (p as { kind?: string }).kind ?? "other";
+        const palette = CIVIC_PALETTE[kind as CivicKind] ?? CIVIC_PALETTE.other;
+        const nm = pick("name:en", "name", "name:th") ?? palette.label;
+        title = `${palette.glyph} ${nm}`;
+        sub = palette.label + (pick("operator") ? ` · ${pick("operator")}` : "");
+        break;
+      }
+      case "waterways": {
+        const wt = (p as { waterway?: string }).waterway ?? "stream";
+        const nm = pick("name:en", "name", "name:th") ?? wt;
+        title = nm;
+        sub = wt.toUpperCase() + (pick("intermittent") === "yes" ? " · intermittent" : "");
+        break;
+      }
+      case "ais-vessels":
+        title = (p as { name?: string }).name || `MMSI ${(p as { mmsi?: string }).mmsi ?? "—"}`;
+        sub = `${(p as { type?: string }).type ?? "vessel"} · ${(p as { speed?: number }).speed ?? "—"} kn`;
+        break;
+      case "datago-points":
+        title = pick("name", "nameEn") ?? "data.go.th POI";
+        sub = `${(p as { category?: string }).category ?? ""} · ${(p as { source?: string }).source ?? ""}`;
+        break;
+      case "port-infrastructure":
+      case "ferry-terminals":
+      case "navigation-aids":
+        title = pick("name:en", "name", "name:th") ?? "Maritime feature";
+        sub = pick("man_made", "amenity", "harbour", "seamark:type") ?? null;
+        break;
+      case "fisheries":
+        title = pick("name") ?? "Fishery zone";
+        sub = `${pick("kind") ?? ""} · ${pick("boats") ?? ""}${pick("yearly_yield_t") ? ` · ${pick("yearly_yield_t")} t/yr` : ""}`;
+        break;
+      case "flood-risk":
+      case "flood-risk-zones":
+        title = pick("name") ?? "Flood-prone area";
+        sub = `${(pick("severity") ?? "").toUpperCase()} · ${pick("type") ?? ""}${pick("households") ? ` · ${pick("households")} households` : ""}`;
+        break;
       case "cu-electricity-nodes":
         title = pick("name") ?? "Electricity";
         sub = (() => {
@@ -519,6 +564,7 @@ export default function App() {
   const ais = useFeed<AisVessel>(`${API_BASE}/api/maritime/ais`, 60_000);
   const datago = useFeed<DatagoPoint>(`${API_BASE}/api/datago/points`, 30 * 60_000);
   const facebook = useFeed<{ id: string; message: string; permalink: string; createdAt: string; reactions?: number; comments?: number; shares?: number }>(`${API_BASE}/api/social/facebook`, 10 * 60_000);
+  const marine = useFeed<MarineSnapshot>(`${API_BASE}/api/marine`, 30 * 60_000);
   // Shuttle and academic calendar not available in this deployment
   const shuttle = { data: [] as ShuttleVehicle[], fallbackTier: "unavailable" as const, ageMinutes: 0 };
   const academic = { data: [] as AcademicSnapshot[] };
@@ -534,6 +580,20 @@ export default function App() {
     "/geo/chonburi-nav-aids.geojson",
   );
   const maritime = { ports: maritimePorts, ferries: maritimeFerries, navAids: maritimeNavAids };
+
+  // Civic POIs + waterways (province-wide OSM)
+  const civicPoints = useGeoJson<FeatureCollection<Point, Record<string, unknown>>>(
+    "/geo/chonburi-civic.geojson",
+  );
+  const waterways = useGeoJson<FeatureCollection<LineString, Record<string, unknown>>>(
+    "/geo/chonburi-waterways.geojson",
+  );
+  const fisheries = useGeoJson<FeatureCollection<Polygon | MultiPolygon, Record<string, unknown>>>(
+    "/geo/chonburi-fisheries.geojson",
+  );
+  const floodRisk = useGeoJson<FeatureCollection<Polygon | MultiPolygon, Record<string, unknown>>>(
+    "/geo/chonburi-flood-risk.geojson",
+  );
   const worldWeather = useWorldWeather();
   const bangkokWeather = useMemo(() => {
     const city = worldWeather.find((c) => c.city.id === "bkk");
@@ -661,6 +721,14 @@ export default function App() {
     if (enabledLayers.has("ais-vessels") && ais.data.length > 0) out.push(aisVesselsLayer(ais.data) as Layer);
     // Open data
     if (enabledLayers.has("datago-points") && datago.data.length > 0) out.push(datagoPointsLayer(datago.data) as Layer);
+    // Civic POIs (province-wide OSM: hospitals/schools/police/fire/temples/markets/...)
+    if (enabledLayers.has("civic-points") && civicPoints) out.push(civicPointsLayer(civicPoints) as Layer);
+    // Waterways (canals + rivers + drains)
+    if (enabledLayers.has("waterways") && waterways) out.push(waterwaysLayer(waterways) as Layer);
+    // Fishing zones
+    if (enabledLayers.has("fisheries") && fisheries) out.push(fisheriesLayer(fisheries) as Layer);
+    // Flood-risk polygons
+    if (enabledLayers.has("flood-risk-zones") && floodRisk) out.push(floodRiskLayer(floodRisk) as Layer);
     // Distance grid (1·5·10 km)
     if (enabledLayers.has("distance-grid")) {
       out.push(distanceGridLayer(CHONBURI.center, [1, 5, 10]) as Layer);
@@ -714,6 +782,8 @@ export default function App() {
     shuttleRoutes, shuttleStops, transitStations, transitLines, campusGates, neighborhoodBuildings, roads,
     shuttle.data, cctv.data, cityReports.data,
     iticEvents.data, bma, bmaAqStationList, electricityFc, waterFc, drainageFc, wifiFc,
+    civicPoints, waterways, fisheries, floodRisk,
+    maritimePorts, maritimeFerries, maritimeNavAids, ais.data, datago.data,
     presence.lng, presence.lat, presence.accuracyM,
   ]);
 
@@ -783,6 +853,13 @@ export default function App() {
         ) : (
           <>
             <AqiBadge trend={aqiTrend.data[0] ?? null} loading={aqiTrend.fallbackTier === "loading"} />
+            <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+              <MarineBrief
+                data={marine.data[0] ?? null}
+                loading={marine.fallbackTier === "loading"}
+                ageMinutes={marine.ageMinutes}
+              />
+            </div>
             <PmcuBrief
               hour={hour}
               isWeekend={isWeekend}

@@ -22,6 +22,7 @@ import { chat, ChatError, type ChatMessage } from "./adapters/chat.js";
 import { fetchAisVessels } from "./adapters/ais.js";
 import { fetchDatagoPoints, fetchDatagoDatasets } from "./adapters/datago.js";
 import { fetchFacebookPosts } from "./adapters/facebook.js";
+import { fetchMarine } from "./adapters/marine.js";
 import { SOURCE_CATALOG } from "@chonburi/shared";
 import type { NormalizedFeed, AirQualityPoint, IncidentFeature, IntelligenceItem, ExecutiveSnapshot, MarketSnapshot } from "@chonburi/shared";
 
@@ -85,6 +86,7 @@ app.get("/", (c) =>
       "/api/markets",
       "/api/executive",
       "/api/maritime/ais",
+      "/api/marine",
       "/api/datago/points",
       "/api/datago/datasets",
       "/api/social/facebook",
@@ -217,6 +219,7 @@ app.get("/api/datago/points", (c) => {
   return c.json(feed);
 });
 app.get("/api/datago/datasets", async (c) => safeFeed(c, fetchDatagoDatasets));
+app.get("/api/marine", async (c) => safeFeed(c, fetchMarine));
 app.get("/api/social/facebook", async (c) =>
   safeFeed(c, () => fetchFacebookPosts({ FACEBOOK_PAGE_ID: c.env.FACEBOOK_PAGE_ID, FACEBOOK_PAGE_TOKEN: c.env.FACEBOOK_PAGE_TOKEN })),
 );

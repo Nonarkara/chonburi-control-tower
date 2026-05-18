@@ -1622,3 +1622,172 @@ export function distanceGridLabelsLayer(
     getBackgroundColor: [3, 16, 31, 220],
   });
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// CIVIC + WATERWAYS — consistent category palette + hover tooltips
+// ═══════════════════════════════════════════════════════════════════════
+
+export interface CivicPoint {
+  kind: CivicKind;
+  name?: string;
+  nameTh?: string;
+  nameEn?: string;
+}
+export type CivicKind =
+  | "hospital" | "clinic" | "pharmacy"
+  | "school" | "university" | "kindergarten"
+  | "police" | "fire"
+  | "government" | "courthouse" | "post"
+  | "temple-buddhist" | "church" | "mosque"
+  | "market" | "bus-station" | "ferry"
+  | "power-substation" | "water-works" | "wastewater"
+  | "other";
+
+// Shared category palette — coded by colour family so the legend is
+// learnable across the whole dashboard. Health = red family; Education
+// = violet; Safety = amber/orange; Government = cerulean; Religion =
+// gold; Utility = teal; Transport = sky.
+export const CIVIC_PALETTE: Record<CivicKind, { color: [number, number, number]; glyph: string; label: string }> = {
+  hospital:         { color: [239, 68, 68],  glyph: "✚", label: "Hospital" },
+  clinic:           { color: [251, 113, 133], glyph: "✚", label: "Clinic" },
+  pharmacy:         { color: [253, 164, 175], glyph: "Rx", label: "Pharmacy" },
+  school:           { color: [167, 139, 250], glyph: "🅢", label: "School" },
+  university:       { color: [196, 181, 253], glyph: "Ⓤ", label: "University" },
+  kindergarten:     { color: [221, 214, 254], glyph: "Ⓚ", label: "Kindergarten" },
+  police:           { color: [56, 189, 248],  glyph: "P",  label: "Police" },
+  fire:             { color: [251, 146, 60],  glyph: "🜂", label: "Fire station" },
+  government:       { color: [14, 165, 233],  glyph: "⌬", label: "Government" },
+  courthouse:       { color: [3, 105, 161],   glyph: "⚖", label: "Courthouse" },
+  post:             { color: [125, 211, 252], glyph: "✉", label: "Post office" },
+  "temple-buddhist":{ color: [251, 191, 36],  glyph: "卐", label: "Temple" },
+  church:           { color: [253, 224, 71],  glyph: "✟", label: "Church" },
+  mosque:           { color: [250, 204, 21],  glyph: "☪", label: "Mosque" },
+  market:           { color: [16, 185, 129],  glyph: "▦", label: "Market" },
+  "bus-station":    { color: [125, 211, 252], glyph: "🚌", label: "Bus station" },
+  ferry:            { color: [251, 191, 36],  glyph: "⛴", label: "Ferry pier" },
+  "power-substation": { color: [245, 158, 11], glyph: "⚡", label: "Substation" },
+  "water-works":    { color: [34, 211, 238],  glyph: "💧", label: "Water works" },
+  wastewater:       { color: [13, 148, 136],  glyph: "♻", label: "Wastewater" },
+  other:            { color: [148, 163, 184], glyph: "○",  label: "Other" },
+};
+
+function readKind(props: Record<string, unknown> | null | undefined): CivicKind {
+  const k = (props?.kind as string) ?? "other";
+  return (k in CIVIC_PALETTE ? (k as CivicKind) : "other");
+}
+
+export function civicPointsLayer(collection: FeatureCollection<Point, Record<string, unknown>>) {
+  return new ScatterplotLayer<Feature<Point, Record<string, unknown>>>({
+    id: "civic-points",
+    data: collection.features,
+    pickable: true,
+    radiusUnits: "pixels",
+    getPosition: (f) => f.geometry.coordinates as [number, number],
+    getRadius: (f) => {
+      const k = readKind(f.properties);
+      // High-importance kinds get bigger dots so the mayor sees them first
+      if (k === "hospital" || k === "fire" || k === "police" || k === "government") return 6;
+      if (k === "university" || k === "courthouse") return 5;
+      return 4;
+    },
+    getFillColor: (f) => {
+      const c = CIVIC_PALETTE[readKind(f.properties)].color;
+      return [...c, 220] as [number, number, number, number];
+    },
+    getLineColor: [255, 255, 255, 220],
+    stroked: true,
+    lineWidthMinPixels: 1,
+  });
+}
+
+// Waterways — colour by type (rivers blue, canals brand-cyan, drains green)
+const WATERWAY_COLOR: Record<string, [number, number, number, number]> = {
+  river:  [56, 189, 248, 200],
+  canal:  [14, 165, 233, 220],
+  stream: [125, 211, 252, 170],
+  drain:  [13, 148, 136, 170],
+  ditch:  [13, 148, 136, 140],
+};
+
+export function waterwaysLayer(collection: FeatureCollection<LineString, Record<string, unknown>>) {
+  return new GeoJsonLayer({
+    id: "waterways",
+    data: collection,
+    pickable: true,
+    stroked: true,
+    filled: false,
+    getLineColor: (f) => {
+      const t = String(f.properties?.waterway ?? "stream").toLowerCase();
+      return (WATERWAY_COLOR[t] ?? WATERWAY_COLOR.stream);
+    },
+    getLineWidth: (f) => {
+      const t = String(f.properties?.waterway ?? "stream").toLowerCase();
+      return t === "river" ? 4 : t === "canal" ? 2.5 : 1;
+    },
+    lineWidthUnits: "pixels",
+    lineWidthMinPixels: 1,
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// FISHERIES + COASTAL FLOOD RISK
+// Hand-authored polygons. Update as municipal GIS supplies real shapes.
+// ═══════════════════════════════════════════════════════════════════════
+
+const FISHERY_COLOR: Record<string, [number, number, number, number]> = {
+  oyster:    [251, 191, 36, 110],
+  shrimp:    [251, 146, 60, 110],
+  mussel:    [167, 139, 250, 110],
+  artisanal: [56, 189, 248, 110],
+  offshore:  [14, 165, 233, 110],
+};
+
+export function fisheriesLayer(collection: FeatureCollection<Polygon | MultiPolygon, Record<string, unknown>>) {
+  return new GeoJsonLayer({
+    id: "fisheries",
+    data: collection,
+    pickable: true,
+    stroked: true,
+    filled: true,
+    getFillColor: (f) => {
+      const k = String(f.properties?.kind ?? "artisanal");
+      return (FISHERY_COLOR[k] ?? FISHERY_COLOR.artisanal);
+    },
+    getLineColor: (f) => {
+      const k = String(f.properties?.kind ?? "artisanal");
+      const c = FISHERY_COLOR[k] ?? FISHERY_COLOR.artisanal;
+      return [c[0], c[1], c[2], 230];
+    },
+    getLineWidth: 2,
+    lineWidthUnits: "pixels",
+    lineWidthMinPixels: 1,
+  });
+}
+
+const FLOOD_COLOR: Record<string, [number, number, number, number]> = {
+  high:   [239, 68, 68, 130],
+  medium: [251, 146, 60, 110],
+  low:    [251, 191, 36, 90],
+};
+
+export function floodRiskLayer(collection: FeatureCollection<Polygon | MultiPolygon, Record<string, unknown>>) {
+  return new GeoJsonLayer({
+    id: "flood-risk",
+    data: collection,
+    pickable: true,
+    stroked: true,
+    filled: true,
+    getFillColor: (f) => {
+      const sev = String(f.properties?.severity ?? "medium");
+      return (FLOOD_COLOR[sev] ?? FLOOD_COLOR.medium);
+    },
+    getLineColor: (f) => {
+      const sev = String(f.properties?.severity ?? "medium");
+      const c = FLOOD_COLOR[sev] ?? FLOOD_COLOR.medium;
+      return [c[0], c[1], c[2], 230];
+    },
+    getLineWidth: 1.5,
+    lineWidthUnits: "pixels",
+    lineWidthMinPixels: 1,
+  });
+}

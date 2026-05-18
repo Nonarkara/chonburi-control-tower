@@ -25,6 +25,12 @@ export type LayerId =
   | "cctv-cameras"
   // Open data
   | "datago-points"
+  // Civic
+  | "civic-points"
+  | "waterways"
+  // Marine + risk
+  | "fisheries"
+  | "flood-risk-zones"
   // Imagery
   | "satellite-esri"
   | "satellite-viirs-truecolor"
@@ -91,17 +97,18 @@ export const LENSES: Lens[] = [
   {
     id: "operations",
     label: "OPS",
-    describe: "Operations — buildings, road network, live traffic, incidents, CCTV, AIS vessels, data.go.th POIs. The default day-to-day view.",
+    describe: "Operations — buildings, road network, civic POIs (hospitals/police/fire/schools), waterways, live traffic, incidents, CCTV, AIS vessels. The default day-to-day view.",
     layers: [
       "municipality-boundary",
       "municipality-buildings",
       "road-network",
+      "civic-points",
+      "waterways",
       "traffic-heatmap",
       "incidents-city-reports",
       "incidents-itic",
       "cctv-cameras",
       "ais-vessels",
-      "datago-points",
     ],
   },
   {
@@ -132,6 +139,7 @@ export const LENSES: Lens[] = [
       "ferry-terminals",
       "navigation-aids",
       "ais-vessels",
+      "fisheries",
       "distance-grid",
     ],
   },
@@ -149,17 +157,18 @@ export const LENSES: Lens[] = [
   {
     id: "safety",
     label: "SAF",
-    describe: "Safety — citizen reports (Traffy), iTIC traffic events, CCTV, flood-prone zones, maritime navigation warnings.",
+    describe: "Safety — coastal flood-risk zones, citizen reports (Traffy), iTIC, CCTV, waterways for drainage, hospitals + fire + police, MODIS flood detection, maritime warnings.",
     layers: [
       "municipality-boundary",
       "municipality-buildings",
+      "civic-points",
+      "waterways",
+      "flood-risk-zones",
       "incidents-city-reports",
       "incidents-itic",
-      "flood-prone-areas",
       "satellite-flood",
       "cctv-cameras",
       "navigation-aids",
-      "datago-points",
     ],
   },
   {
@@ -266,6 +275,16 @@ export const ALL_LAYERS: {
   // ─── Open data ─────────────────────────────────────────────────────────
   { id: "datago-points",     label: "data.go.th points",        swatch: "#C084FC", group: "open-data",
     describe: "Government POIs from data.go.th filtered to Chonburi: schools, hospitals, health centres, government offices, temples, markets." },
+
+  // ─── Civic (OSM, province-wide) ────────────────────────────────────────
+  { id: "civic-points",      label: "Civic POIs (color-coded)", swatch: "#EF4444", group: "municipality",
+    describe: "Hospitals (✚ red) · clinics (pink) · schools (🅢 violet) · police (P cyan) · fire stations (🜂 orange) · government (cerulean) · temples (卐 gold) · markets (▦ green) · post offices · substations · water works. Hover for name. From OSM province-wide." },
+  { id: "waterways",         label: "Canals + rivers + drains",  swatch: "#0EA5E9", group: "municipality",
+    describe: "Hydrology network: rivers (sky blue, thick), canals (cerulean, medium), streams (pale sky, thin), drains/ditches (teal). Critical for flood-prevention planning + identifying drainage backbone." },
+  { id: "fisheries",         label: "Fishing + aquaculture zones", swatch: "#FBBF24", group: "maritime",
+    describe: "Coastal fishing economy: Ang Sila oysters · Bang Saen shrimp · Bang Phra mussels · Chonburi Bay artisanal · Koh Si Chang offshore. Click for boat count + yield." },
+  { id: "flood-risk-zones",  label: "Coastal flood-risk zones",   swatch: "#EF4444", group: "environment",
+    describe: "Hand-authored polygons of historical flood-prone areas (king-tide, storm-surge, drainage-backflow). Hover for severity + household count. Replace with municipal GIS when supplied." },
 
   // ─── Imagery ───────────────────────────────────────────────────────────
   { id: "satellite-esri",    label: "Satellite (Esri HD)",      swatch: "#60A5FA", group: "imagery",

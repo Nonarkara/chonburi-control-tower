@@ -1,0 +1,115 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "angsila-oyster",
+        "name": "Ang Sila oyster farming",
+        "nameTh": "เลี้ยงหอยนางรม อ่างศิลา",
+        "kind": "oyster",
+        "boats": "~40 households",
+        "yearly_yield_t": 1200,
+        "describe": "Concentrated oyster-rope farming in shallow bay. Vulnerable to SST > 32°C and freshwater dilution from monsoon runoff."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [100.928, 13.345],
+          [100.952, 13.345],
+          [100.952, 13.378],
+          [100.928, 13.378],
+          [100.928, 13.345]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "bangsaen-shrimp",
+        "name": "Bang Saen shrimp ponds",
+        "nameTh": "นากุ้ง บางแสน",
+        "kind": "shrimp",
+        "boats": "~25 operators",
+        "yearly_yield_t": 320,
+        "describe": "Coastal aquaculture ponds. Critically sensitive to flood inundation (saltwater overflow into ponds) and disease outbreaks during heatwaves."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [100.918, 13.275],
+          [100.945, 13.275],
+          [100.945, 13.298],
+          [100.918, 13.298],
+          [100.918, 13.275]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "chonburi-bay-fishing",
+        "name": "Chonburi Bay artisanal fishing",
+        "nameTh": "พื้นที่ประมงพื้นบ้าน อ่าวชลบุรี",
+        "kind": "artisanal",
+        "boats": "~180 small boats",
+        "yearly_yield_t": 850,
+        "describe": "Small-boat traditional fishing zone (< 5 km offshore). Households depend on daily catches; weather window matters more than seasonal totals."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [100.93, 13.32],
+          [100.99, 13.32],
+          [100.99, 13.40],
+          [100.93, 13.40],
+          [100.93, 13.32]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "bangphra-shrimp",
+        "name": "Bang Phra mussel + shrimp",
+        "nameTh": "หอยและกุ้ง บางพระ",
+        "kind": "mussel",
+        "boats": "~60 households",
+        "yearly_yield_t": 480,
+        "describe": "Mussel ropes + shrimp cages mixed-use zone. Famous for oysters from Bang Phra reservoir outflow waters."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [100.92, 13.225],
+          [100.94, 13.225],
+          [100.94, 13.260],
+          [100.92, 13.260],
+          [100.92, 13.225]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "kosichang-fishing",
+        "name": "Koh Si Chang offshore fishing",
+        "nameTh": "ประมง เกาะสีชัง",
+        "kind": "offshore",
+        "boats": "~70 commercial",
+        "yearly_yield_t": 2400,
+        "describe": "Mid-water gill nets and squid jigging around Si Chang island. Larger commercial boats — wave threshold for safety is higher (~2.5 m)."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [100.80, 13.13],
+          [100.88, 13.13],
+          [100.88, 13.18],
+          [100.80, 13.18],
+          [100.80, 13.13]
+        ]]
+      }
+    }
+  ]
+}

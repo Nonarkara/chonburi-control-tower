@@ -1,0 +1,93 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "bang-pla-soi-low",
+        "name": "Bang Pla Soi low-lying district",
+        "nameTh": "พื้นที่ลุ่ม บางปลาสร้อย",
+        "severity": "high",
+        "type": "coastal-tidal",
+        "describe": "Historical king-tide flood corridor. Old shophouse district 0.5-1.5 m above MSL. Inundated 3-4 times per year during peak swell + spring tide.",
+        "households": 4200
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [100.978, 13.355],
+          [100.992, 13.355],
+          [100.992, 13.372],
+          [100.978, 13.372],
+          [100.978, 13.355]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "bangsaen-shore-flood",
+        "name": "Bang Saen waterfront",
+        "nameTh": "ชายหาดบางแสน",
+        "severity": "medium",
+        "type": "storm-surge",
+        "describe": "Beach-front street + restaurant strip. Storm surge during October-November monsoon pushes water onto Coastal Road and into ground-floor shops.",
+        "households": 1800
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [100.917, 13.275],
+          [100.928, 13.275],
+          [100.928, 13.298],
+          [100.917, 13.298],
+          [100.917, 13.275]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "muang-old-town",
+        "name": "Muang Chonburi old-town drainage failure",
+        "nameTh": "เขตเมืองเก่า การระบายน้ำล้มเหลว",
+        "severity": "high",
+        "type": "drainage-backflow",
+        "describe": "Aged 1970s storm-drain network. Heavy rain > 60 mm/h overwhelms the system and backs up into ground-floor stalls and homes. Mayor's #1 capital project priority.",
+        "households": 3600
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [100.973, 13.360],
+          [100.987, 13.360],
+          [100.987, 13.378],
+          [100.973, 13.378],
+          [100.973, 13.360]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "kheha-flood",
+        "name": "Kheha Chonburi housing estate",
+        "nameTh": "เคหะชลบุรี",
+        "severity": "low",
+        "type": "drainage-overflow",
+        "describe": "Large social housing estate with inadequate cross-drainage. Knee-deep ponding after summer thunderstorms.",
+        "households": 2400
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [100.955, 13.345],
+          [100.972, 13.345],
+          [100.972, 13.360],
+          [100.955, 13.360],
+          [100.955, 13.345]
+        ]]
+      }
+    }
+  ]
+}
