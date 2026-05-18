@@ -19,6 +19,8 @@ import { fetchTrends } from "./adapters/trends.js";
 import { fetchExecutiveSnapshot, deriveAlerts } from "./adapters/executive.js";
 import { fetchMarkets } from "./adapters/markets.js";
 import { chat, ChatError, type ChatMessage } from "./adapters/chat.js";
+import { fetchAisVessels } from "./adapters/ais.js";
+import { fetchDatagoPoints, fetchDatagoDatasets } from "./adapters/datago.js";
 import { SOURCE_CATALOG } from "@chonburi/shared";
 import type { NormalizedFeed, AirQualityPoint, IncidentFeature, IntelligenceItem, ExecutiveSnapshot, MarketSnapshot } from "@chonburi/shared";
 
@@ -31,6 +33,7 @@ type Bindings = {
   VIABUS_TOKEN?: string;
   VIABUS_BASE_URL?: string;
   AQICN_TOKEN?: string;
+  AISSTREAM_TOKEN?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -78,6 +81,9 @@ app.get("/", (c) =>
       "/api/trends",
       "/api/markets",
       "/api/executive",
+      "/api/maritime/ais",
+      "/api/datago/points",
+      "/api/datago/datasets",
       "/api/chat",
     ],
   }),
@@ -196,6 +202,17 @@ app.get("/api/air-quality", async (c) => safeFeed(c, fetchAirQuality));
 app.get("/api/air-quality/trend", async (c) => safeFeed(c, fetchAirQualityTrend));
 app.get("/api/cctv/longdo", async (c) => safeFeed(c, fetchCctv));
 app.get("/api/trends", async (c) => safeFeed(c, fetchTrends));
+app.get("/api/maritime/ais", (c) => {
+  const feed = fetchAisVessels();
+  setMetaHeaders(c, feed);
+  return c.json(feed);
+});
+app.get("/api/datago/points", (c) => {
+  const feed = fetchDatagoPoints();
+  setMetaHeaders(c, feed);
+  return c.json(feed);
+});
+app.get("/api/datago/datasets", async (c) => safeFeed(c, fetchDatagoDatasets));
 app.get("/api/markets", async (c) =>
   safeFeed(c, () => fetchMarkets({ FMP_API_KEY: c.env.FMP_API_KEY, FRED_API_KEY: c.env.FRED_API_KEY })),
 );

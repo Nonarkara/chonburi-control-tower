@@ -16,7 +16,9 @@ export type SourceCategory =
   | "imagery"       // satellite, aerial, CCTV
   | "vibes"         // news, social, search trends
   | "infrastructure" // utilities, parking, energy
-  | "campus";       // chula-specific (shuttle, parking, security)
+  | "maritime"      // AIS, ports, lighthouses, ferries
+  | "open-data"     // data.go.th and adjacent national/local portals
+  | "campus";       // legacy — kept for backward compat
 
 export interface SourceEntry {
   id: string;
@@ -603,14 +605,59 @@ export const SOURCE_CATALOG: SourceEntry[] = [
     describe: "Academic CV dataset for Chula campus buildings — for AR wayfinding overlays or auto-tagging photo evidence.",
   },
   {
-    id: "data-go-th",
-    label: "data.go.th — Thai government open data",
-    vendor: "DGA (Digital Government Agency)",
-    category: "infrastructure",
-    status: "research",
-    endpoint: "https://data.go.th/",
-    describe: "National open-data portal — population, urban planning, transport, education. CKAN-compatible API; aggregator layer needed.",
+    id: "data-go-th-points",
+    label: "data.go.th — curated POIs (Chonburi)",
+    vendor: "DGA + curated",
+    category: "open-data",
+    status: "live",
+    apiPath: "/api/datago/points",
+    describe: "Curated geocoded POIs across health, education, religion, government, markets and police — sourced from data.go.th CKAN exports.",
     docs: "https://data.go.th/dataset",
+  },
+  {
+    id: "data-go-th-datasets",
+    label: "data.go.th — dataset index",
+    vendor: "DGA (Digital Government Agency)",
+    category: "open-data",
+    status: "live",
+    endpoint: "https://data.go.th/api/3/action/package_search",
+    apiPath: "/api/datago/datasets",
+    pollSeconds: 3600,
+    describe: "16+ curated Chonburi-relevant CKAN datasets (MoPH, MoE, DLA, DRA, RTP, PCD, EEC, Marine Dept, TAT, NSO, MoTS) plus live CKAN search.",
+    docs: "https://data.go.th/dataset",
+  },
+  // ---- Maritime ----
+  {
+    id: "openseamap",
+    label: "OpenSeaMap nautical overlay",
+    vendor: "OpenSeaMap (community)",
+    category: "maritime",
+    status: "live",
+    endpoint: "https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png",
+    describe: "Community nautical chart overlay — shipping lanes, depth contours, anchorages, mooring buoys, navigational marks. Tiles, no auth.",
+    docs: "https://openseamap.org",
+  },
+  {
+    id: "aisstream",
+    label: "AISStream — live vessel positions",
+    vendor: "AISStream.io",
+    category: "maritime",
+    status: "ready",
+    endpoint: "wss://stream.aisstream.io/v0/stream",
+    apiPath: "/api/maritime/ais",
+    keyEnv: "AISSTREAM_TOKEN",
+    pollSeconds: 60,
+    describe: "Real-time AIS positions for cargo, tankers, fishing, passenger vessels in the Gulf of Thailand bbox. Free with a registration key.",
+    docs: "https://aisstream.io",
+  },
+  {
+    id: "osm-maritime-infra",
+    label: "OSM maritime infrastructure",
+    vendor: "OpenStreetMap",
+    category: "maritime",
+    status: "live",
+    describe: "Ports + harbour landuse + piers (119) · ferry terminals (4) · lighthouses + beacons + buoys (9). Fetched via Overpass, refreshed on deploy.",
+    docs: "https://www.openstreetmap.org",
   },
 ];
 

@@ -15,7 +15,7 @@ interface Props {
   onToggleLayer: (id: LayerId) => void;
 }
 
-const GROUP_ORDER: LayerGroup[] = ["campus", "mobility", "incidents", "utility", "environment", "imagery"];
+const GROUP_ORDER: LayerGroup[] = ["municipality", "maritime", "mobility", "incidents", "open-data", "environment", "imagery"];
 
 export function LayerPalette({ lens, onLensChange, enabled, onToggleLayer }: Props) {
   // group → list of layers (preserve declaration order within each group)
@@ -27,10 +27,11 @@ export function LayerPalette({ lens, onLensChange, enabled, onToggleLayer }: Pro
   }, []);
 
   const [collapsed, setCollapsed] = useState<Record<LayerGroup, boolean>>(() => ({
-    campus: false,
+    municipality: false,
+    maritime: false,
     mobility: false,
     incidents: true,
-    utility: true,
+    "open-data": true,
     environment: true,
     imagery: true,
   }));

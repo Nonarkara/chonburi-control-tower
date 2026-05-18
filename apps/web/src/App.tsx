@@ -60,6 +60,14 @@ import {
   waterNodeLayer,
   wifiHeatmapLayer,
   wifiPointsLayer,
+  maritimeOverlayLayer,
+  portInfrastructureLayer,
+  ferryTerminalsLayer,
+  navigationAidsLayer,
+  aisVesselsLayer,
+  datagoPointsLayer,
+  type AisVessel,
+  type DatagoPoint,
   type AqStation,
   type BuildingProperties,
   type CctvCamera,
@@ -341,6 +349,7 @@ export default function App() {
     let title: string | null = null;
     let sub: string | null = null;
     switch (id) {
+      case "municipality-buildings":
       case "campus-buildings":
         title = pick("nameEn", "name", "nameTh") ?? "Building";
         sub = (() => {
@@ -502,9 +511,23 @@ export default function App() {
   const executive = useFeed<ExecutiveSnapshot>(`${API_BASE}/api/executive`, 15 * 60_000);
   const markets = useFeed<MarketSnapshot>(`${API_BASE}/api/markets`, 10 * 60_000);
   const precip = useFeed<PrecipNowcast>(`${API_BASE}/api/precip-nowcast`, 5 * 60_000);
+  const ais = useFeed<AisVessel>(`${API_BASE}/api/maritime/ais`, 60_000);
+  const datago = useFeed<DatagoPoint>(`${API_BASE}/api/datago/points`, 30 * 60_000);
   // Shuttle and academic calendar not available in this deployment
   const shuttle = { data: [] as ShuttleVehicle[], fallbackTier: "unavailable" as const, ageMinutes: 0 };
   const academic = { data: [] as AcademicSnapshot[] };
+
+  // Maritime infrastructure (static OSM GeoJSON)
+  const maritimePorts = useGeoJson<FeatureCollection<Polygon | MultiPolygon | LineString, Record<string, unknown>>>(
+    "/geo/chonburi-ports.geojson",
+  );
+  const maritimeFerries = useGeoJson<FeatureCollection<Point, Record<string, unknown>>>(
+    "/geo/chonburi-ferries.geojson",
+  );
+  const maritimeNavAids = useGeoJson<FeatureCollection<Point, Record<string, unknown>>>(
+    "/geo/chonburi-nav-aids.geojson",
+  );
+  const maritime = { ports: maritimePorts, ferries: maritimeFerries, navAids: maritimeNavAids };
   const worldWeather = useWorldWeather();
   const bangkokWeather = useMemo(() => {
     const city = worldWeather.find((c) => c.city.id === "bkk");
@@ -585,8 +608,9 @@ export default function App() {
     if (enabledLayers.has("cu-map-2015")) out.push(cuMapOverlay() as Layer);
     if (enabledLayers.has("bma-parks") && bma?.parks) out.push(bmaParksLayer(bma.parks) as Layer);
     if (enabledLayers.has("cu-lands") && cuLands) out.push(cuLandsLayer(cuLands) as Layer);
-    if (enabledLayers.has("campus-boundary") && campus) out.push(campusBoundaryLayer(campus) as Layer);
-    if (enabledLayers.has("campus-buildings") && buildings)
+    if ((enabledLayers.has("municipality-boundary") || enabledLayers.has("campus-boundary")) && campus)
+      out.push(campusBoundaryLayer(campus) as Layer);
+    if ((enabledLayers.has("municipality-buildings") || enabledLayers.has("campus-buildings")) && buildings)
       out.push(buildingsLayer(buildings, { extruded: is3D, ghosted: isSubstructure }) as Layer);
     if (enabledLayers.has("neighborhood-buildings") && neighborhoodBuildings)
       out.push(neighborhoodBuildingsLayer(neighborhoodBuildings, { extruded: is3D, ghosted: isSubstructure }) as Layer);
@@ -623,6 +647,14 @@ export default function App() {
     if (enabledLayers.has("cctv-cameras")) out.push(cctvLayer(cctv.data) as Layer);
     if (enabledLayers.has("incidents-city-reports")) out.push(incidentLayer("incidents-city-reports", cityReports.data) as Layer);
     if (enabledLayers.has("incidents-itic")) out.push(incidentLayer("incidents-itic", iticEvents.data) as Layer);
+    // Maritime
+    if (enabledLayers.has("maritime-overlay")) out.push(maritimeOverlayLayer() as Layer);
+    if (enabledLayers.has("port-infrastructure") && maritime?.ports) out.push(portInfrastructureLayer(maritime.ports) as Layer);
+    if (enabledLayers.has("ferry-terminals") && maritime?.ferries) out.push(ferryTerminalsLayer(maritime.ferries) as Layer);
+    if (enabledLayers.has("navigation-aids") && maritime?.navAids) out.push(navigationAidsLayer(maritime.navAids) as Layer);
+    if (enabledLayers.has("ais-vessels") && ais.data.length > 0) out.push(aisVesselsLayer(ais.data) as Layer);
+    // Open data
+    if (enabledLayers.has("datago-points") && datago.data.length > 0) out.push(datagoPointsLayer(datago.data) as Layer);
 
     // Underground utilities. In 3DS we force-enable them and render the lines
     // as PathLayer at burial depth so they sit visibly under the ghosted

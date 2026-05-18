@@ -1361,3 +1361,169 @@ export function neighborhoodBuildingsLayer(
     },
   });
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// MARITIME LAYERS
+// ═══════════════════════════════════════════════════════════════════════
+
+export interface AisVessel {
+  mmsi: string;
+  name: string | null;
+  lat: number;
+  lng: number;
+  course?: number;
+  speed?: number;
+  type?: string;
+  flag?: string;
+  lastUpdate?: string;
+}
+
+export interface DatagoPoint {
+  id: string;
+  name: string;
+  nameEn?: string;
+  category: string;
+  lat: number;
+  lng: number;
+  source: string;
+  attribution?: string;
+}
+
+// OpenSeaMap raster tile overlay — shipping lanes, depth, anchorages
+export function maritimeOverlayLayer() {
+  return new TileLayer({
+    id: "maritime-overlay",
+    data: "https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png",
+    minZoom: 0,
+    maxZoom: 18,
+    tileSize: 256,
+    pickable: false,
+    opacity: 0.85,
+    renderSubLayers: (props) => {
+      const { boundingBox } = props.tile as unknown as {
+        boundingBox: [[number, number], [number, number]];
+      };
+      const [[w, s], [e, n]] = boundingBox;
+      return new BitmapLayer({
+        ...props,
+        data: undefined,
+        image: props.data as unknown as string,
+        bounds: [w, s, e, n],
+      });
+    },
+  });
+}
+
+// Port infrastructure — polygons (harbour landuse, piers, breakwaters)
+export function portInfrastructureLayer(collection: FeatureCollection<Polygon | MultiPolygon | LineString, Record<string, unknown>>) {
+  return new GeoJsonLayer({
+    id: "port-infrastructure",
+    data: collection,
+    pickable: true,
+    stroked: true,
+    filled: true,
+    getFillColor: [245, 158, 11, 70],
+    getLineColor: [245, 158, 11, 220],
+    getLineWidth: 2,
+    lineWidthMinPixels: 1,
+  });
+}
+
+// Ferry terminals — point markers
+export function ferryTerminalsLayer(collection: FeatureCollection<Point, Record<string, unknown>>) {
+  const features = collection.features.filter((f) => f.geometry.type === "Point");
+  return new ScatterplotLayer<Feature<Point, Record<string, unknown>>>({
+    id: "ferry-terminals",
+    data: features,
+    pickable: true,
+    radiusUnits: "pixels",
+    getPosition: (f) => f.geometry.coordinates as [number, number],
+    getRadius: 7,
+    getFillColor: [251, 191, 36, 230],
+    getLineColor: [255, 255, 255, 180],
+    stroked: true,
+    lineWidthMinPixels: 1.5,
+  });
+}
+
+// Navigation aids — lighthouses, beacons, buoys
+export function navigationAidsLayer(collection: FeatureCollection<Point, Record<string, unknown>>) {
+  const features = collection.features.filter((f) => f.geometry.type === "Point");
+  return new ScatterplotLayer<Feature<Point, Record<string, unknown>>>({
+    id: "navigation-aids",
+    data: features,
+    pickable: true,
+    radiusUnits: "pixels",
+    getPosition: (f) => f.geometry.coordinates as [number, number],
+    getRadius: 6,
+    getFillColor: (f) => {
+      const t = String(f.properties?.["man_made"] ?? f.properties?.["seamark:type"] ?? "");
+      if (t === "lighthouse") return [250, 204, 21, 240];
+      if (t.includes("buoy")) return [56, 189, 248, 220];
+      return [250, 204, 21, 200];
+    },
+    getLineColor: [255, 255, 255, 200],
+    stroked: true,
+    lineWidthMinPixels: 1.5,
+  });
+}
+
+// AIS vessels — live ship positions
+const VESSEL_COLOR: Record<string, [number, number, number]> = {
+  cargo:     [16, 185, 129],   // green
+  tanker:    [239, 68, 68],    // red
+  passenger: [56, 189, 248],   // blue
+  fishing:   [251, 191, 36],   // amber
+  pleasure:  [167, 139, 250],  // purple
+  tug:       [122, 132, 151],  // grey
+  unknown:   [156, 163, 175],  // neutral
+};
+
+export function aisVesselsLayer(vessels: AisVessel[]) {
+  return new ScatterplotLayer<AisVessel>({
+    id: "ais-vessels",
+    data: vessels,
+    pickable: true,
+    radiusUnits: "pixels",
+    getPosition: (v) => [v.lng, v.lat],
+    getRadius: 5,
+    getFillColor: (v) => {
+      const t = (v.type ?? "unknown").toLowerCase();
+      for (const k of Object.keys(VESSEL_COLOR)) if (t.includes(k)) return [...VESSEL_COLOR[k], 230] as [number, number, number, number];
+      return [...VESSEL_COLOR.unknown, 200] as [number, number, number, number];
+    },
+    getLineColor: [255, 255, 255, 180],
+    stroked: true,
+    lineWidthMinPixels: 1,
+  });
+}
+
+// data.go.th points — government POI markers
+const DATAGO_COLOR: Record<string, [number, number, number]> = {
+  school:    [167, 139, 250],
+  hospital:  [239, 68, 68],
+  health:    [251, 113, 133],
+  temple:    [251, 191, 36],
+  market:    [16, 185, 129],
+  office:    [56, 189, 248],
+  default:   [192, 132, 252],
+};
+
+export function datagoPointsLayer(points: DatagoPoint[]) {
+  return new ScatterplotLayer<DatagoPoint>({
+    id: "datago-points",
+    data: points,
+    pickable: true,
+    radiusUnits: "pixels",
+    getPosition: (p) => [p.lng, p.lat],
+    getRadius: 5,
+    getFillColor: (p) => {
+      const cat = p.category.toLowerCase();
+      for (const k of Object.keys(DATAGO_COLOR)) if (cat.includes(k)) return [...DATAGO_COLOR[k], 220] as [number, number, number, number];
+      return [...DATAGO_COLOR.default, 200] as [number, number, number, number];
+    },
+    getLineColor: [255, 255, 255, 180],
+    stroked: true,
+    lineWidthMinPixels: 1,
+  });
+}

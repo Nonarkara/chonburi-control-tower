@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import app from "./index.js";
 import { hydrateCacheFromDisk, enableCachePersistence, stopCachePersistence } from "./lib/persistence.js";
 import { hydrateNewsArchive } from "./lib/newsArchive.js";
+import { startAisStream } from "./adapters/ais.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -60,7 +61,15 @@ const env = {
   VIABUS_TOKEN: process.env.VIABUS_TOKEN,
   VIABUS_BASE_URL: process.env.VIABUS_BASE_URL,
   AQICN_TOKEN: process.env.AQICN_TOKEN,
+  AISSTREAM_TOKEN: process.env.AISSTREAM_TOKEN,
 };
+
+// Start AIS WebSocket subscriber if token is provided. No-op without key.
+if (process.env.AISSTREAM_TOKEN) {
+  startAisStream(process.env.AISSTREAM_TOKEN);
+} else {
+  console.log("[chonburi-api] AISSTREAM_TOKEN not set — AIS vessels will be empty");
+}
 
 await hydrateNewsArchive()
   .then((n) => console.log(`[chonburi-api] news archive: ${n} records loaded from disk`))
@@ -96,6 +105,9 @@ const PREWARM_PATHS = [
   "/api/trends",
   "/api/markets",
   "/api/executive",
+  "/api/maritime/ais",
+  "/api/datago/points",
+  "/api/datago/datasets",
 ];
 
 async function prewarmOnce() {

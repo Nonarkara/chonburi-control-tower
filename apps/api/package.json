@@ -15,11 +15,13 @@
     "@chonburi/shared": "workspace:*",
     "@hono/node-server": "^1.13.7",
     "google-trends-api": "^4.9.2",
-    "hono": "^4.6.10"
+    "hono": "^4.6.10",
+    "ws": "^8.20.1"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20251101.0",
     "@types/node": "^22.10.5",
+    "@types/ws": "^8.18.1",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "wrangler": "^4.0.0"
