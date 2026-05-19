@@ -20,7 +20,7 @@ import { fetchExecutiveSnapshot, deriveAlerts } from "./adapters/executive.js";
 import { fetchMarkets } from "./adapters/markets.js";
 import { chat, ChatError, type ChatMessage } from "./adapters/chat.js";
 import { fetchAisVessels } from "./adapters/ais.js";
-import { fetchDatagoPoints, fetchDatagoDatasets } from "./adapters/datago.js";
+import { fetchDatagoPoints, fetchDatagoDatasets, fetchReservoirs, fetchDisasterStats, fetchFahfon } from "./adapters/datago.js";
 import { fetchFacebookPosts } from "./adapters/facebook.js";
 import { fetchMarine } from "./adapters/marine.js";
 import { fetchTides } from "./adapters/tides.js";
@@ -39,6 +39,7 @@ type Bindings = {
   AISSTREAM_TOKEN?: string;
   FACEBOOK_PAGE_ID?: string;
   FACEBOOK_PAGE_TOKEN?: string;
+  DATA_GO_TH_TOKEN?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -219,7 +220,19 @@ app.get("/api/datago/points", (c) => {
   setMetaHeaders(c, feed);
   return c.json(feed);
 });
-app.get("/api/datago/datasets", async (c) => safeFeed(c, fetchDatagoDatasets));
+app.get("/api/datago/datasets",  async (c) => safeFeed(c, fetchDatagoDatasets));
+app.get("/api/datago/reservoirs", async (c) => {
+  const token = c.env.DATA_GO_TH_TOKEN ?? "";
+  return safeFeed(c, () => fetchReservoirs(token));
+});
+app.get("/api/datago/disasters",  async (c) => {
+  const token = c.env.DATA_GO_TH_TOKEN ?? "";
+  return safeFeed(c, () => fetchDisasterStats(token));
+});
+app.get("/api/datago/fahfon",     async (c) => {
+  const token = c.env.DATA_GO_TH_TOKEN ?? "";
+  return safeFeed(c, () => fetchFahfon(token));
+});
 app.get("/api/marine", async (c) => safeFeed(c, fetchMarine));
 app.get("/api/tides",  async (c) => safeFeed(c, fetchTides));
 app.get("/api/social/facebook", async (c) =>

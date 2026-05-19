@@ -166,3 +166,139 @@ export async function fetchDatagoDatasets(): Promise<NormalizedFeed<DatagoDatase
     };
   });
 }
+
+// ─── LIVE DATA.GO.TH DATASETS (require DATA_GO_TH_TOKEN) ────────────────
+
+const CKAN = "https://data.go.th/api/3/action/datastore_search";
+
+async function ckanFetch<T>(
+  resourceId: string,
+  token: string,
+  params: Record<string, string | number> = {},
+): Promise<T[] | null> {
+  const qs = new URLSearchParams({
+    resource_id: resourceId,
+    limit: String(params.limit ?? 100),
+    ...(params.sort ? { sort: String(params.sort) } : {}),
+  });
+  const url = `${CKAN}?${qs}`;
+  try {
+    const res = await fetch(url, {
+      headers: { Authorization: token, "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { result?: { records?: T[] } };
+    return json.result?.records ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// ─── Reservoir / water-situation data ─────────────────────────────────
+
+export interface ReservoirStatus {
+  name: string;         // Thai name
+  district: string;
+  capacityPct: number | null;  // % of original capacity
+  currentVolMCM: number | null;
+  maxVolMCM: number | null;
+  daysRemaining: number | null;
+  rainfallYesterdayMm: number | null;
+  trend: "rising" | "falling" | "stable";
+}
+
+const RESERVOIR_RESOURCE = "2b635f67-a83b-4d29-8864-1dce24e223e8";
+
+export async function fetchReservoirs(token: string): Promise<NormalizedFeed<ReservoirStatus>> {
+  return cached("datago-reservoirs", 3600, async () => {
+    const fetchedAt = new Date().toISOString();
+    const rows = await ckanFetch<Record<string, unknown>>(RESERVOIR_RESOURCE, token);
+    if (!rows) return { features: [], meta: { source: "datago-reservoirs", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const } };
+
+    const features: ReservoirStatus[] = rows.map((r) => {
+      const vol      = Number(r["Current Water Volume (million cubic meters)"]) || null;
+      const volYest  = Number(r["Water Volume Yesterday"]) || null;
+      const maxVol   = Number(r["Maximum Storage Capacity (million cubic meters)"]) || null;
+      const days     = Number(r["Remaining Water Supply (days)"]) || null;
+      const capPct   = Number(r["Current Reservoir Storage (% of Original Capacity)"]) || null;
+      const rain     = Number(r["Yesterday's Rainfall (mm)"]) || null;
+      const trend =
+        vol != null && volYest != null
+          ? vol > volYest ? "rising" : vol < volYest ? "falling" : "stable"
+          : "stable";
+      return {
+        name: String(r["Reservoir"] ?? ""),
+        district: String(r["Sub-district/District"] ?? ""),
+        capacityPct: capPct,
+        currentVolMCM: vol,
+        maxVolMCM: maxVol,
+        daysRemaining: days,
+        rainfallYesterdayMm: rain,
+        trend,
+      };
+    });
+
+    // Sort by criticality (fewest days first)
+    features.sort((a, b) => (a.daysRemaining ?? 9999) - (b.daysRemaining ?? 9999));
+
+    return { features, meta: { source: "datago-reservoirs", fetchedAt, ageMinutes: cacheAgeMinutes(fetchedAt), fallbackTier: "live" as const } };
+  });
+}
+
+// ─── Disaster statistics ───────────────────────────────────────────────
+
+export interface DisasterStat {
+  type: string;   // อัคคีภัย (fire), อุทกภัย (flood), etc.
+  year: number;
+  count: number;
+}
+
+const DISASTER_RESOURCE = "8f3231f1-2518-4562-af1a-3f2cb4bfc9bc";
+
+export async function fetchDisasterStats(token: string): Promise<NormalizedFeed<DisasterStat>> {
+  return cached("datago-disasters", 86400, async () => {
+    const fetchedAt = new Date().toISOString();
+    const rows = await ckanFetch<Record<string, unknown>>(DISASTER_RESOURCE, token);
+    if (!rows) return { features: [], meta: { source: "datago-disasters", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const } };
+    const features: DisasterStat[] = rows.map((r) => ({
+      type: String(r["ประเภทภัย"] ?? ""),
+      year: Number(r["ปี"] ?? 0),
+      count: Number(r["สถิติสาธารณภัย"] ?? 0),
+    }));
+    return { features, meta: { source: "datago-disasters", fetchedAt, ageMinutes: cacheAgeMinutes(fetchedAt), fallbackTier: "live" as const } };
+  });
+}
+
+// ─── FAHFON ground-truth air quality (IoT sensors, Bang Sarae) ─────────
+
+export interface FahfonReading {
+  station: string;
+  date: string;
+  tempC: number | null;
+  co2Ppm: number | null;
+  pm1: number | null;
+  pm25: number | null;
+  pm10: number | null;
+}
+
+const FAHFON_RESOURCE = "0561a062-05cd-4353-b2df-a3549637da71";
+
+export async function fetchFahfon(token: string): Promise<NormalizedFeed<FahfonReading>> {
+  return cached("datago-fahfon", 3600 * 12, async () => {
+    const fetchedAt = new Date().toISOString();
+    // Get the most recent readings sorted by _id desc
+    const rows = await ckanFetch<Record<string, unknown>>(FAHFON_RESOURCE, token, { limit: 20, sort: "_id desc" });
+    if (!rows) return { features: [], meta: { source: "datago-fahfon", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const } };
+    const features: FahfonReading[] = rows.map((r) => ({
+      station: String(r["สถานีตรวจวัดอากาศ"] ?? ""),
+      date: String(r["DATE"] ?? "").slice(0, 10),
+      tempC: Number(r["TEMP (C)"]) || null,
+      co2Ppm: Number(r["CO2 (ppm)"]) || null,
+      pm1: Number(r["PM1 (มคก./ลบ.ม.)"]) || null,
+      pm25: Number(r["PM2.5 (มคก./ลบ.ม.)"]) || null,
+      pm10: Number(r["PM10 (มคก./ลบ.ม.)"]) || null,
+    }));
+    return { features, meta: { source: "datago-fahfon", fetchedAt, ageMinutes: cacheAgeMinutes(fetchedAt), fallbackTier: "live" as const } };
+  });
+}

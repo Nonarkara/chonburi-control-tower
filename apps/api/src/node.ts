@@ -62,6 +62,7 @@ const env = {
   VIABUS_BASE_URL: process.env.VIABUS_BASE_URL,
   AQICN_TOKEN: process.env.AQICN_TOKEN,
   AISSTREAM_TOKEN: process.env.AISSTREAM_TOKEN,
+  DATA_GO_TH_TOKEN: process.env.DATA_GO_TH_TOKEN,
 };
 
 // Start AIS WebSocket subscriber if token is provided. No-op without key.

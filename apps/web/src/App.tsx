@@ -105,6 +105,7 @@ import { PmcuBrief } from "./components/PmcuBrief";
 import { NewsDesk } from "./components/NewsDesk";
 import { FacebookPanel } from "./components/FacebookPanel";
 import { CoastalBrief, type MarineSnapshot } from "./components/CoastalBrief";
+import { WaterPanel, type ReservoirStatus } from "./components/WaterPanel";
 import { TidePanel, type TideSnapshot } from "./components/TidePanel";
 import { FisheryPanel } from "./components/FisheryPanel";
 import { SourceCatalog } from "./components/SourceCatalog";
@@ -612,6 +613,7 @@ export default function App() {
   const facebook = useFeed<{ id: string; message: string; permalink: string; createdAt: string; reactions?: number; comments?: number; shares?: number }>(`${API_BASE}/api/social/facebook`, 10 * 60_000);
   const marine = useFeed<MarineSnapshot>(`${API_BASE}/api/marine`, 30 * 60_000);
   const tides = useFeed<TideSnapshot>(`${API_BASE}/api/tides`, 10 * 60_000);
+  const reservoirs = useFeed<ReservoirStatus>(`${API_BASE}/api/datago/reservoirs`, 60 * 60_000);
   // Shuttle and academic calendar not available in this deployment
   const shuttle = { data: [] as ShuttleVehicle[], fallbackTier: "unavailable" as const, ageMinutes: 0 };
   const academic = { data: [] as AcademicSnapshot[] };
@@ -916,6 +918,15 @@ export default function App() {
                 precipMm={precip.data[0]?.nowMm ?? null}
               />
             </div>
+            {reservoirs.data.length > 0 && (
+              <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+                <WaterPanel
+                  data={reservoirs.data}
+                  loading={reservoirs.fallbackTier === "loading"}
+                  ageMinutes={reservoirs.ageMinutes}
+                />
+              </div>
+            )}
             <PmcuBrief
               hour={hour}
               isWeekend={isWeekend}
