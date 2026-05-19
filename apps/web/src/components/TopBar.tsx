@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { CHONBURI } from "@chonburi/shared";
 import type { AcademicSnapshot, FallbackTier } from "@chonburi/shared";
 import { useTheme } from "../hooks/useTheme";
 
@@ -73,7 +72,7 @@ export function TopBar({ feeds, onOpenCatalog, catalogCount, viewMode, onCycleVi
         <div className="brand-stack">
           <strong>Chonburi Town Center</strong>
           <span className="brand-sub mono">
-            CTM-01 ⌑ {CHONBURI.name.en} ⌑ Eastern Seaboard
+            CTM-01 · Eastern Seaboard
           </span>
         </div>
       </div>

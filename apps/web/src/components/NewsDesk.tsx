@@ -86,14 +86,8 @@ export function NewsDesk({ items, loading, ageMinutes, onRefresh }: Props) {
                 const a = ACTION_TAG[t];
                 if (!a) return null;
                 return (
-                  <span key={t} className="mono" title={`${a.label} — ${a.do}`}
-                    style={{
-                      color: a.color,
-                      fontSize: "0.6rem",
-                      letterSpacing: "0.05em",
-                      padding: "1px 5px",
-                      border: `1px solid ${a.color}`,
-                    }}>
+                  <span key={t} className="eyebrow mono action-chip" title={`${a.label} — ${a.do}`}
+                    style={{ color: a.color, borderColor: a.color }}>
                     {a.glyph} {t}
                   </span>
                 );
@@ -117,7 +111,7 @@ export function NewsDesk({ items, loading, ageMinutes, onRefresh }: Props) {
         )}
       </div>
       {actionable.length > 0 && (
-        <div className="caption mono" style={{ marginTop: 8, color: "var(--text-3)", fontSize: "0.62rem", letterSpacing: "0.08em" }}>
+        <div className="eyebrow mono" style={{ marginTop: 8, color: "var(--text-3)" }}>
           ACTION LEGEND:&nbsp;
           ▲EM emergency · ✚FU funeral · ◆PO police · ★HO honour · ✦FE festival · ▣IN infra · ◢BZ business · ✚PU health
         </div>

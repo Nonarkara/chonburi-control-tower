@@ -444,7 +444,7 @@
 .layer-age {
   color: var(--brand);
   letter-spacing: 0.06em;
-  font-size: 0.6rem;
+  font-size: var(--size-eyebrow);
   padding: 1px 4px;
   border: 1px solid var(--brand);
   opacity: 0.75;
@@ -1008,7 +1008,7 @@
 .pmcu-fleet-note {
   grid-column: 1 / -1;
   color: var(--text-3);
-  font-size: 0.6rem;
+  font-size: var(--size-eyebrow);
   letter-spacing: 0.03em;
   margin-top: -2px;
 }
@@ -1189,7 +1189,7 @@
   align-items: end;
   justify-items: center;
   gap: 2px;
-  font-size: 0.6rem;
+  font-size: var(--size-eyebrow);
   color: var(--text-2);
 }
 .world-day-name {
@@ -1212,8 +1212,8 @@
   background: var(--data);
   transition: height 0.4s;
 }
-.world-day-pct { font-size: 0.6rem; color: var(--text-1); }
-.world-day-temp { font-size: 0.6rem; color: var(--text-3); }
+.world-day-pct { font-size: var(--size-eyebrow); color: var(--text-1); }
+.world-day-temp { font-size: var(--size-eyebrow); color: var(--text-3); }
 
 /* Partner-city clocks */
 .world-partners {
@@ -1253,7 +1253,7 @@
   color: var(--text-3);
 }
 .world-city-temp {
-  font-size: 0.6rem;
+  font-size: var(--size-eyebrow);
   color: var(--text-2);
   white-space: nowrap;
   overflow: hidden;
@@ -1379,7 +1379,7 @@
   font-weight: 600;
 }
 .layer-group-meta {
-  font-size: 0.6rem;
+  font-size: var(--size-eyebrow);
   color: var(--text-2);
   letter-spacing: 0.04em;
 }
@@ -1403,7 +1403,7 @@
   align-items: center;
 }
 .device-clear {
-  font-size: 0.6rem;
+  font-size: var(--size-eyebrow);
   letter-spacing: 0.08em;
   padding: 2px 6px;
   background: transparent;
@@ -1590,7 +1590,7 @@
   font-weight: 500;
 }
 .news-ticker-age {
-  font-size: 0.6rem;
+  font-size: var(--size-eyebrow);
   color: var(--text-3);
   letter-spacing: 0.04em;
 }
@@ -3059,4 +3059,42 @@
 .peer-flag {
   font-size: 0.84rem;
   line-height: 1;
+}
+
+/* ── MarineBrief ── three text sizes only (display/body/micro) */
+.marine-brief { display: flex; flex-direction: column; gap: var(--s-2); }
+.marine-verdicts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-1);
+}
+.marine-verdict {
+  border: 1px solid var(--line);
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+/* Verdict value uses h2 — second display tier reserved for composite numerals.
+   Per §11.7: "composite numerals may use display even when not page title". */
+.marine-verdict-value {
+  font-size: var(--size-h2);
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.marine-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-1) var(--s-3);
+  margin-top: var(--s-1);
+}
+.marine-detail-grid > div { display: flex; flex-direction: column; gap: 0; }
+.marine-detail-grid .mono { font-size: var(--size-body); }
+
+/* ── News action-tag chips ── micro size, hairline border, mono */
+.action-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border: 1px solid currentColor;
 }

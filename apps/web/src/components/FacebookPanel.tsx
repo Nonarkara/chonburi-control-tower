@@ -67,15 +67,15 @@ export function FacebookPanel({ posts, loading }: Props) {
           {posts.slice(0, 4).map((p) => (
             <a key={p.id} href={p.permalink} target="_blank" rel="noreferrer noopener" className="news-item">
               <div className="news-header" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span className="mono" style={{ color: "var(--brand)", fontSize: "0.62rem", letterSpacing: "0.06em" }}>
+                <span className="eyebrow mono" style={{ color: "var(--brand)" }}>
                   ▶ POST
                 </span>
-                <span className="mono" style={{ marginLeft: "auto", fontSize: "0.66rem", color: "var(--text-3)" }}>
+                <span className="eyebrow mono" style={{ marginLeft: "auto", color: "var(--text-3)" }}>
                   {ago(p.createdAt)}
                 </span>
               </div>
               <div className="title" style={{ whiteSpace: "pre-wrap" }}>{p.message.slice(0, 240)}{p.message.length > 240 ? "…" : ""}</div>
-              <div className="meta mono" style={{ fontSize: "0.66rem" }}>
+              <div className="eyebrow mono">
                 {p.reactions != null && <span>❤ {p.reactions}</span>}
                 {p.comments != null && <span style={{ marginLeft: 8 }}>💬 {p.comments}</span>}
                 {p.shares != null && <span style={{ marginLeft: 8 }}>↻ {p.shares}</span>}
@@ -107,7 +107,7 @@ export function FacebookPanel({ posts, loading }: Props) {
       />
 
       {posts.length === 0 && !loading && (
-        <div className="caption mono" style={{ color: "var(--text-3)", fontSize: "0.66rem" }}>
+        <div className="eyebrow mono" style={{ color: "var(--text-3)" }}>
           Live timeline above via Meta page plugin. For server-side tagged posts,
           set <code>FACEBOOK_PAGE_TOKEN</code> in the API env.
         </div>

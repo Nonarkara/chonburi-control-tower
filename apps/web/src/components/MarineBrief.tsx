@@ -1,12 +1,9 @@
 /**
  * MarineBrief — sea-state readout for the mayor.
  *
- * The bay just off Chonburi feeds two anxious constituencies:
- *   - Small-boat fishermen who need wave height < 1.5 m to launch safely
- *   - Coastal residents whose homes flood when swell + onshore wind stack
- *
- * This panel gives a one-glance "go / no-go" verdict + the 24h surge
- * forecast. Data: Open-Meteo Marine (free, no key, ~3 km cell).
+ * Three text sizes only: --size-h1 (display) for the verdict numerals,
+ * --size-body for label lines, --size-eyebrow (micro) for eyebrows + meta.
+ * No inline rem values; type stays in the canonical hierarchy.
  */
 
 export interface MarineSnapshot {
@@ -64,74 +61,60 @@ export function MarineBrief({ data, loading, ageMinutes }: Props) {
   const boatColor = data.smallBoatSafe ? "var(--good)" : "var(--bad)";
 
   return (
-    <div className="col" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    <div className="col marine-brief">
       <div className="spread" style={{ alignItems: "center" }}>
         <span className="eyebrow">SEA STATE // GULF OF THAILAND</span>
-        <span className="mono caption" style={{ color: "var(--text-3)" }}>
+        <span className="eyebrow mono" style={{ color: "var(--text-3)" }}>
           {ageMinutes != null ? `${ageMinutes}M AGO` : ""}
         </span>
       </div>
 
-      {/* Verdicts row */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
-        <div style={{ border: `1px solid ${boatColor}`, padding: "5px 8px" }}>
-          <div className="caption mono" style={{ fontSize: "0.6rem", letterSpacing: "0.08em", color: "var(--text-3)" }}>
-            SMALL-BOAT
-          </div>
-          <div className="mono" style={{ color: boatColor, fontSize: "0.85rem" }}>
+      {/* Verdict tiles — body weight + colour, micro eyebrow + micro caption */}
+      <div className="marine-verdicts">
+        <div className="marine-verdict" style={{ borderColor: boatColor }}>
+          <div className="eyebrow">SMALL-BOAT</div>
+          <div className="mono marine-verdict-value" style={{ color: boatColor }}>
             {data.smallBoatSafe ? "✓ SAFE" : "✕ HOLD"}
           </div>
-          <div className="caption mono" style={{ fontSize: "0.62rem", color: "var(--text-3)" }}>
+          <div className="eyebrow mono" style={{ color: "var(--text-3)" }}>
             wave {fmt(data.waveHeightM, 2, " m")}
           </div>
         </div>
-        <div style={{ border: `1px solid ${sstColor}`, padding: "5px 8px" }}>
-          <div className="caption mono" style={{ fontSize: "0.6rem", letterSpacing: "0.08em", color: "var(--text-3)" }}>
-            SST
-          </div>
-          <div className="mono" style={{ color: sstColor, fontSize: "0.85rem" }}>
+        <div className="marine-verdict" style={{ borderColor: sstColor }}>
+          <div className="eyebrow">SST</div>
+          <div className="mono marine-verdict-value" style={{ color: sstColor }}>
             {fmt(data.sstC, 1, "°C")}
           </div>
-          <div className="caption mono" style={{ fontSize: "0.62rem", color: "var(--text-3)" }}>
+          <div className="eyebrow mono" style={{ color: "var(--text-3)" }}>
             {data.thermalStress ? "⚠ shellfish stress" : "normal"}
           </div>
         </div>
       </div>
 
-      {/* Detail grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginTop: 4 }}>
+      {/* Detail grid — micro eyebrow, body line below */}
+      <div className="marine-detail-grid">
         <div>
-          <div className="caption mono" style={{ fontSize: "0.6rem", color: "var(--text-3)" }}>WIND-SEA</div>
-          <div className="mono" style={{ fontSize: "0.76rem" }}>
-            {fmt(data.waveHeightM, 2, " m")} · {fmt(data.wavePeriodS, 1, "s")} · {compass(data.waveDirectionDeg)}
-          </div>
+          <div className="eyebrow">WIND-SEA</div>
+          <div className="mono">{fmt(data.waveHeightM, 2, " m")} · {fmt(data.wavePeriodS, 1, "s")} · {compass(data.waveDirectionDeg)}</div>
         </div>
         <div>
-          <div className="caption mono" style={{ fontSize: "0.6rem", color: "var(--text-3)" }}>SWELL</div>
-          <div className="mono" style={{ fontSize: "0.76rem" }}>
-            {fmt(data.swellHeightM, 2, " m")} · {fmt(data.swellPeriodS, 1, "s")} · {compass(data.swellDirectionDeg)}
-          </div>
+          <div className="eyebrow">SWELL</div>
+          <div className="mono">{fmt(data.swellHeightM, 2, " m")} · {fmt(data.swellPeriodS, 1, "s")} · {compass(data.swellDirectionDeg)}</div>
         </div>
         <div>
-          <div className="caption mono" style={{ fontSize: "0.6rem", color: "var(--text-3)" }}>CURRENT</div>
-          <div className="mono" style={{ fontSize: "0.76rem" }}>
-            {fmt(data.currentKmh, 1, " km/h")} · {compass(data.currentDirectionDeg)}
-          </div>
+          <div className="eyebrow">CURRENT</div>
+          <div className="mono">{fmt(data.currentKmh, 1, " km/h")} · {compass(data.currentDirectionDeg)}</div>
         </div>
         <div>
-          <div className="caption mono" style={{ fontSize: "0.6rem", color: "var(--text-3)" }}>SURGE PEAK · 24H</div>
-          <div className="mono" style={{ fontSize: "0.76rem", color: surgeColor }}>
-            {fmt(data.surgePeakNext24hM, 2, " m")}
-          </div>
+          <div className="eyebrow">SURGE PEAK · 24H</div>
+          <div className="mono" style={{ color: surgeColor }}>{fmt(data.surgePeakNext24hM, 2, " m")}</div>
         </div>
       </div>
 
-      {/* Mini sparkline of next 24h wave height */}
+      {/* 24h wave sparkline */}
       {data.next24h.length > 0 && (
-        <div style={{ marginTop: 4 }}>
-          <div className="caption mono" style={{ fontSize: "0.6rem", color: "var(--text-3)", letterSpacing: "0.08em" }}>
-            WAVE NEXT 24 H · {data.next24h.length} HOURLY
-          </div>
+        <div>
+          <div className="eyebrow">WAVE NEXT 24 H · {data.next24h.length} HOURLY</div>
           <svg viewBox="0 0 240 28" width="100%" height="28" style={{ display: "block" }}>
             {(() => {
               const pts = data.next24h.slice(0, 24);
@@ -152,8 +135,8 @@ export function MarineBrief({ data, loading, ageMinutes }: Props) {
         </div>
       )}
 
-      <div className="caption mono" style={{ fontSize: "0.6rem", color: "var(--text-3)", marginTop: 2 }}>
-        SOURCE · OPEN-METEO MARINE · 3KM CELL · BAY OFF CHONBURI 100.95E 13.34N
+      <div className="eyebrow mono" style={{ color: "var(--text-3)" }}>
+        SOURCE · OPEN-METEO MARINE · 3KM CELL · 100.95E 13.34N
       </div>
     </div>
   );
