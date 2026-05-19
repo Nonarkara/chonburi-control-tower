@@ -51,7 +51,8 @@
   background: var(--bg-1);
   position: relative;
 }
-/* amber rule under topbar — 1px hairline */
+/* Chonburi colour bars under topbar:
+   sea-blue first line + gold second line = seal palette in 2 hairlines. */
 .topbar::after {
   content: "";
   position: absolute;
@@ -59,8 +60,18 @@
   left: 0;
   right: 0;
   height: 1px;
+  background: var(--data);
+  opacity: 0.9;
+}
+.topbar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
   background: var(--accent);
-  opacity: 0.45;
+  opacity: 0.6;
 }
 
 /* Brand cluster: SLIC + depa logos, then the title stack. */
@@ -118,7 +129,8 @@
 }
 .brand-wave {
   display: inline-block;
-  color: var(--accent);
+  /* Sea-blue wave — reads as the Gulf of Thailand */
+  color: var(--data);
   margin: 0 6px 0 2px;
   flex-shrink: 0;
 }
@@ -132,14 +144,17 @@
   font-weight: 600;
   letter-spacing: 0.005em;
   font-size: 0.96rem;
-  color: var(--text);
+  /* Gold city name — the ship's sails, the Mondaine hand */
+  color: var(--accent);
   line-height: 1.1;
 }
 .brand-sub {
   font-size: 0.66rem;
-  color: var(--text-2);
+  /* Sea-blue sub — "Eastern Seaboard" reads as the water */
+  color: var(--data);
   letter-spacing: 0.04em;
   line-height: 1;
+  opacity: 0.85;
 }
 /* Feed chips */
 .topbar .feeds {
@@ -230,7 +245,7 @@
   overflow-y: auto;
   position: relative;
 }
-/* 3px amber left edge — operational marker */
+/* 3px sea-blue left edge — the coastal/data side of the dashboard */
 .left-bar::before {
   content: "";
   position: absolute;
@@ -238,8 +253,8 @@
   left: 0;
   width: 3px;
   height: 100%;
-  background: var(--accent);
-  opacity: 0.75;
+  background: var(--data);
+  opacity: 0.9;
 }
 .left-section {
   padding: var(--s-3);
@@ -425,10 +440,11 @@
   letter-spacing: 0.10em;
   color: var(--text-3);
 }
-.lens button:hover { color: var(--accent); border: 0; }
+.lens button:hover { color: var(--data); border: 0; }
 .lens button.active {
-  background: var(--accent);
-  color: var(--bg);
+  /* Sea-blue active lens — white text on blue reads as the seal */
+  background: var(--data);
+  color: #ffffff;
 }
 
 /* ── Layer toggles — terminal readout ── */
