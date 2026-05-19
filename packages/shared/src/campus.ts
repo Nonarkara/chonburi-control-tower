@@ -43,8 +43,8 @@ export const CHONBURI: CampusConfig = {
     longitude: 100.9847,
     latitude: 13.3611,
     zoom: 13.5,
-    pitch: 0,
-    bearing: 0,
+    pitch: 50,
+    bearing: -18,
   },
 };
 

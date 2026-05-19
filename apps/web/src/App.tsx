@@ -351,7 +351,7 @@ export default function App() {
   // View mode cycles 2D → 3D (buildings extrude) → 3DS (substructure: buildings
   // turn translucent, utilities drop to their burial depth). Camera follows.
   type ViewMode = "2D" | "3D" | "3DS";
-  const [viewMode, setViewMode] = useState<ViewMode>("2D");
+  const [viewMode, setViewMode] = useState<ViewMode>("3D");
   const is3D = viewMode === "3D" || viewMode === "3DS";
   const isSubstructure = viewMode === "3DS";
 
