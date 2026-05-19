@@ -108,7 +108,7 @@ export function SheetsPanel({ open, onClose }: Props) {
                   <span className="sheets-num mono">03</span>
                   <div>
                     <strong>Run setup once</strong>
-                    <p>Click ▷ Run → select <span className="mono">setup</span> → authorize. The script creates ~30 tabs: 10 live feeds (every 5 min), 5 static reference tabs (gates, lines, lands, …), and 15 placeholder tabs for future official Chula pipelines — Enrollment, Energy, Water, Waste, Library, Parking, Hospital, Donors, Publications, Patents, …</p>
+                    <p>Click ▷ Run → select <span className="mono">setup</span> → authorize. The script creates ~30 tabs: 10 live feeds (every 5 min), 5 static reference tabs (roads, buildings, civic, …), and 15 placeholder tabs for future official municipal pipelines — Enrollment, Energy, Water, Waste, Library, Parking, Hospital, Donors, Publications, Patents, …</p>
                   </div>
                 </div>
                 <div className="sheets-step">
@@ -180,7 +180,7 @@ export function SheetsPanel({ open, onClose }: Props) {
                     </li>
                   ))}
                 </ul>
-                <p className="caption" style={{ marginTop: 14 }}>Placeholder tabs — ready for official Chula pipelines:</p>
+                <p className="caption" style={{ marginTop: 14 }}>Placeholder tabs — ready for official municipal pipelines:</p>
                 <ul className="sheets-endpoints mono">
                   {[
                     ["Enrollment",     "Registrar — students per faculty / level / year"],

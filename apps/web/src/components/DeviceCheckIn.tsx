@@ -29,11 +29,11 @@ function networkLabel(net: DevicePresence["network"]): string {
 /**
  * DeviceCheckIn — left-rail panel that prompts the user to log this
  * computer into the dashboard by GPS only. After permission, shows the
- * fix, accuracy, network, and whether the device is inside CU's outer
+ * fix, accuracy, network, and whether the device is inside the municipal
  * bounding box.
  */
 export function DeviceCheckIn({ presence, onRequest, onClear }: Props) {
-  const { state, lng, lat, accuracyM, fixedAt, network, insideCampus } = presence;
+  const { state, lng, lat, accuracyM, fixedAt, network, insideArea } = presence;
 
   return (
     <section className="device-card">
@@ -99,12 +99,12 @@ export function DeviceCheckIn({ presence, onRequest, onClear }: Props) {
             </div>
           )}
           <div className="device-row">
-            <span className="lbl">CAMPUS</span>
+            <span className="lbl">AREA</span>
             <span
               className="val mono"
-              style={{ color: insideCampus ? "var(--good)" : "var(--bad)" }}
+              style={{ color: insideArea ? "var(--good)" : "var(--bad)" }}
             >
-              {insideCampus == null ? "—" : insideCampus ? "✓ ON CAMPUS" : "OFF CAMPUS"}
+              {insideArea == null ? "—" : insideArea ? "✓ IN AREA" : "OUT OF AREA"}
             </span>
           </div>
           {fixedAt && (

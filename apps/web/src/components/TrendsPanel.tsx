@@ -30,7 +30,7 @@ const LANGS: Array<{ id: TrendsSnapshot["lang"]; label: string }> = [
 
 /**
  * Trends panel — top of the right rail. Shows what people are searching for
- * around the active "Chula" keyword in each language, with the past-90-day
+ * around the active "Chonburi" keyword in each language, with the past-90-day
  * interest curve as a tiny sparkline.
  */
 export function TrendsPanel({ snapshots, loading, ageMinutes, onRefresh }: Props) {
@@ -63,7 +63,7 @@ export function TrendsPanel({ snapshots, loading, ageMinutes, onRefresh }: Props
     <section className="trends-panel">
       <header className="trends-head">
         <div className="trends-tag">
-          <span className="eyebrow mono">Trends · #Chula · 90 d</span>
+          <span className="eyebrow mono">Trends · #Chonburi · 90 d</span>
           {active && <span className="trends-keyword">{active.keyword}</span>}
         </div>
         <button

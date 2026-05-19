@@ -33,7 +33,7 @@ export function NewsTicker({ items, loading }: Props) {
       <div className="news-ticker">
         <span className="news-ticker-tag mono">LIVE · NEWS</span>
         <div className="news-ticker-track news-ticker-empty">
-          <span className="caption">Loading Chula / Siam / Samyan headlines…</span>
+          <span className="caption">Loading Chonburi headlines…</span>
         </div>
       </div>
     );

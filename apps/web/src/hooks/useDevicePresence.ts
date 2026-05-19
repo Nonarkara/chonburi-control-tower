@@ -18,8 +18,8 @@ export interface DevicePresence {
     rttMs: number | null;
     saveData: boolean | null;
   };
-  // derived: are we inside CU campus?
-  insideCampus: boolean | null;
+  // derived: are we inside the municipality area?
+  insideArea: boolean | null;
   err: string | null;
 }
 
@@ -29,14 +29,14 @@ const EMPTY: DevicePresence = {
   accuracyM: null, altitudeM: null, headingDeg: null, speedMs: null,
   fixedAt: null,
   network: { type: null, effective: null, downlinkMbps: null, rttMs: null, saveData: null },
-  insideCampus: null,
+  insideArea: null,
   err: null,
 };
 
-// Outer CU bbox: campus + Siam + Samyan (matches our outerBounds elsewhere).
+// Outer Chonburi Town Municipality bbox.
 const OUTER = {
-  minLng: 100.515, minLat: 13.728,
-  maxLng: 100.548, maxLat: 13.756,
+  minLng: 100.940, minLat: 13.320,
+  maxLng: 101.030, maxLat: 13.410,
 };
 const inOuterBox = (lng: number, lat: number) =>
   lng >= OUTER.minLng && lng <= OUTER.maxLng &&
@@ -64,8 +64,8 @@ function readNetwork(): DevicePresence["network"] {
  *    tracks the device.
  *  - Pulls Network Information API metadata (connection type / 4g / wifi
  *    / Mbps / RTT) and refreshes when it changes.
- *  - Derives `insideCampus` from the outer bbox so the UI can flag a
- *    visitor vs an on-campus operator.
+ *  - Derives `insideArea` from the outer bbox so the UI can flag a
+ *    visitor vs an in-area operator.
  */
 export function useDevicePresence(): {
   presence: DevicePresence;
@@ -115,7 +115,7 @@ export function useDevicePresence(): {
           headingDeg: heading ?? null,
           speedMs: speed ?? null,
           fixedAt: new Date(pos.timestamp).toISOString(),
-          insideCampus: inOuterBox(longitude, latitude),
+          insideArea: inOuterBox(longitude, latitude),
           network: readNetwork(),
         }));
       },

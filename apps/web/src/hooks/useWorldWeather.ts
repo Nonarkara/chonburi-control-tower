@@ -11,11 +11,11 @@ export interface CityRef {
 
 /**
  * Partner cities the dashboard surfaces.
- * Order matters — Bangkok is always first (host), then ASEAN/East-Asia partners,
+ * Order matters — Chonburi is always first (host), then ASEAN/East-Asia partners,
  * then EU, then US (East then West).
  */
 export const PARTNER_CITIES: CityRef[] = [
-  { id: "bkk", city: "Bangkok",   countryShort: "TH", tz: "Asia/Bangkok",       lat: 13.7395, lng: 100.5328 },
+  { id: "cbo", city: "Chonburi",  countryShort: "TH", tz: "Asia/Bangkok",       lat: 13.3611, lng: 100.9847 },
   { id: "sgp", city: "Singapore", countryShort: "SG", tz: "Asia/Singapore",     lat: 1.3521,  lng: 103.8198 },
   { id: "tok", city: "Tokyo",     countryShort: "JP", tz: "Asia/Tokyo",         lat: 35.6762, lng: 139.6503 },
   { id: "sha", city: "Shanghai",  countryShort: "CN", tz: "Asia/Shanghai",      lat: 31.2304, lng: 121.4737 },
@@ -130,7 +130,7 @@ async function fetchOne(c: CityRef, signal?: AbortSignal): Promise<CityWeather |
 }
 
 // 30-minute localStorage cache so a refresh isn't a fresh 7-city fan-out
-const CACHE_KEY = "chula:world-weather";
+const CACHE_KEY = "chonburi:world-weather";
 const CACHE_TTL_MS = 30 * 60 * 1000;
 
 function readCache(): { fetchedAt: string; results: CityWeather[] } | null {

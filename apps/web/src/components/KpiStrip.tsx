@@ -35,7 +35,7 @@ export function KpiStrip({ cityReports, iticEvents, airQuality, weather }: Props
         <div className="value" style={{ color: totalEvents > 5 ? "var(--bad)" : totalEvents > 0 ? "var(--warn)" : "var(--text)" }}>
           {totalEvents}
         </div>
-        <div className="sub">CAMPUS BBOX</div>
+        <div className="sub">MUNICIPAL AREA</div>
       </div>
 
       <div className="kpi">

@@ -24,7 +24,7 @@ export function Manual({ open, onClose }: Props) {
       <div
         className="manual"
         role="dialog"
-        aria-label="Chula Control Tower — manual"
+        aria-label="Chonburi Control Tower — manual"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="manual-head">
@@ -43,17 +43,17 @@ export function Manual({ open, onClose }: Props) {
           <section className="manual-section">
             <h3 className="manual-h3">At a glance</h3>
             <p>
-              One screen, one campus. The map is the dashboard's spine — everything else feeds it.
+              One screen, one municipality. The map is the dashboard's spine — everything else feeds it.
               Pick a <strong>lens</strong> on the right to switch the data story; toggle individual
               layers below it; click any building, pipe, or POI for details.
               Hover any control for a tooltip.
             </p>
             <ul className="manual-flow">
               <li><span className="mono">①</span> Top bar — brand, live-feed health, controls (2D/3D, theme, sources, manual)</li>
-              <li><span className="mono">②</span> World strip — Bangkok weather + 6 user-set city clocks</li>
+              <li><span className="mono">②</span> World strip — Chonburi weather + 6 user-set city clocks</li>
               <li><span className="mono">③</span> News ticker — top headlines, scrolls horizontally; hover to pause</li>
               <li><span className="mono">④</span> Left rail — device check-in, speed test, municipal brief, KPIs</li>
-              <li><span className="mono">⑤</span> Map — the campus twin (2D, 3D, or 3DS substructure)</li>
+              <li><span className="mono">⑤</span> Map — the city twin (2D, 3D, or 3DS substructure)</li>
               <li><span className="mono">⑥</span> Right rail — Google Trends + full news desk</li>
               <li><span className="mono">⑦</span> Bottom — version pill, traffic hour slider, counts</li>
             </ul>
@@ -66,7 +66,7 @@ export function Manual({ open, onClose }: Props) {
             <table className="manual-table">
               <thead><tr><th>Code</th><th>Name</th><th>What it shows</th></tr></thead>
               <tbody>
-                <tr><td className="mono">OPS</td><td>Operations</td><td>Default day-to-day view — campus, CU lands, traffic, incidents, shuttle live, BMA POIs, air quality.</td></tr>
+                <tr><td className="mono">OPS</td><td>Operations</td><td>Default day-to-day view — municipal boundary, buildings, road network, civic POIs, waterways, live traffic, incidents, CCTV, AIS vessels.</td></tr>
                 <tr><td className="mono">MOB</td><td>Mobility</td><td>Traffic heatmap, iTIC events, all 5 shuttle lines, BTS/MRT, CCTV.</td></tr>
                 <tr><td className="mono">ENV</td><td>Environment</td><td>Esri high-res satellite + green spaces + AQ. Regional satellites opt-in.</td></tr>
                 <tr><td className="mono">SAF</td><td>Safety</td><td>Citizen reports + iTIC + hospital/fire/police POIs + CCTV + flood.</td></tr>
@@ -161,7 +161,7 @@ export function Manual({ open, onClose }: Props) {
                 <dt>CTM-01</dt><dd>Chonburi Town Center v1 — this dashboard.</dd>
                 <dt>BRIEF</dt><dd>Municipal brief panel — Chonburi arterial load, parking zones, transport fleet, active development pipeline.</dd>
                 <dt>BMA</dt><dd>Bangkok Metropolitan Administration — city government. Source of POIs, parks, AQ stations, drainage.</dd>
-                <dt>MEA</dt><dd>Metropolitan Electricity Authority — owns the substations that feed campus.</dd>
+                <dt>MEA</dt><dd>Metropolitan Electricity Authority — Bangkok electricity utility (legacy reference).</dd>
                 <dt>MWA</dt><dd>Metropolitan Waterworks Authority — owns the water mains.</dd>
                 <dt>depa</dt><dd>Digital Economy Promotion Agency — co-sponsor of this project (logo top-left).</dd>
                 <dt>SLIC</dt><dd>Smart Liveable Cities index — sibling project (logo top-left).</dd>
@@ -181,7 +181,7 @@ export function Manual({ open, onClose }: Props) {
                 <dt>HV / MV / LV</dt><dd>High / Medium / Low Voltage — 115 kV transmission, 22 kV distribution, 230/400 V service.</dd>
                 <dt>RTT</dt><dd>Round-Trip Time — how long a network packet takes to bounce. Lower = snappier.</dd>
                 <dt>Mbps</dt><dd>Megabits per second — network download speed.</dd>
-                <dt>BTS / MRT</dt><dd>Bangkok Skytrain / Metro — the two rail systems with stations walkable from campus.</dd>
+                <dt>BTS / MRT</dt><dd>Bangkok Skytrain / Metro — legacy transit reference; Chonburi EEC Link planned.</dd>
               </dl>
             </div>
           </section>

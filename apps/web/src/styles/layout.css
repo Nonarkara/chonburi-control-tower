@@ -21,7 +21,6 @@
   background: var(--bad, #dc2626);
   color: #fff;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .shell {
@@ -52,7 +51,7 @@
   background: var(--bg-1);
   position: relative;
 }
-/* cerulean rule under topbar — 1px hairline (Chonburi maritime accent) */
+/* amber rule under topbar — 1px hairline */
 .topbar::after {
   content: "";
   position: absolute;
@@ -60,7 +59,7 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: var(--brand);
+  background: var(--accent);
   opacity: 0.45;
 }
 
@@ -105,7 +104,7 @@
 }
 .brand-wave {
   display: inline-block;
-  color: var(--brand);
+  color: var(--accent);
   margin: 0 6px 0 2px;
   flex-shrink: 0;
 }
@@ -199,12 +198,12 @@
 }
 .clock-time {
   font-size: 0.94rem;
-  color: var(--brand);
+  color: var(--accent);
   line-height: 1;
 }
-/* Subtle cerulean glow on the clock — dark theme only */
+/* Subtle amber glow on the clock — dark theme only */
 [data-theme="dark"] .clock-time {
-  text-shadow: 0 0 12px rgba(14, 165, 233, 0.40);
+  text-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
 }
 
 /* ── Left sidebar ── */
@@ -217,7 +216,7 @@
   overflow-y: auto;
   position: relative;
 }
-/* 3px cerulean left edge — Chonburi maritime marker */
+/* 3px amber left edge — operational marker */
 .left-bar::before {
   content: "";
   position: absolute;
@@ -225,7 +224,7 @@
   left: 0;
   width: 3px;
   height: 100%;
-  background: var(--brand);
+  background: var(--accent);
   opacity: 0.75;
 }
 .left-section {
@@ -256,7 +255,7 @@
   overflow: hidden;
   position: relative;
 }
-/* 3px cerulean right edge */
+/* 3px amber right edge */
 .right-bar::before {
   content: "";
   position: absolute;
@@ -264,7 +263,7 @@
   right: 0;
   width: 3px;
   height: 100%;
-  background: var(--brand);
+  background: var(--accent);
   opacity: 0.75;
 }
 .right-news {
@@ -442,11 +441,11 @@
 .layer-toggle.on  { border-left-color: var(--accent); color: var(--text-1); }
 .layer-toggle.off { color: var(--text-3); }
 .layer-age {
-  color: var(--brand);
+  color: var(--accent);
   letter-spacing: 0.06em;
   font-size: var(--size-eyebrow);
   padding: 1px 4px;
-  border: 1px solid var(--brand);
+  border: 1px solid var(--accent);
   opacity: 0.75;
 }
 .layer-toggle.off .layer-age { opacity: 0.45; }
@@ -527,7 +526,7 @@
   align-items: center;
   gap: 6px;
   padding: 2px 8px;
-  background: var(--brand);
+  background: var(--accent);
   color: var(--bg);
   font-size: 0.60rem;
   letter-spacing: 0.10em;
@@ -751,7 +750,7 @@
   outline: none;
 }
 .building-search-input:focus {
-  border-color: var(--brand);
+  border-color: var(--accent);
   background: rgba(10, 14, 20, 0.98);
 }
 .building-search-input::placeholder {
@@ -781,7 +780,7 @@
 .building-search-row:first-child { border-top: 0; }
 .building-search-row:hover,
 .building-search-row:focus {
-  background: var(--brand);
+  background: var(--accent);
   color: var(--bg);
   outline: 0;
 }
@@ -812,7 +811,7 @@
   bottom: 0;
   left: 0;
   width: 4px;
-  background: var(--brand);
+  background: var(--accent);
 }
 .building-card-head {
   display: flex;
@@ -894,7 +893,7 @@
   margin-top: 2px;
 }
 .pmcu-kv {
-  border-left: 2px solid var(--brand);
+  border-left: 2px solid var(--accent);
   padding: 2px 0 2px 8px;
 }
 .pmcu-kv .num {
@@ -1659,8 +1658,8 @@
 
 /* ── 3DS toggle variant: amber underline so the substructure mode reads as escalated ── */
 .dim-toggle.vm-3D  { background: var(--accent); color: var(--bg); border-color: var(--accent); }
-.dim-toggle.vm-3DS { background: var(--brand); color: #fff; border-color: var(--brand); }
-.dim-toggle.vm-3DS:hover { background: var(--brand-soft); border-color: var(--brand-soft); color: #fff; }
+.dim-toggle.vm-3DS { background: var(--accent-dim); color: var(--bg); border-color: var(--accent-dim); }
+.dim-toggle.vm-3DS:hover { background: var(--accent); border-color: var(--accent); color: var(--bg); }
 
 /* ─────────────────────────────────────────────────────────────────────────
    Mobile: phones + small tablets (≤ 900 px).
@@ -2336,13 +2335,11 @@
   height: 8px;
   background: var(--accent);
   flex-shrink: 0;
-  border-radius: 50%;
-  box-shadow: 0 0 0 3px rgba(232, 56, 152, 0.18);
   animation: chat-pulse 2.4s ease-in-out infinite;
 }
 @keyframes chat-pulse {
-  0%, 100% { box-shadow: 0 0 0 3px rgba(232, 56, 152, 0.18); }
-  50%      { box-shadow: 0 0 0 8px rgba(232, 56, 152, 0.04); }
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
 }
 .chat-handle-label {
   flex: 1;
@@ -2382,7 +2379,6 @@
   border-top: 3px solid var(--accent);
   display: grid;
   grid-template-rows: auto 1fr auto;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
   position: relative;
 }
 .chat-head {
@@ -2786,9 +2782,9 @@
 
 /* ── Executive panels ─────────────────────────────────────────────────── */
 
-/* Left bar in executive mode gets a pink edge instead of amber */
+/* Left bar in executive mode gets a dim amber edge */
 .left-bar-exec::before {
-  background: var(--brand) !important;
+  background: var(--accent-dim) !important;
   opacity: 0.8;
 }
 

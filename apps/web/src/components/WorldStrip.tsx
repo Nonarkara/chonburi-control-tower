@@ -13,10 +13,10 @@ interface AqiTrend {
 }
 
 interface Props {
-  bangkokAqi: number | null;
-  bangkokPm25: number | null;
-  // Weather for the Bangkok host block — fetched in useWorldWeather.
-  bangkokWeather: {
+  hostAqi: number | null;
+  hostPm25: number | null;
+  // Weather for the Chonburi host block — fetched in useWorldWeather.
+  hostWeather: {
     tempC: number | null;
     apparentTempC: number | null;
     humidity: number | null;
@@ -33,7 +33,7 @@ interface Props {
     sunset: string | null;
     daily: Array<{ date: string; tempMaxC: number; tempMinC: number; precipMm: number; precipProb: number }>;
   } | null;
-  bangkokPulse: {
+  hostPulse: {
     iticEvents: number;
     openReports: number;
     news24h: number;
@@ -136,7 +136,7 @@ function rainBadge(p: PrecipNowcast | null): { label: string; sub: string; color
   };
 }
 
-export function WorldStrip({ bangkokAqi, bangkokPm25, bangkokWeather, bangkokPulse, precipNowcast }: Props) {
+export function WorldStrip({ hostAqi, hostPm25, hostWeather, hostPulse, precipNowcast }: Props) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -146,36 +146,36 @@ export function WorldStrip({ bangkokAqi, bangkokPm25, bangkokWeather, bangkokPul
   const { clocks, setAt, slots } = useCustomClocks();
   const [editing, setEditing] = useState<number | null>(null);
 
-  const aqi = aqiBand(bangkokAqi);
-  const uv = uvBand(bangkokWeather?.uv ?? null);
-  const wind = bangkokWeather?.windKmh ?? null;
-  const windDir = windDirLabel(bangkokWeather?.windDeg ?? null);
-  const sunrise = hmFromIso(bangkokWeather?.sunrise ?? null);
-  const sunset = hmFromIso(bangkokWeather?.sunset ?? null);
-  const sunLabel = bangkokWeather?.isDay === false ? "SUNRISE" : "SUNSET";
-  const sunTime = bangkokWeather?.isDay === false ? sunrise : sunset;
+  const aqi = aqiBand(hostAqi);
+  const uv = uvBand(hostWeather?.uv ?? null);
+  const wind = hostWeather?.windKmh ?? null;
+  const windDir = windDirLabel(hostWeather?.windDeg ?? null);
+  const sunrise = hmFromIso(hostWeather?.sunrise ?? null);
+  const sunset = hmFromIso(hostWeather?.sunset ?? null);
+  const sunLabel = hostWeather?.isDay === false ? "SUNRISE" : "SUNSET";
+  const sunTime = hostWeather?.isDay === false ? sunrise : sunset;
 
   return (
     <div className="world-strip">
       <section className="world-host">
         <div className="world-host-head">
-          <span className="eyebrow mono">Bangkok · host</span>
+          <span className="eyebrow mono">Chonburi · host</span>
           <span className="mono caption">
             {timeInTz("Asia/Bangkok", now).hms} · {timeInTz("Asia/Bangkok", now).offset}
           </span>
         </div>
         <div className="world-host-row">
           <div className="world-host-now">
-            <span className="world-host-temp">{fmtTemp(bangkokWeather?.tempC ?? null)}</span>
-            <span className="world-host-cond">{bangkokWeather?.condition ?? "—"}</span>
+            <span className="world-host-temp">{fmtTemp(hostWeather?.tempC ?? null)}</span>
+            <span className="world-host-cond">{hostWeather?.condition ?? "—"}</span>
             <span className="world-host-feels mono">
-              FL {fmtTemp(bangkokWeather?.apparentTempC ?? null)}
+              FL {fmtTemp(hostWeather?.apparentTempC ?? null)}
             </span>
           </div>
           <div className="world-host-stats">
             <div className="world-stat">
               <span className="lbl">HUMIDITY</span>
-              <span className="val mono">{fmtPct(bangkokWeather?.humidity ?? null)}</span>
+              <span className="val mono">{fmtPct(hostWeather?.humidity ?? null)}</span>
             </div>
             <div className="world-stat">
               <span className="lbl">WIND</span>
@@ -184,14 +184,14 @@ export function WorldStrip({ bangkokAqi, bangkokPm25, bangkokWeather, bangkokPul
             </div>
             <div className="world-stat">
               <span className="lbl">UV</span>
-              <span className="val mono" style={{ color: uv.color }}>{fmtFix(bangkokWeather?.uv ?? null, 1)}</span>
+              <span className="val mono" style={{ color: uv.color }}>{fmtFix(hostWeather?.uv ?? null, 1)}</span>
               <span className="sub mono" style={{ color: uv.color }}>{uv.label}</span>
             </div>
             <div className="world-stat">
               <span className="lbl">AQI</span>
-              <span className="val mono" style={{ color: aqi.color }}>{bangkokAqi ?? "—"}</span>
+              <span className="val mono" style={{ color: aqi.color }}>{hostAqi ?? "—"}</span>
               <span className="sub mono" style={{ color: aqi.color }}>
-                {bangkokPm25 != null ? `PM2.5 ${bangkokPm25.toFixed(1)}` : aqi.label}
+                {hostPm25 != null ? `PM2.5 ${hostPm25.toFixed(1)}` : aqi.label}
               </span>
             </div>
             <div className="world-stat">
@@ -205,14 +205,14 @@ export function WorldStrip({ bangkokAqi, bangkokPm25, bangkokWeather, bangkokPul
             </div>
             <div className="world-stat">
               <span className="lbl">RAIN NOW</span>
-              <span className="val mono">{fmtFix(bangkokWeather?.rainNow ?? null, 1)}</span>
-              <span className="sub mono">MM/H · CLOUD {fmtPct(bangkokWeather?.cloudPct ?? null)}</span>
+              <span className="val mono">{fmtFix(hostWeather?.rainNow ?? null, 1)}</span>
+              <span className="sub mono">MM/H · CLOUD {fmtPct(hostWeather?.cloudPct ?? null)}</span>
             </div>
             <div className="world-stat">
               <span className="lbl">VIS</span>
-              <span className="val mono">{fmtFix(bangkokWeather?.visKm ?? null, 1)}</span>
+              <span className="val mono">{fmtFix(hostWeather?.visKm ?? null, 1)}</span>
               <span className="sub mono">
-                KM · {fmtInt(bangkokWeather?.pressurehPa ?? null)} hPa
+                KM · {fmtInt(hostWeather?.pressurehPa ?? null)} hPa
               </span>
             </div>
             <div className="world-stat">
@@ -221,42 +221,42 @@ export function WorldStrip({ bangkokAqi, bangkokPm25, bangkokWeather, bangkokPul
               <span className="sub mono">↑ {sunrise} · ↓ {sunset}</span>
             </div>
           </div>
-          <div className="world-host-pulse" aria-label="Bangkok live operational pulse">
+          <div className="world-host-pulse" aria-label="Chonburi live operational pulse">
             <div className="pulse-head">
               <span className="dot live" />
-              <span className="eyebrow mono">Bangkok pulse</span>
+              <span className="eyebrow mono">Chonburi pulse</span>
             </div>
             <div className="pulse-grid">
               <div className="pulse-cell">
                 <span className="lbl">iTIC EVT</span>
                 <span
                   className="val mono"
-                  style={{ color: pulseColor(bangkokPulse.iticEvents, 1, 6) }}
+                  style={{ color: pulseColor(hostPulse.iticEvents, 1, 6) }}
                 >
-                  {bangkokPulse.iticEvents}
+                  {hostPulse.iticEvents}
                 </span>
               </div>
               <div className="pulse-cell">
                 <span className="lbl">CR OPEN</span>
                 <span
                   className="val mono"
-                  style={{ color: pulseColor(bangkokPulse.openReports, 1, 11) }}
+                  style={{ color: pulseColor(hostPulse.openReports, 1, 11) }}
                 >
-                  {bangkokPulse.openReports}
+                  {hostPulse.openReports}
                 </span>
               </div>
               <div className="pulse-cell">
                 <span className="lbl">NEWS 24H</span>
-                <span className="val mono">{bangkokPulse.news24h}</span>
+                <span className="val mono">{hostPulse.news24h}</span>
               </div>
               <div className="pulse-cell">
-                <span className="lbl">CU BUS</span>
-                <span className="val mono">{bangkokPulse.shuttleLive}</span>
+                <span className="lbl">MUNI BUS</span>
+                <span className="val mono">{hostPulse.shuttleLive}</span>
               </div>
             </div>
           </div>
           <div className="world-forecast" aria-label="5-day rain probability">
-            {(bangkokWeather?.daily ?? []).slice(0, 5).map((d, i) => (
+            {(hostWeather?.daily ?? []).slice(0, 5).map((d, i) => (
               <div className="world-day" key={d.date}>
                 <span className="world-day-name mono">{i === 0 ? "TODAY" : dayLabel(d.date)}</span>
                 <span className="world-day-bar" title={`${d.precipProb}% rain · ${d.precipMm.toFixed(1)}mm`}>

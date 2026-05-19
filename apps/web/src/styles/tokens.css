@@ -10,19 +10,16 @@
 */
 
 :root {
-  /* ── Identity — Chonburi maritime cerulean. City-by-the-sea corporate identity. ── */
-  --brand:      #0EA5E9;
-  --brand-soft: #0369A1;
-  /* ── Operational accent — amber. Always active metrics. ── */
-  --accent:     #F5A623;
-  --accent-dim: #A06B0F;
-  /* ── Data accents — meaning-encoded, identical across themes ── */
-  --data: #00B4FF;   /* cold cyan — generic data */
-  --good: #00C168;   /* emerald — live / healthy */
-  --warn: #F5A623;   /* amber — same as accent */
-  --bad:  #E53939;   /* coral — alert */
-  --crit: #C81E1E;   /* danger */
-  --info: #8B5CF6;   /* violet — informational */
+  /* ── ONE accent — amber. The equals key on the Braun calculator. ── */
+  --accent:     #f59e0b;
+  --accent-dim: #b45309;
+  /* ── Functional data accents — load-bearing only, identical across themes ── */
+  --data: #58a6ff;   /* cyan — links, data marks (used sparingly) */
+  --good: #3fb950;   /* emerald — live / healthy */
+  --warn: #f59e0b;   /* amber — same as accent */
+  --bad:  #f85149;   /* coral — alert */
+  --crit: #da3633;   /* danger */
+  --info: #8b949e;   /* neutral grey — informational, never decorative */
 
   /* ── Type system — IBM Plex ────────────────────────────────────────── */
   --font-sans:
@@ -60,20 +57,20 @@
   color-scheme: dark;
 }
 
-/* ── Dark theme (default) — Chonburi maritime navy ───────────────────── */
+/* ── Dark theme (default) — near-black with blue undertone ───────────── */
 :root,
 [data-theme="dark"] {
-  --bg:    #03101f;
-  --bg-1:  #061830;
-  --bg-2:  #0a2240;
-  --bg-3:  #112d4f;
-  --line:  #1a3a5e;
-  --line-2:#264a73;
+  --bg:    #0a0e14;
+  --bg-1:  #0d1117;
+  --bg-2:  #161b22;
+  --bg-3:  #21262d;
+  --line:  #30363d;
+  --line-2:#484f58;
 
-  --text:   #eaeef5;
-  --text-1: #b0bac9;
-  --text-2: #68788f;
-  --text-3: #384055;
+  --text:   #e6edf3;
+  --text-1: #c9d1d9;
+  --text-2: #8b949e;
+  --text-3: #484f58;
   color-scheme: dark;
 }
 
@@ -95,15 +92,14 @@
   --text-2: #56595e;
   --text-3: #888c92;
 
-  /* Tone data accents down slightly for white surface */
-  --brand:      #0284C7;
+  /* Tone data accents down for white surface */
   --accent:     #c87600;
-  --data: #006a96;
-  --good: #097b3f;
+  --data: #0969da;
+  --good: #1a7f37;
   --warn: #b35200;
-  --bad:  #b81e1e;
-  --crit: #8c0e0e;
-  --info: #5b3fb8;
+  --bad:  #cf222e;
+  --crit: #a40e26;
+  --info: #6e7781;
   color-scheme: light;
 }
 

@@ -55,7 +55,7 @@ export function FacebookPanel({ posts, loading }: Props) {
           target="_blank"
           rel="noreferrer noopener"
           className="mono caption"
-          style={{ color: "var(--brand)", letterSpacing: "0.05em" }}
+          style={{ color: "var(--accent)", letterSpacing: "0.05em" }}
         >
           @{PAGE_USERNAME} ↗
         </a>
@@ -67,7 +67,7 @@ export function FacebookPanel({ posts, loading }: Props) {
           {posts.slice(0, 4).map((p) => (
             <a key={p.id} href={p.permalink} target="_blank" rel="noreferrer noopener" className="news-item">
               <div className="news-header" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span className="eyebrow mono" style={{ color: "var(--brand)" }}>
+                <span className="eyebrow mono" style={{ color: "var(--accent)" }}>
                   ▶ POST
                 </span>
                 <span className="eyebrow mono" style={{ marginLeft: "auto", color: "var(--text-3)" }}>

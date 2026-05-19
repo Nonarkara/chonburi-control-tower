@@ -126,7 +126,7 @@ export function MarineBrief({ data, loading, ageMinutes }: Props) {
               }).join(" ");
               return (
                 <>
-                  <path d={path} fill="none" stroke="var(--brand)" strokeWidth="1.5" />
+                  <path d={path} fill="none" stroke="var(--accent)" strokeWidth="1.5" />
                   <line x1="0" y1="26" x2="240" y2="26" stroke="var(--line)" strokeWidth="0.5" />
                 </>
               );

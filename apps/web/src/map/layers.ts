@@ -1069,10 +1069,10 @@ export function cuMapOverlay(
 /** NASA GIBS WMTS tile layer — free, no API key. */
 /**
  * NASA GIBS global tile layer (MODIS true-color, NDVI, LST, flood).
- * The source product is GoogleMapsCompatible_Level9 — beyond zoom 9 the same
- * tile is stretched to multiple zoom levels, producing useless smears at
- * city scale. `extent` is left global but `currentZoom` gates the visible
- * prop so the layer simply doesn't render at zoom ≥ 10 by default.
+ * Always visible when called — the caller decides whether to add it to
+ * the deck.gl layer list based on enabledLayers. The zoom restriction was
+ * removed: if the user explicitly turns a satellite layer on, they should
+ * see it. Layer descriptions in the palette already say "regional zoom".
  */
 // GIBS product → (format, max-level) heuristic. RGB / true-color products
 // ship as JPG at Level 9; thematic palettes (NDVI, LST, AOD, NO2, IMERG)
@@ -1101,7 +1101,6 @@ export function gibsLayer(
   productId: string,
   date?: string,
   opacity = 0.6,
-  currentZoom?: number,
   opts: GibsOpts = {},
 ) {
   const dateStr = date ?? new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -1116,7 +1115,6 @@ export function gibsLayer(
     maxZoom: level,
     tileSize: 256,
     opacity,
-    visible: currentZoom == null ? true : currentZoom < 10,
     renderSubLayers: (props) => {
       const { boundingBox } = props.tile as unknown as {
         boundingBox: [[number, number], [number, number]];
@@ -1189,7 +1187,7 @@ export function openTopoTerrainLayer(opacity = 0.6) {
  * loop, 10-min cadence — best for spotting incoming storms over Bangkok.
  * Uses WMS (not WMTS) because GIBS only exposes Himawari that way.
  */
-export function himawariInfraredLayer(opacity = 0.55, currentZoom?: number) {
+export function himawariInfraredLayer(opacity = 0.55) {
   const today = new Date().toISOString().slice(0, 10);
   // GIBS WMS template — single tile per request, but TileLayer drives the bbox.
   const wmsBase =
@@ -1202,7 +1200,6 @@ export function himawariInfraredLayer(opacity = 0.55, currentZoom?: number) {
     maxZoom: 9,
     tileSize: 256,
     opacity,
-    visible: currentZoom == null ? true : currentZoom < 10,
     getTileData: async ({ bbox }) => {
       // bbox in Web Mercator metres. GIBS expects BBOX=minx,miny,maxx,maxy.
       const { west, south, east, north } = bbox as { west: number; south: number; east: number; north: number };

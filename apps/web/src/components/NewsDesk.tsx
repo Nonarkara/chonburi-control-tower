@@ -27,7 +27,7 @@ const ACTION_TAG: Record<string, { label: string; color: string; glyph: string; 
   HO: { label: "Honour",           color: "var(--good)", glyph: "★", do: "congratulate" },
   FE: { label: "Festival",         color: "#FBBF24",     glyph: "✦", do: "attend opening" },
   IN: { label: "Infrastructure",   color: "var(--data)", glyph: "▣", do: "chase department" },
-  BZ: { label: "EEC / Business",   color: "var(--brand)", glyph: "◢", do: "attend signing" },
+  BZ: { label: "EEC / Business",   color: "var(--accent)", glyph: "◢", do: "attend signing" },
   PU: { label: "Public health",    color: "#F472B6",     glyph: "✚", do: "visit / congratulate staff" },
 };
 

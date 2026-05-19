@@ -216,7 +216,7 @@ export function ChatBox({ apiBase }: Props) {
           type="button"
           className="chat-handle"
           onClick={() => setOpen(true)}
-          aria-label="Open Chula concierge chat"
+          aria-label="Open concierge chat"
         >
           <span className="chat-handle-dot" />
           <span className="chat-handle-label">
@@ -230,11 +230,11 @@ export function ChatBox({ apiBase }: Props) {
       )}
 
       {open && (
-        <div className="chat-panel" role="dialog" aria-label="Chula concierge chat">
+        <div className="chat-panel" role="dialog" aria-label="Concierge chat">
           <header className="chat-head">
             <div className="col">
               <span className="eyebrow mono">CTM-Concierge · Gemini 2.5 Flash</span>
-              <h2 className="chat-title">Ask anything about Chula</h2>
+              <h2 className="chat-title">Ask anything about Chonburi</h2>
             </div>
             <div className="chat-head-tools">
               {turnCount > 0 && (
@@ -256,7 +256,7 @@ export function ChatBox({ apiBase }: Props) {
             {messages.length === 0 && (
               <div className="chat-empty">
                 <p className="chat-empty-lede">
-                  Live link to a Chula-trained briefer. Free-tier model — clear,
+                  Live link to a municipal briefer. Free-tier model — clear,
                   factual, no fluff. Try one of these or type your own:
                 </p>
                 <div className="chat-suggestions">

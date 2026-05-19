@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DeckGL from "@deck.gl/react";
 import type { Layer } from "@deck.gl/core";
-import { Map as MapLibreMap } from "react-map-gl/maplibre";
+import { Map as MapLibreMap, Source, Layer as MapLayer } from "react-map-gl/maplibre";
 import maplibregl from "maplibre-gl";
 import type { FeatureCollection, Geometry, LineString, Point, Polygon, MultiPolygon } from "geojson";
 import { CHONBURI } from "@chonburi/shared";
@@ -133,6 +133,35 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? ""
  * them. Theme-aware: dark → carto dark + deep navy ocean tint;
  * light → carto positron-light + pale sky-blue ocean tint.
  */
+// Yesterday ISO date — GIBS tiles publish with ~24 h delay
+const GIBS_DATE = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+const GIBS_BASE = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best";
+
+function gibsUrl(product: string, level: number, format: "jpg" | "png"): string {
+  return `${GIBS_BASE}/${product}/default/${GIBS_DATE}/GoogleMapsCompatible_Level${level}/{z}/{y}/{x}.${format}`;
+}
+
+// GIBS satellite layers rendered via MapLibre <Source>/<Layer> — MapLibre handles
+// raster tile stretching perfectly (proven by the carto basemap).
+// Deck.gl TileLayer is kept for esriSatelliteLayer only.
+const GIBS_LAYERS: Array<{
+  id: string;
+  product: string;
+  level: number;
+  format: "jpg" | "png";
+  opacity: number;
+}> = [
+  { id: "satellite-true-color",         product: "MODIS_Terra_CorrectedReflectance_TrueColor",    level: 9, format: "jpg", opacity: 0.85 },
+  { id: "satellite-viirs-truecolor",     product: "VIIRS_NOAA20_CorrectedReflectance_TrueColor",   level: 9, format: "jpg", opacity: 0.85 },
+  { id: "satellite-night",               product: "VIIRS_SNPP_DayNightBand_ENCC",                  level: 8, format: "png", opacity: 0.85 },
+  { id: "satellite-imerg",               product: "IMERG_Precipitation_Rate",                      level: 6, format: "png", opacity: 0.75 },
+  { id: "satellite-ndvi",                product: "MODIS_Terra_NDVI_8Day",                         level: 9, format: "png", opacity: 0.70 },
+  { id: "satellite-lst",                 product: "MODIS_Terra_Land_Surface_Temp_Day",             level: 7, format: "png", opacity: 0.70 },
+  { id: "satellite-aerosol",             product: "MODIS_Combined_Value_Added_AOD",                level: 7, format: "png", opacity: 0.70 },
+  { id: "satellite-no2",                 product: "OMI_Nitrogen_Dioxide_Tropo_Column",             level: 6, format: "png", opacity: 0.70 },
+  { id: "satellite-flood",               product: "MODIS_Combined_Flood_3-Day",                    level: 7, format: "png", opacity: 0.75 },
+];
+
 function basemapStyle(theme: "dark" | "light"): maplibregl.StyleSpecification {
   const baseSlug = theme === "dark" ? "dark_nolabels" : "light_nolabels";
   const labelsSlug = theme === "dark" ? "dark_only_labels" : "light_only_labels";
@@ -311,11 +340,11 @@ export default function App() {
   const { presence, request: requestDevice, clear: clearDevice } = useDevicePresence();
   const firstFixFlown = useRef(false);
   useEffect(() => {
-    if (!firstFixFlown.current && presence.lng != null && presence.lat != null && presence.insideCampus) {
+    if (!firstFixFlown.current && presence.lng != null && presence.lat != null && presence.insideArea) {
       flyTo(presence.lng, presence.lat, 17);
       firstFixFlown.current = true;
     }
-  }, [presence.lng, presence.lat, presence.insideCampus, flyTo]);
+  }, [presence.lng, presence.lat, presence.insideArea, flyTo]);
 
   // View mode cycles 2D → 3D (buildings extrude) → 3DS (substructure: buildings
   // turn translucent, utilities drop to their burial depth). Camera follows.
@@ -602,14 +631,14 @@ export default function App() {
     "/geo/chonburi-flood-risk.geojson",
   );
   const worldWeather = useWorldWeather();
-  const bangkokWeather = useMemo(() => {
-    const city = worldWeather.find((c) => c.city.id === "bkk");
+  const hostWeather = useMemo(() => {
+    const city = worldWeather.find((c) => c.city.id === "cbo");
     if (!city) return null;
     const { city: _city, fetchedAt: _fetchedAt, ...rest } = city;
     return rest;
   }, [worldWeather]);
 
-  const bangkokPulse = useMemo(() => {
+  const hostPulse = useMemo(() => {
     const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
     const openReports = cityReports.data.filter((r) => r.status !== "resolved").length;
     const news24h = news.data.filter((n) => {
@@ -651,32 +680,11 @@ export default function App() {
     // Imagery first — renders beneath all vector data
     // Esri is the only satellite useful at city zoom — high-res tiles up to 19.
     if (enabledLayers.has("satellite-esri")) out.push(esriSatelliteLayer(1.0) as Layer);
-    // OpenTopoMap renders contours that fight with our building outlines —
-    // hide it at zoom ≥ 14 (city scale) so it only helps the regional view.
-    if (enabledLayers.has("satellite-terrain") && viewState.zoom < 14)
-      out.push(openTopoTerrainLayer(0.6) as Layer);
-    // MODIS / Himawari are 250 m – 1 km globals. They smear past zoom 10, so
-    // we pass `currentZoom` and let the factory mark them invisible.
-    if (enabledLayers.has("satellite-true-color"))
-      out.push(gibsLayer("MODIS_Terra_CorrectedReflectance_TrueColor", undefined, 0.55, viewState.zoom) as Layer);
-    if (enabledLayers.has("satellite-viirs-truecolor"))
-      out.push(gibsLayer("VIIRS_NOAA20_CorrectedReflectance_TrueColor", undefined, 0.65, viewState.zoom) as Layer);
-    if (enabledLayers.has("satellite-night"))
-      out.push(gibsLayer("VIIRS_SNPP_DayNightBand_ENCC", undefined, 0.85, viewState.zoom) as Layer);
-    if (enabledLayers.has("satellite-himawari"))
-      out.push(himawariInfraredLayer(0.55, viewState.zoom) as Layer);
-    if (enabledLayers.has("satellite-imerg"))
-      out.push(gibsLayer("IMERG_Precipitation_Rate", undefined, 0.7, viewState.zoom) as Layer);
-    if (enabledLayers.has("satellite-ndvi"))
-      out.push(gibsLayer("MODIS_Terra_NDVI_8Day", undefined, 0.6, viewState.zoom) as Layer);
-    if (enabledLayers.has("satellite-lst"))
-      out.push(gibsLayer("MODIS_Terra_Land_Surface_Temp_Day", undefined, 0.65, viewState.zoom) as Layer);
-    if (enabledLayers.has("satellite-aerosol"))
-      out.push(gibsLayer("MODIS_Combined_Value_Added_AOD", undefined, 0.7, viewState.zoom) as Layer);
-    if (enabledLayers.has("satellite-no2"))
-      out.push(gibsLayer("OMI_Nitrogen_Dioxide_Tropo_Column", undefined, 0.7, viewState.zoom) as Layer);
-    if (enabledLayers.has("satellite-flood"))
-      out.push(gibsLayer("MODIS_Combined_Flood_3-Day", undefined, 0.7, viewState.zoom) as Layer);
+    // Satellite rasters — GIBS layers now served via MapLibre <Source>/<Layer>
+    // (see MapLibreMap children below) for reliable tile stretching at any zoom.
+    // Only Esri HD (maxZoom:19), Himawari (WMS), and terrain stay in deck.gl.
+    if (enabledLayers.has("satellite-terrain")) out.push(openTopoTerrainLayer(0.6) as Layer);
+    if (enabledLayers.has("satellite-himawari")) out.push(himawariInfraredLayer(0.55) as Layer);
     // CU paper map (raster) — sits above satellites, below vectors so it can be read alongside building outlines.
     if (enabledLayers.has("cu-map-2015")) out.push(cuMapOverlay() as Layer);
     if (enabledLayers.has("bma-parks") && bma?.parks) out.push(bmaParksLayer(bma.parks) as Layer);
@@ -830,16 +838,16 @@ export default function App() {
         academic={academic.data[0] ?? null}
       />
 
-      {/* ── World strip: Bangkok host + 3 user-editable clocks ── */}
+      {/* ── World strip: Chonburi host + 3 user-editable clocks ── */}
       <WorldStrip
-        bangkokAqi={aqiTrend.data[0]?.current.aqi ?? null}
-        bangkokPm25={aqiTrend.data[0]?.current.pm25 ?? null}
-        bangkokWeather={bangkokWeather}
-        bangkokPulse={bangkokPulse}
+        hostAqi={aqiTrend.data[0]?.current.aqi ?? null}
+        hostPm25={aqiTrend.data[0]?.current.pm25 ?? null}
+        hostWeather={hostWeather}
+        hostPulse={hostPulse}
         precipNowcast={precip.data[0] ?? null}
       />
 
-      {/* ── News ticker: stock-market scroll of top campus headlines ── */}
+      {/* ── News ticker: stock-market scroll of top headlines ── */}
       <NewsTicker items={news.data} loading={news.fallbackTier === "loading"} />
 
       {/* ── Markets ticker: SET Bangkok + global indices + THB forex + WTI/Brent + FRED macro ── */}
@@ -882,7 +890,7 @@ export default function App() {
               <SpeedTestPanel />
             </div>
             <div className="left-section">
-              <span className="eyebrow mono">Campus Brief</span>
+              <span className="eyebrow mono">Municipal Brief</span>
               <KpiStrip
                 cityReports={cityReports.data}
                 iticEvents={iticEvents.data}
@@ -913,7 +921,29 @@ export default function App() {
               mapLib={maplibregl as unknown as typeof maplibregl}
               attributionControl={false}
               renderWorldCopies={false}
-            />
+            >
+              {/* GIBS satellite raster sources — rendered via MapLibre for
+                  reliable tile stretching at any viewport zoom. Only active
+                  layers are mounted so MapLibre only fetches what's needed. */}
+              {GIBS_LAYERS.filter(g => enabledLayers.has(g.id as LayerId)).map(g => (
+                <Source
+                  key={g.id}
+                  id={`gibs-src-${g.id}`}
+                  type="raster"
+                  tiles={[gibsUrl(g.product, g.level, g.format)]}
+                  tileSize={256}
+                  minzoom={0}
+                  maxzoom={g.level}
+                >
+                  <MapLayer
+                    id={`gibs-lyr-${g.id}`}
+                    type="raster"
+                    paint={{ "raster-opacity": g.opacity }}
+                    beforeId="labels-top"
+                  />
+                </Source>
+              ))}
+            </MapLibreMap>
           </DeckGL>
           <BuildingSearch
             buildings={buildings}
@@ -982,7 +1012,7 @@ export default function App() {
       <div className="bottom-bar">
         <div className="bottom-ident">
           <span className="pill">v0.1</span>
-          <span>Chula Main · Bangkok</span>
+          <span>Chonburi Town · Eastern Seaboard</span>
         </div>
         <HourRail
           hour={hour}
@@ -992,7 +1022,7 @@ export default function App() {
         />
         <div className="bottom-stats">
           <span>{trafficSamples.length} ROADS · {layers.length} LAYERS</span>
-          <span>{bma?.pois.length ?? 0} BMA · {cctv.data.length} CCTV · {shuttle.data.length} BUSES</span>
+          <span>{civicPoints?.features.length ?? 0} CIVIC · {cctv.data.length} CCTV · {ais.data.length} AIS</span>
         </div>
       </div>
 
