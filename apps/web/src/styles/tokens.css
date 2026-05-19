@@ -14,7 +14,7 @@
   --accent:     #f59e0b;
   --accent-dim: #b45309;
   /* ── Functional data accents — load-bearing only, identical across themes ── */
-  --data: #58a6ff;   /* cyan — links, data marks (used sparingly) */
+  --data: #4babe5;   /* Chonburi seal sky-blue — links, data marks */
   --good: #3fb950;   /* emerald — live / healthy */
   --warn: #f59e0b;   /* amber — same as accent */
   --bad:  #f85149;   /* coral — alert */
@@ -94,7 +94,7 @@
 
   /* Tone data accents down for white surface */
   --accent:     #c87600;
-  --data: #0969da;
+  --data: #1a7abf;   /* Chonburi seal blue — darkened for white surface */
   --good: #1a7f37;
   --warn: #b35200;
   --bad:  #cf222e;

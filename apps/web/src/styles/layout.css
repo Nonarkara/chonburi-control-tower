@@ -69,31 +69,45 @@
   align-items: center;
   gap: var(--s-3);
 }
+/* Logo containers — white background so logos with white BGs blend
+   cleanly on both dark and light themes. No shadow, no radius (DNA §11). */
 .topbar .brand .sponsor {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   height: 30px;
-  padding: 2px 4px;
-  background: var(--bg-2);
-  border: 1px solid var(--line);
+  padding: 2px 5px;
+  background: #ffffff;
+  border: 1px solid rgba(255,255,255,0.18);
   text-decoration: none;
-  transition: background 0.15s, border-color 0.15s;
+  opacity: 0.90;
+  transition: opacity 0.15s;
 }
-.topbar .brand .sponsor:hover {
-  background: var(--bg-3);
-  border-color: var(--line-2);
-}
+.topbar .brand .sponsor:hover { opacity: 1; }
+
 .topbar .brand .sponsor img {
-  height: 26px;
+  height: 24px;
   width: auto;
   display: block;
+  object-fit: contain;
 }
-/* depa logo is a JPG with a white background — in dark mode invert
-   slightly so the white doesn't shout; in light mode show as-is. */
-[data-theme="dark"] .topbar .brand .sponsor img[src*="depa"] {
-  filter: brightness(0.92) saturate(0.85);
-  mix-blend-mode: screen;
+
+/* Seal is circular — give it a little extra breathing room */
+.topbar .brand .sponsor-seal {
+  padding: 2px;
+  height: 34px;
+}
+.topbar .brand .sponsor-seal img { height: 30px; }
+
+/* Axiom is a circular badge — same treatment */
+.topbar .brand .sponsor-axiom img { height: 28px; }
+
+/* Light mode: the white container disappears into the white topbar.
+   Reduce border so they read as frameless on white. */
+[data-theme="light"] .topbar .brand .sponsor {
+  background: #ffffff;
+  border-color: var(--line);
+  opacity: 1;
 }
 .brand-sep {
   display: inline-block;
@@ -1689,14 +1703,21 @@
   }
   .shell.mobile .topbar .feeds { display: none; }
   .shell.mobile .live-count { display: none; }
+  /* On mobile: only show the Chonburi seal (principal identity).
+     Partner logos (depa, smart-city, axiom) are secondary — hide to save space. */
   .shell.mobile .topbar .brand .sponsor { height: 24px; padding: 1px 3px; }
   .shell.mobile .topbar .brand .sponsor img { height: 22px; }
+  .shell.mobile .topbar .brand .sponsor-seal { height: 34px; padding: 2px 3px; }
+  .shell.mobile .topbar .brand .sponsor-seal img { height: 30px; }
+  /* Hide partner logos on narrow screens */
+  .shell.mobile .topbar .brand a.sponsor:not(.sponsor-seal) { display: none; }
   .shell.mobile .topbar .brand strong { font-size: 0.78rem; }
   .shell.mobile .brand-sub { display: none; }
   .shell.mobile .brand-sep { display: none; }
   .shell.mobile .topbar .clock { display: none; }
-  .shell.mobile .topbar-right { gap: 6px; }
+  .shell.mobile .topbar-right { gap: 4px; flex-shrink: 0; }
   .shell.mobile .topbar-right > button { font-size: 0.60rem; padding: 0 6px; height: 26px; min-width: 26px; }
+  .shell.mobile .sheets-btn { display: none; } /* hide SHEETS on mobile */
 
   /* World strip becomes horizontally scrollable so the partner clocks still fit. */
   .shell.mobile .world-strip {
@@ -3093,4 +3114,31 @@
   align-items: center;
   padding: 1px 5px;
   border: 1px solid currentColor;
+}
+
+/* ── Mobile coastal panels ───────────────────────────────────────────────
+   On phones the 4-col vessel-matrix and 2-col detail-grid are readable
+   but the verdict cards need min-height for comfortable tap targets.    */
+@media (max-width: 480px) {
+  .marine-verdicts {
+    grid-template-columns: 1fr 1fr; /* 2×2 on narrow phones */
+  }
+  .marine-verdict {
+    min-height: 64px;
+  }
+  .marine-detail-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  /* TidePanel: sparkline fills full width, tide value stays large */
+  .marine-brief .eyebrow { letter-spacing: 0.06em; }
+
+  /* Fishery rows: ensure zone name doesn't wrap awkwardly */
+  /* Already flex-column so this is fine */
+
+  /* Touch targets on mobile nav — 44px minimum */
+  .mobile-nav-btn { min-height: 44px; }
+
+  /* Logo strip on mobile: single seal + brand reads cleanly */
+  .topbar .brand { gap: 6px; }
+  .brand-wave { display: none; } /* wave is decorative on mobile — remove */
 }

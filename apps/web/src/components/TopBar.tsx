@@ -45,23 +45,23 @@ export function TopBar({ feeds, onOpenCatalog, catalogCount, viewMode, onCycleVi
     <header className="topbar">
       {/* Sponsor + identity bar */}
       <div className="brand">
-        <a
-          className="sponsor"
-          href="https://slic-index.nonarkara.org"
-          target="_blank"
-          rel="noreferrer"
-          aria-label="SLIC Index — Smart Liveable Cities"
-        >
-          <img src="/logos/slic.png" alt="SLIC" />
+        {/* Municipal seal — principal identity mark */}
+        <a className="sponsor sponsor-seal" href="https://www.chonburi.go.th" target="_blank"
+           rel="noreferrer" aria-label="เทศบาลเมืองชลบุรี — Chonburi Town Municipality">
+          <img src="/logos/chonburi-seal.jpeg" alt="Chonburi seal" />
         </a>
-        <a
-          className="sponsor"
-          href="https://www.depa.or.th"
-          target="_blank"
-          rel="noreferrer"
-          aria-label="depa — Digital Economy Promotion Agency"
-        >
+        {/* Partners */}
+        <a className="sponsor" href="https://www.depa.or.th" target="_blank"
+           rel="noreferrer" aria-label="depa — Digital Economy Promotion Agency">
           <img src="/logos/depa.jpg" alt="depa" />
+        </a>
+        <a className="sponsor" href="https://www.smartcitythailand.or.th" target="_blank"
+           rel="noreferrer" aria-label="Smart City Thailand">
+          <img src="/logos/smart-city-thailand.jpg" alt="Smart City Thailand" />
+        </a>
+        <a className="sponsor sponsor-axiom" href="https://axiom.nonarkara.org" target="_blank"
+           rel="noreferrer" aria-label="Axiom — Innovation as a Service">
+          <img src="/logos/axiom.png" alt="Axiom" />
         </a>
         <svg className="brand-wave" width="42" height="22" viewBox="0 0 42 22" aria-hidden>
           <path d="M0 11 Q 5 4, 10 11 T 20 11 T 30 11 T 42 11"

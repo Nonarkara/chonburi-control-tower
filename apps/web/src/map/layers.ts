@@ -294,6 +294,7 @@ function buildingHeightMeters(props: BuildingProperties): number {
  *   tall (≥50m) → sky-300        — skyline marker, height gradient continues
  */
 export type LandmarkKind =
+  | "residential"   // houses, apartments — warm terracotta; every household
   | "hotel" | "temple" | "church" | "mosque"
   | "government" | "police" | "fire" | "hospital" | "clinic"
   | "school" | "university" | "power" | "tall" | null;
@@ -308,6 +309,7 @@ export function classifyBuilding(props: BuildingProperties): LandmarkKind {
   const of = (props.office     ?? "").toLowerCase();
   const nm = ((props.name ?? "") + " " + (props.nameEn ?? "") + " " + (props.nameTh ?? "")).toLowerCase();
 
+  // Civic + landmark priority
   if (a === "hospital"  || hc === "hospital") return "hospital";
   if (a === "clinic"    || hc === "clinic" || hc === "doctor") return "clinic";
   if (a === "police")   return "police";
@@ -317,26 +319,35 @@ export function classifyBuilding(props: BuildingProperties): LandmarkKind {
   if (a === "place_of_worship") {
     if (r === "christian") return "church";
     if (r === "muslim")    return "mosque";
-    return "temple";                          // default: buddhist
+    return "temple";
   }
   if (a === "townhall" || of === "government" || a === "courthouse") return "government";
   if (t === "hotel" || b === "hotel") return "hotel";
   if (op.includes("egat") || op.includes("pea ") || op.includes("การไฟฟ้า")) return "power";
-  // Name-based fallback for EGAT / government / hotel
   if (nm.includes("egat") || nm.includes("การไฟฟ้า")) return "power";
   if (nm.includes("hotel") || nm.includes("โรงแรม")) return "hotel";
   if (nm.includes("โรงพยาบาล") || nm.includes("hospital")) return "hospital";
   if (nm.includes("วัด") || nm.includes("temple") || nm.includes("wat ")) return "temple";
   if (nm.includes("สถานีตำรวจ") || nm.includes("police")) return "police";
-  // Height-based: tall towers get their own tier regardless of use
   if (buildingHeightMeters(props) >= 50) return "tall";
+
+  // Residential / household — every house, apartment, row-house
+  // Warm terracotta so households read as warm inhabited fabric vs blue civic.
+  if (
+    b === "house" || b === "detached" || b === "semidetached_house" ||
+    b === "terrace" || b === "row_house" || b === "bungalow" ||
+    b === "apartments" || b === "residential" || b === "dormitory" ||
+    b === "hut" || b === "cabin"
+  ) return "residential";
+
   return null;
 }
 
 // Landmark fill colours — one decision per category, legible in both 2D + 3D.
 // Amber = civic importance (hotels, power). Semantic palette for safety/health.
 const LANDMARK_COLOR: Record<NonNullable<LandmarkKind>, [number, number, number]> = {
-  hotel:      [245, 158, 11],   // amber — tourism anchor
+  residential: [210, 110, 65],  // warm terracotta — household fabric, distinct from blue civic
+  hotel:       [245, 158, 11],  // amber — tourism anchor
   temple:     [251, 191, 36],   // bright gold — cultural backbone
   church:     [253, 224, 71],   // pale gold
   mosque:     [250, 204, 21],   // gold variant
