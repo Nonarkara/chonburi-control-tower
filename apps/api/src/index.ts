@@ -23,6 +23,7 @@ import { fetchAisVessels } from "./adapters/ais.js";
 import { fetchDatagoPoints, fetchDatagoDatasets } from "./adapters/datago.js";
 import { fetchFacebookPosts } from "./adapters/facebook.js";
 import { fetchMarine } from "./adapters/marine.js";
+import { fetchTides } from "./adapters/tides.js";
 import { SOURCE_CATALOG } from "@chonburi/shared";
 import type { NormalizedFeed, AirQualityPoint, IncidentFeature, IntelligenceItem, ExecutiveSnapshot, MarketSnapshot } from "@chonburi/shared";
 
@@ -220,6 +221,7 @@ app.get("/api/datago/points", (c) => {
 });
 app.get("/api/datago/datasets", async (c) => safeFeed(c, fetchDatagoDatasets));
 app.get("/api/marine", async (c) => safeFeed(c, fetchMarine));
+app.get("/api/tides",  async (c) => safeFeed(c, fetchTides));
 app.get("/api/social/facebook", async (c) =>
   safeFeed(c, () => fetchFacebookPosts({ FACEBOOK_PAGE_ID: c.env.FACEBOOK_PAGE_ID, FACEBOOK_PAGE_TOKEN: c.env.FACEBOOK_PAGE_TOKEN })),
 );

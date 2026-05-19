@@ -106,6 +106,8 @@ const PREWARM_PATHS = [
   "/api/markets",
   "/api/executive",
   "/api/maritime/ais",
+  "/api/marine",
+  "/api/tides",
   "/api/datago/points",
   "/api/datago/datasets",
 ];

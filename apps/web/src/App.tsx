@@ -101,7 +101,9 @@ import { KpiStrip } from "./components/KpiStrip";
 import { PmcuBrief } from "./components/PmcuBrief";
 import { NewsDesk } from "./components/NewsDesk";
 import { FacebookPanel } from "./components/FacebookPanel";
-import { MarineBrief, type MarineSnapshot } from "./components/MarineBrief";
+import { CoastalBrief, type MarineSnapshot } from "./components/CoastalBrief";
+import { TidePanel, type TideSnapshot } from "./components/TidePanel";
+import { FisheryPanel } from "./components/FisheryPanel";
 import { SourceCatalog } from "./components/SourceCatalog";
 import { Manual } from "./components/Manual";
 import { SheetsPanel, loadSheetsUrl } from "./components/SheetsPanel";
@@ -601,6 +603,7 @@ export default function App() {
   const datago = useFeed<DatagoPoint>(`${API_BASE}/api/datago/points`, 30 * 60_000);
   const facebook = useFeed<{ id: string; message: string; permalink: string; createdAt: string; reactions?: number; comments?: number; shares?: number }>(`${API_BASE}/api/social/facebook`, 10 * 60_000);
   const marine = useFeed<MarineSnapshot>(`${API_BASE}/api/marine`, 30 * 60_000);
+  const tides = useFeed<TideSnapshot>(`${API_BASE}/api/tides`, 10 * 60_000);
   // Shuttle and academic calendar not available in this deployment
   const shuttle = { data: [] as ShuttleVehicle[], fallbackTier: "unavailable" as const, ageMinutes: 0 };
   const academic = { data: [] as AcademicSnapshot[] };
@@ -869,10 +872,23 @@ export default function App() {
           <>
             <AqiBadge trend={aqiTrend.data[0] ?? null} loading={aqiTrend.fallbackTier === "loading"} />
             <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
-              <MarineBrief
+              <CoastalBrief
                 data={marine.data[0] ?? null}
                 loading={marine.fallbackTier === "loading"}
                 ageMinutes={marine.ageMinutes}
+              />
+            </div>
+            <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+              <TidePanel
+                data={tides.data[0] ?? null}
+                loading={tides.fallbackTier === "loading"}
+              />
+            </div>
+            <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+              <FisheryPanel
+                marine={marine.data[0] ?? null}
+                tide={tides.data[0] ?? null}
+                precipMm={precip.data[0]?.nowMm ?? null}
               />
             </div>
             <PmcuBrief
