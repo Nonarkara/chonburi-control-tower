@@ -17,7 +17,7 @@ const CATEGORY_LABEL: Record<SourceCategory, string> = {
   infrastructure: "INF",
   maritime: "MAR",
   "open-data": "OPN",
-  campus: "CMP",
+  campus: "LEG",
 };
 
 interface Props { open: boolean; onClose: () => void }

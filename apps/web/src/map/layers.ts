@@ -262,6 +262,14 @@ export interface BuildingProperties {
   levels: number | null;
   height: number | null;
   operator: string | null;
+  // OSM civic tags — present on landmark buildings
+  amenity?: string | null;
+  tourism?: string | null;
+  religion?: string | null;
+  "building:use"?: string | null;
+  office?: string | null;
+  healthcare?: string | null;
+  shop?: string | null;
 }
 
 function buildingHeightMeters(props: BuildingProperties): number {
@@ -271,56 +279,151 @@ function buildingHeightMeters(props: BuildingProperties): number {
 }
 
 /**
- * Render every Chula building as a filled, tappable polygon.
- * In 2D: low-key footprint outlines (named buildings warmer).
- * In 3D: same polygons extruded to their `height`, with a height-graded
- *        fill so the skyline reads at a glance.
- * In 3DS (substructure): same extrusion at much lower opacity so the
- *        underground utilities below show through — SimCity-2000-style
- *        cutaway. Strokes stay visible at full opacity for context.
+ * Classify a building into a landmark category from its OSM tags.
+ * Returns a semantic type string, or null for ordinary buildings.
+ *
+ * Category palette (amber = civic importance, then semantic data colours):
+ *   hotel       → amber/gold     — tourism anchor, draws investment
+ *   temple      → bright gold    — cultural backbone, mayor attends regularly
+ *   government  → sky-400        — public institutions, mayor's own offices
+ *   police      → cyan           — safety infrastructure
+ *   fire        → orange         — emergency response
+ *   hospital    → coral-red      — health anchor
+ *   school      → violet         — education, community
+ *   egat/power  → amber          — infrastructure, EGAT = Electricity Gen Auth Thailand
+ *   tall (≥50m) → sky-300        — skyline marker, height gradient continues
+ */
+export type LandmarkKind =
+  | "hotel" | "temple" | "church" | "mosque"
+  | "government" | "police" | "fire" | "hospital" | "clinic"
+  | "school" | "university" | "power" | "tall" | null;
+
+export function classifyBuilding(props: BuildingProperties): LandmarkKind {
+  const a  = (props.amenity    ?? "").toLowerCase();
+  const t  = (props.tourism    ?? "").toLowerCase();
+  const b  = (props.building   ?? "").toLowerCase();
+  const r  = (props.religion   ?? "").toLowerCase();
+  const op = (props.operator   ?? "").toLowerCase();
+  const hc = (props.healthcare ?? "").toLowerCase();
+  const of = (props.office     ?? "").toLowerCase();
+  const nm = ((props.name ?? "") + " " + (props.nameEn ?? "") + " " + (props.nameTh ?? "")).toLowerCase();
+
+  if (a === "hospital"  || hc === "hospital") return "hospital";
+  if (a === "clinic"    || hc === "clinic" || hc === "doctor") return "clinic";
+  if (a === "police")   return "police";
+  if (a === "fire_station") return "fire";
+  if (a === "school" || a === "kindergarten") return "school";
+  if (a === "university" || a === "college") return "university";
+  if (a === "place_of_worship") {
+    if (r === "christian") return "church";
+    if (r === "muslim")    return "mosque";
+    return "temple";                          // default: buddhist
+  }
+  if (a === "townhall" || of === "government" || a === "courthouse") return "government";
+  if (t === "hotel" || b === "hotel") return "hotel";
+  if (op.includes("egat") || op.includes("pea ") || op.includes("การไฟฟ้า")) return "power";
+  // Name-based fallback for EGAT / government / hotel
+  if (nm.includes("egat") || nm.includes("การไฟฟ้า")) return "power";
+  if (nm.includes("hotel") || nm.includes("โรงแรม")) return "hotel";
+  if (nm.includes("โรงพยาบาล") || nm.includes("hospital")) return "hospital";
+  if (nm.includes("วัด") || nm.includes("temple") || nm.includes("wat ")) return "temple";
+  if (nm.includes("สถานีตำรวจ") || nm.includes("police")) return "police";
+  // Height-based: tall towers get their own tier regardless of use
+  if (buildingHeightMeters(props) >= 50) return "tall";
+  return null;
+}
+
+// Landmark fill colours — one decision per category, legible in both 2D + 3D.
+// Amber = civic importance (hotels, power). Semantic palette for safety/health.
+const LANDMARK_COLOR: Record<NonNullable<LandmarkKind>, [number, number, number]> = {
+  hotel:      [245, 158, 11],   // amber — tourism anchor
+  temple:     [251, 191, 36],   // bright gold — cultural backbone
+  church:     [253, 224, 71],   // pale gold
+  mosque:     [250, 204, 21],   // gold variant
+  government: [56,  189, 248],  // sky-400 — public institutions
+  police:     [34,  211, 238],  // cyan — safety
+  fire:       [251, 146, 60],   // orange — emergency
+  hospital:   [239,  68,  68],  // red — health
+  clinic:     [251, 113, 133],  // pink-red
+  school:     [167, 139, 250],  // violet — education
+  university: [196, 181, 253],  // light violet
+  power:      [245, 158, 11],   // amber — EGAT/PEA infrastructure
+  tall:       [125, 211, 252],  // sky-300 — skyline marker
+};
+
+// Height ramp for ordinary (non-landmark) buildings in 3D.
+function heightColor(h: number): [number, number, number] {
+  if (h >= 50) return [125, 211, 252]; // sky-300 — very tall
+  if (h >= 30) return [56,  189, 248]; // sky-400
+  if (h >= 15) return [14,  165, 233]; // sky-500
+  return             [3,   105, 161];  // sky-700 — low-rise
+}
+
+/**
+ * Render every municipality building as a filled, tappable 3D box.
+ *
+ * 2D: hairline footprints — landmarks warmer, ordinary buildings dim.
+ * 3D: extruded to real height. Landmarks get their category colour at full
+ *     vibrancy regardless of height. Ordinary buildings stay on the blue
+ *     height-ramp (sky-300 → sky-700). The result: the mayor can read the
+ *     urban topology — the gold temple cluster, amber hotel strip, red
+ *     hospital district — all visible in a single 3D view.
+ * 3DS: ghosted for the substructure (utilities) cutaway view.
  */
 export function buildingsLayer(
   collection: FeatureCollection<Polygon | MultiPolygon, BuildingProperties>,
   options: { extruded?: boolean; ghosted?: boolean } = {},
 ) {
   const extruded = options.extruded ?? false;
-  const ghosted = options.ghosted ?? false;
-
-  const fillAlpha = ghosted ? 32 : 1.0;
-  const lineAlpha = ghosted ? 110 : 220;
-
-  // Height ramp — 4 bands of magenta → amber, named buildings sit on the warmer
-  // half so the campus reads warmer than the surrounding city.
-  const colorFor = (h: number, named: boolean): [number, number, number, number] => {
-    if (extruded) {
-      // Maritime blue palette — taller buildings glow brighter cerulean.
-      if (h >= 50) return [125, 211, 252, ghosted ? fillAlpha : 235]; // sky-300
-      if (h >= 30) return [56, 189, 248,  ghosted ? fillAlpha : 220]; // sky-400
-      if (h >= 15) return [14, 165, 233,  ghosted ? fillAlpha : 205]; // sky-500
-      return       [3, 105, 161,         ghosted ? fillAlpha : 195]; // sky-700
-    }
-    return named
-      ? [14, 165, 233, ghosted ? fillAlpha : 110]
-      : [148, 163, 184, ghosted ? fillAlpha : 80];
-  };
+  const ghosted  = options.ghosted  ?? false;
+  const fillA = ghosted ? 32  : undefined; // undefined → per-building alpha
+  const lineA = ghosted ? 110 : 220;
 
   return new GeoJsonLayer({
-    id: "campus-buildings",
+    id: "municipality-buildings",
     data: collection as unknown as FeatureCollection,
     stroked: true,
     filled: true,
     pickable: true,
     extruded,
     material: extruded && !ghosted
-      ? { ambient: 0.6, diffuse: 0.7, shininess: 12, specularColor: [255, 220, 180] }
+      ? { ambient: 0.65, diffuse: 0.75, shininess: 18, specularColor: [255, 240, 200] }
       : false,
-    getFillColor: ((f: Feature<Polygon | MultiPolygon, BuildingProperties>) =>
-      colorFor(buildingHeightMeters(f.properties), !!f.properties.name)) as unknown as [number, number, number, number],
-    getLineColor: ((f: Feature<Polygon | MultiPolygon, BuildingProperties>) =>
-      f.properties.name
-        ? ([14, 165, 233, lineAlpha] as [number, number, number, number])
-        : ([148, 163, 184, lineAlpha] as [number, number, number, number])) as unknown as [number, number, number, number],
-    getLineWidth: 0.8,
+    getFillColor: ((f: Feature<Polygon | MultiPolygon, BuildingProperties>) => {
+      const kind = classifyBuilding(f.properties);
+      if (ghosted) {
+        const base = kind ? LANDMARK_COLOR[kind] : heightColor(buildingHeightMeters(f.properties));
+        return [base[0], base[1], base[2], 32] as [number, number, number, number];
+      }
+      if (extruded) {
+        if (kind) {
+          const c = LANDMARK_COLOR[kind];
+          return [c[0], c[1], c[2], 230] as [number, number, number, number];
+        }
+        const c = heightColor(buildingHeightMeters(f.properties));
+        return [c[0], c[1], c[2], 200] as [number, number, number, number];
+      }
+      // 2D flat view — landmarks stand out, ordinary buildings are dim
+      if (kind) {
+        const c = LANDMARK_COLOR[kind];
+        return [c[0], c[1], c[2], 130] as [number, number, number, number];
+      }
+      return f.properties.name
+        ? [14, 165, 233, 100] as [number, number, number, number]
+        : [80, 110, 140, 60]  as [number, number, number, number];
+    }) as unknown as [number, number, number, number],
+    getLineColor: ((f: Feature<Polygon | MultiPolygon, BuildingProperties>) => {
+      const kind = classifyBuilding(f.properties);
+      if (kind) {
+        const c = LANDMARK_COLOR[kind];
+        return [c[0], c[1], c[2], lineA] as [number, number, number, number];
+      }
+      return f.properties.name
+        ? [14, 165, 233, lineA] as [number, number, number, number]
+        : [80, 110, 140, lineA] as [number, number, number, number];
+    }) as unknown as [number, number, number, number],
+    getLineWidth: ((f: Feature<Polygon | MultiPolygon, BuildingProperties>) =>
+      classifyBuilding(f.properties) ? 1.2 : 0.6) as unknown as number,
     lineWidthMinPixels: 0.5,
     getElevation: ((f: Feature<Polygon | MultiPolygon, BuildingProperties>) =>
       buildingHeightMeters(f.properties)) as unknown as number,

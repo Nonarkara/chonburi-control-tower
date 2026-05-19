@@ -9,10 +9,10 @@ export interface ClockSpec {
   lng: number;
 }
 
-const STORAGE_KEY = "chula:custom-clocks-v2";
+const STORAGE_KEY = "chonburi:custom-clocks-v2";
 const SLOTS = 6;
 
-// Sensible defaults — the 6 partner regions Chula collaborates with most often.
+// Sensible defaults — 6 global reference cities.
 const DEFAULTS: Array<ClockSpec | null> = [
   { id: "Singapore-SG",     label: "Singapore",     country: "SG", tz: "Asia/Singapore",     lat: 1.3521,  lng: 103.8198 },
   { id: "Tokyo-JP",         label: "Tokyo",         country: "JP", tz: "Asia/Tokyo",         lat: 35.6762, lng: 139.6503 },

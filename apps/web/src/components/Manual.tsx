@@ -161,7 +161,7 @@ export function Manual({ open, onClose }: Props) {
                 <dt>CTM-01</dt><dd>Chonburi Town Center v1 — this dashboard.</dd>
                 <dt>BRIEF</dt><dd>Municipal brief panel — Chonburi arterial load, parking zones, transport fleet, active development pipeline.</dd>
                 <dt>BMA</dt><dd>Bangkok Metropolitan Administration — city government. Source of POIs, parks, AQ stations, drainage.</dd>
-                <dt>MEA</dt><dd>Metropolitan Electricity Authority — Bangkok electricity utility (legacy reference).</dd>
+                <dt>MEA</dt><dd>Metropolitan Electricity Authority — MEA serves Bangkok; Chonburi served by PEA (Provincial Electricity Authority).</dd>
                 <dt>MWA</dt><dd>Metropolitan Waterworks Authority — owns the water mains.</dd>
                 <dt>depa</dt><dd>Digital Economy Promotion Agency — co-sponsor of this project (logo top-left).</dd>
                 <dt>SLIC</dt><dd>Smart Liveable Cities index — sibling project (logo top-left).</dd>
@@ -171,7 +171,7 @@ export function Manual({ open, onClose }: Props) {
               <dl>
                 <dt>AQI</dt><dd>Air Quality Index (US EPA scale) — derived from PM2.5 + PM10.</dd>
                 <dt>PM2.5</dt><dd>Particulate matter ≤ 2.5 µm — the haze you breathe. WHO 24-hr guideline is 15 µg/m³.</dd>
-                <dt>iTIC</dt><dd>Intelligent Traffic Information Center / Longdo — live Bangkok traffic events.</dd>
+                <dt>iTIC</dt><dd>Intelligent Traffic Information Center / Longdo — live traffic events (Eastern Seaboard + national).</dd>
                 <dt>Traffy CR</dt><dd>Traffy Fondue + City Reporter — citizen complaint feed (BMA's 311).</dd>
                 <dt>NDVI</dt><dd>Normalized Difference Vegetation Index — satellite-derived greenness.</dd>
                 <dt>LST</dt><dd>Land Surface Temperature — satellite-derived ground temp; shows urban heat islands.</dd>
@@ -181,7 +181,7 @@ export function Manual({ open, onClose }: Props) {
                 <dt>HV / MV / LV</dt><dd>High / Medium / Low Voltage — 115 kV transmission, 22 kV distribution, 230/400 V service.</dd>
                 <dt>RTT</dt><dd>Round-Trip Time — how long a network packet takes to bounce. Lower = snappier.</dd>
                 <dt>Mbps</dt><dd>Megabits per second — network download speed.</dd>
-                <dt>BTS / MRT</dt><dd>Bangkok Skytrain / Metro — legacy transit reference; Chonburi EEC Link planned.</dd>
+                <dt>BTS / MRT</dt><dd>Bangkok Skytrain / Metro — Chonburi has no metro yet; EEC high-speed rail link planned for 2028.</dd>
               </dl>
             </div>
           </section>
@@ -222,7 +222,7 @@ export function Manual({ open, onClose }: Props) {
           </section>
 
           <footer className="manual-foot caption">
-            v0.1 · Built over a weekend, ninja style. Code at github.com/Nonarkara/chula-control-tower.
+            v0.1 · Built over a weekend, ninja style. Code at github.com/Nonarkara/chonburi-control-tower.
           </footer>
         </div>
       </div>

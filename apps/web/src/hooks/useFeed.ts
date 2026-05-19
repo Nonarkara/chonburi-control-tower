@@ -9,7 +9,7 @@ interface FeedState<T> {
   error: string | null;
 }
 
-const STORAGE_PREFIX = "chula:feed:";
+const STORAGE_PREFIX = "chonburi:feed:";
 const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000;
 const UNAVAILABLE_AFTER_FAILS = 3;
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const STORAGE_KEY = "chula:sheets-url-v1";
+const STORAGE_KEY = "chonburi:sheets-url-v1";
 
 // Build-time default — set VITE_SHEETS_URL in apps/web/.env.production to make
 // the SHEETS button open the live data sheet on first click, no setup needed.
@@ -95,7 +95,7 @@ export function SheetsPanel({ open, onClose }: Props) {
                     <strong>Open Apps Script + paste the code</strong>
                     <p>Extensions → Apps Script. Delete the default code. Paste everything from <span className="mono">infra/google-sheets/Code.js</span> in the repo.</p>
                     <a
-                      href="https://github.com/Nonarkara/chula-control-tower/blob/main/infra/google-sheets/Code.js"
+                      href="https://github.com/Nonarkara/chonburi-control-tower/blob/main/infra/google-sheets/Code.js"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="sheets-link mono"
@@ -160,7 +160,7 @@ export function SheetsPanel({ open, onClose }: Props) {
                 </div>
               </div>
               <div className="sheets-info">
-                <p className="caption">Live tabs — refreshed every 5 minutes from <span className="mono">chula-api.nonarkara.org</span>:</p>
+                <p className="caption">Live tabs — refreshed every 5 minutes from <span className="mono">chonburi-api.nonarkara.org</span>:</p>
                 <ul className="sheets-endpoints mono">
                   {[
                     ["Weather",      "/api/weather"],

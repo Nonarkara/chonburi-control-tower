@@ -24,7 +24,7 @@ interface Measurement {
   source: "browser-timed";
 }
 
-const STORAGE_KEY = "chula:speedtest";
+const STORAGE_KEY = "chonburi:speedtest";
 
 function readSaved(): Measurement | null {
   try {
