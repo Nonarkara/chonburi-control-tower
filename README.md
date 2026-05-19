@@ -1,102 +1,257 @@
-# Chonburi Town Center
+<div align="center">
 
-![Dr Non's Chonburi Town Municipality Super Dashboard — unifying data, revolutionising the campus](docs/hero.png)
+# Chonburi Control Tower
+### ศูนย์บัญชาการเมืองชลบุรี
 
-Single-area control-tower dashboard for **Chonburi Town Municipality main campus** and the surrounding CU lands in Bangkok (Siam Square, Samyan Mitrtown, Chamchuri Square, Stadium One, MBK, Suan Luang, Centenary Park, Chula Hospital).
+**A real-time intelligence dashboard for Thai municipal governments**  
+**แดชบอร์ดข่าวกรองแบบเรียลไทม์สำหรับเทศบาลไทย**
 
-Pulls real-time traffic, citizen reports, news, satellite imagery, air quality, CCTV, transit, and BMA points-of-interest. Designed for a Bauhaus + LCARS engineer aesthetic.
+![Chonburi Control Tower](docs/chonburi%20hero.png)
 
-## Origin
+[![Deployed on Cloudflare Pages](https://img.shields.io/badge/Deployed-Cloudflare%20Pages-orange)](https://chonburi.nonarkara.org)
+[![API on Cloudflare Workers](https://img.shields.io/badge/API-Cloudflare%20Workers-orange)](https://chonburi-control-tower-api.drnon.workers.dev/api/health)
+[![Built with Hono](https://img.shields.io/badge/API-Hono%204.6-blue)](https://hono.dev)
+[![Built with deck.gl](https://img.shields.io/badge/Map-deck.gl%209.3-blue)](https://deck.gl)
 
-> *"Dr Non — show me your dashboard."*
+---
 
-That was the ask, more or less. Someone in charge at Chula wanted to see what I'd been building. The polite move would have been to point at a few of the existing dashboards lying around — there are plenty — and call it a day. I didn't feel like that.
+**[🇹🇭 ภาษาไทย](#ภาษาไทย) · [🇬🇧 English](#english)**
 
-If he wants to see **his** dashboard — not a dashboard, not a generic dashboard, **his** — then I'm going to build him one. From scratch. Over a weekend. The way I actually work when no one's watching: ninja style.
+</div>
 
-That meant:
+---
 
-- **One screen, one campus.** Not a portfolio, not a tour, not a slide deck. A single live surface that says *"this is Chula right now."* Traffic, citizen complaints, air quality, hospital flows, CCTV, BMA points-of-interest, transit, satellite — everything Chula's footprint actually intersects with, on one map, talking to each other.
-- **Real data only.** No mockups. BMA ArcGIS, BMA Open Data, Open-Meteo, iTIC/Longdo traffic, Traffy Fondue, Longdo CCTV — 35+ live sources stitched together. If something can't be wired to a real endpoint, it doesn't ship.
-- **Run it from my Mac.** Cloudflare tunnel to `chonburi-api.nonarkara.org`, web statically hosted on Cloudflare Pages, launchd keeping the API alive 24/7 on the M3. Zero-cost infra, zero excuses, zero "let me get back to you on procurement."
-- **Bauhaus + LCARS.** No corporate chrome, no rounded gradient cards. Modular grid, monospace labels, route colours, honest information design. The aesthetic of someone who actually wants you to read the screen.
+## English
 
-The image at the top is the dream of it — Dr Non in front of the wall of glass, the campus laid out like a circuit, every data source feeding in. The code in this repo is the working version of that picture. Same campus, same intent, fewer comic-book sparks.
+### What Is This?
 
-**Why bother?** Because the gap between "we have data" and "we can act on the data" is the gap public-service infrastructure lives or dies in. A control tower for one campus is the smallest honest unit to prove the gap can be closed. Close it here, and the same pattern works for a city — and after that, a country.
+Chonburi Control Tower is a **free, open-source, fork-in-10-minutes city intelligence dashboard** built for Thai municipal governments. It pulls 40+ live data feeds into a single map — traffic incidents, air quality, sea state, fisheries zones, flood risks, citizen complaints, maritime vessel positions, satellite imagery, and government open data — and presents them to the mayor and operations team in a format that answers the only question that matters: **"What do I need to do right now?"**
 
-That's the pitch. The rest of this README is how it's wired.
+The dashboard was built in a single sprint as a proof-of-concept for the [SLIC Index](https://slic.nonarkara.org) smart-city programme. It is live at **[chonburi.nonarkara.org](https://chonburi.nonarkara.org)**.
 
-## Repo layout
+### How We Got Here
 
-```
-chonburi-control-tower/
-├── apps/
-│   ├── web/      # Vite + React 19 + Deck.gl + MapLibre (static, deploys to Cloudflare Pages)
-│   └── api/      # Hono (dual-runtime: Cloudflare Workers + Node)
-├── packages/
-│   └── shared/   # types, locale, campus config, source catalog
-└── infra/
-    └── org.nonarkara.chula-api.plist   # launchd unit for the Node API
-```
+This project started as a fork of a campus dashboard built for Chulalongkorn University in Bangkok. That dashboard solved a well-defined problem: 37,000 students, 19 faculties, one district, real-time shuttle positions and air quality.
 
-## Runtime
+The question that followed was harder: **can the same architecture serve a coastal Thai municipality — a city with fisheries, a port, flood-prone streets, maritime traffic, and a mayor who needs to know whether small-boat fishermen can safely go out today?**
 
-| Component | Where it runs | How |
-|---|---|---|
-| **Web** (static) | Cloudflare Pages | `pnpm --filter @chula/web build && wrangler pages deploy dist` |
-| **API** (live data) | This Mac, port 8787 | launchd `org.nonarkara.chula-api` → `tsx src/node.ts` |
-| **Public API URL** | `https://chonburi-api.nonarkara.org` | Cloudflare Tunnel (PM2 `city-reporter-tunnel`) → localhost:8787 |
-| **Public web URL** | `https://chonburi.nonarkara.org` | Cloudflare Pages custom domain |
+The answer turned out to be yes — but only after stripping out every Bangkok/campus assumption and rebuilding the data layer around Chonburi's actual geography and concerns. The Eastern Economic Corridor context (EEC), the Gulf of Thailand coastline, the Ang Sila oyster farmers, the 4,200 households that flood every king tide — these are not Bangkok problems, and the dashboard should not pretend they are.
 
-The API runs as Node (not Workers) because workerd's BoringSSL TLS rejects some Thai gov endpoints (bmagis.bangkok.go.th, data.bangkok.go.th). Node uses OpenSSL and reaches them cleanly. Same Hono code works in both runtimes; Workers entry is `src/index.ts`, Node entry is `src/node.ts`.
+What you're looking at is the result of that rebuild.
 
-## Data sources (35+, see `/api/sources`)
+### Features
 
-| Live now | What it gives us |
+| Category | What you get |
 |---|---|
-| **BMA ArcGIS** `bmagis.bangkok.go.th` | 107+ POIs in campus bbox: hospitals, fire, police, health centers, BMA offices, markets, parks, pump stations, flood gates |
-| **BMA Open Data** `data.bangkok.go.th` | 59 keyword-discovered datasets (markets, traffic 2569, green space, …) |
-| **Open-Meteo** | Weather + Air-Quality with 8h forecast (powers the persistent AQI badge) |
-| **iTIC / Longdo** | Live traffic events (accidents, closures, congestion) |
-| **Traffy Fondue** | Citizen complaints (Bangkok-wide, bbox-filtered) |
-| **Longdo Cameras** | CCTV feeds (bbox-filtered) |
-| **NASA GIBS** | Free WMTS tiles: MODIS true-color, 8-day NDVI |
-| **Google News + Bangkok Post RSS** | Chula/Siam/Samyan keyword news, 5-min cache |
+| **Live map** | deck.gl + MapLibre, dark/light theme, 2D/3D/3DS (substructure) modes |
+| **3D buildings** | ~5,000 OSM footprints extruded to real heights. Landmarks color-coded: 🟡 hotels, 🟡 temples, 🔵 government, 🩵 police, 🟠 fire stations, 🔴 hospitals, 🟣 schools, 🟡 EGAT/power |
+| **Maritime** | OpenSeaMap overlay, Laem Chabang port, ferry terminals, navigation aids, AIS vessel positions (live with key) |
+| **Sea state** | Open-Meteo Marine: wave height + direction + period, swell, SST, ocean current, 24 h forecast. Small-boat go/no-go verdict, shellfish thermal-stress alert |
+| **Fisheries** | Ang Sila oyster, Bang Saen shrimp, Bang Phra mussel, Chonburi Bay artisanal, Koh Si Chang offshore zones with yield data |
+| **Flood risk** | 4 annotated flood-prone zones with household counts and flood type |
+| **Satellites** | 11 NASA GIBS/Esri products: VIIRS true-color, MODIS, Himawari IR, IMERG rainfall, NDVI, LST, AOD, NO₂, flood detection — all date-stamped in the layer palette |
+| **Civic POIs** | 802 OSM-sourced points: hospitals, schools, police, fire, government, temples, markets — color-coded and hoverable |
+| **Waterways** | 1,836 canal/river/drainage segments (critical for flood-prevention planning) |
+| **Mayor's Desk** | Every news headline classified by action tag: 🔺 EM emergency, ✚ FU funeral (attend/send wreath), ◆ PO police-citizen friction, ★ HO honour, ✦ FE festival, ▣ IN infrastructure, ◢ BZ EEC/business, ✚ PU public health |
+| **Facebook** | Meta page-plugin embed of the municipal Facebook page (no auth needed) |
+| **Air quality** | Open-Meteo grid AQ + 8h forecast |
+| **Weather** | Open-Meteo current + precipitation nowcast |
+| **Traffic** | iTIC/Longdo live events (Eastern Seaboard bbox) |
+| **Citizen reports** | Traffy Fondue nationwide feed filtered to Chonburi province |
+| **data.go.th** | 22 curated government POIs + 16 national dataset catalog entries |
+| **Markets** | FMP + FRED: SET, USD/THB, VIX, WTI, gold |
+| **AI chat** | CTM-Concierge (Gemini 2.5 Flash, server-proxied, Chonburi context) |
 
-Static fallbacks for BMA POIs ship in `apps/web/public/geo/bma/` for resilience.
+### Fork It For Your City — 5-Minute Setup
 
-## Local dev
+**Prerequisites:** Node 20+, pnpm 10+, a free Cloudflare account.
 
 ```bash
+# 1. Fork + clone
+git clone https://github.com/Nonarkara/chonburi-control-tower
+cd chonburi-control-tower
 pnpm install
-pnpm --filter @chula/api dev:node    # Node API at http://localhost:8787
-pnpm --filter @chula/web dev          # Vite at http://localhost:5173 (proxies /api → 8787)
+
+# 2. Set your city
+# Edit packages/shared/src/campus.ts — change CHONBURI config:
 ```
 
-## Manage the live API
+```typescript
+export const CHONBURI: CampusConfig = {
+  id: "your-city",
+  name: {
+    en: "Your City Municipality",
+    th: "เทศบาลเมืองของคุณ",
+    zh: "你的城市",
+  },
+  center: [YOUR_LNG, YOUR_LAT],   // e.g. [100.9847, 13.3611]
+  innerBounds: [[LNG_SW, LAT_SW], [LNG_NE, LAT_NE]],  // municipality border
+  outerBounds: [[LNG_SW_WIDE, LAT_SW_WIDE], [LNG_NE_WIDE, LAT_NE_WIDE]],  // province+
+  defaultView: {
+    longitude: YOUR_LNG,
+    latitude: YOUR_LAT,
+    zoom: 13.5,   // 13 for city, 15 for district, 11 for province
+    pitch: 0,
+    bearing: 0,
+  },
+};
+```
 
 ```bash
-# Status
-launchctl list | grep chula-api
-tail -f var/api.out.log
+# 3. Update news keywords (apps/api/src/adapters/news.ts)
+#    Change "ชลบุรี / Chonburi / EEC" to your city's name
 
-# Stop / start
-launchctl bootout  gui/$(id -u) ~/Library/LaunchAgents/org.nonarkara.chula-api.plist
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/org.nonarkara.chula-api.plist
+# 4. Run locally
+pnpm --filter @your-city/api dev:node   # API on :8787
+pnpm --filter @your-city/web dev        # Web on :5173
+
+# 5. Deploy (free)
+cd apps/web && wrangler pages project create your-city-dashboard
+VITE_API_BASE_URL=https://your-city-api.yourname.workers.dev \
+  pnpm build && wrangler pages deploy dist
 ```
 
-## Deploy the web (when Cloudflare auth lands)
+### Satellite Layer Configuration
 
-```bash
-cd apps/web
-pnpm exec wrangler login         # one-time, browser flow
-pnpm build
-pnpm exec wrangler pages deploy dist --project-name chonburi-control-tower
-# Then attach custom domain chonburi.nonarkara.org in the Pages dashboard or via:
-# pnpm exec wrangler pages deployment tail
+Every satellite layer is date-stamped in the palette with how fresh the data is:
+
+| Layer | Source | Delay | Good for |
+|---|---|---|---|
+| Esri HD | Esri World Imagery | mosaic | High-res base imagery, city detail |
+| VIIRS true-color | NASA NOAA-20 | 24 h | Cloud-free true color |
+| MODIS true-color | NASA Terra | 24 h | Daily wide-area view |
+| VIIRS night lights | NASA SNPP | 24 h | Urban extent, fishing fleet lights |
+| IMERG rainfall | NASA GPM | 6 h | Live monsoon cells |
+| Himawari IR | JMA via NASA | 10 min | Storm fronts approaching the Gulf |
+| NDVI | MODIS 8-day | 8 days | Crop health, green cover |
+| Land surface temp | MODIS daily | 24 h | Urban heat island |
+| Aerosol | MODIS MAIAC | 24 h | Haze, industrial plumes (Laem Chabang) |
+| NO₂ | OMI | 24 h | Traffic + power plant pollution |
+| Flood detection | MODIS 3-day | 3 days | Flooded areas after rain events |
+
+All GIBS layers are served via MapLibre `<Source type="raster">` for reliable rendering at any zoom level. Configure opacity per layer in `GIBS_LAYERS[]` in `apps/web/src/App.tsx`.
+
+### API Architecture
+
+```
+apps/
+├── api/          Hono 4.6 (dual-runtime: Node 24/7 + Cloudflare Worker)
+│   └── src/adapters/
+│       ├── news.ts          Google News RSS, Bangkok Post — keyword-filtered
+│       ├── marine.ts        Open-Meteo Marine — wave/SST/swell/current
+│       ├── weather.ts       Open-Meteo forecast
+│       ├── airQuality.ts    Open-Meteo AQ + 8h
+│       ├── itis.ts          iTIC/Longdo live traffic
+│       ├── cityReporter.ts  Traffy Fondue nationwide feed
+│       ├── cctv.ts          Longdo traffic cameras
+│       ├── datago.ts        data.go.th curated POIs + CKAN catalog
+│       ├── marine.ts        Open-Meteo Marine
+│       ├── ais.ts           AISStream.io WebSocket (key optional)
+│       ├── facebook.ts      Graph API (token optional; Meta iframe always works)
+│       ├── markets.ts       FMP + FRED indices
+│       ├── trends.ts        Google Trends
+│       ├── executive.ts     Municipal KPI snapshot
+│       └── chat.ts          Gemini 2.5 Flash proxy
+└── web/          React 19 + Vite + deck.gl 9.3 + MapLibre 5.7
+    └── src/
+        ├── map/layers.ts    All deck.gl + MapLibre layer factories
+        ├── map/presets.ts   Layer groups, lens definitions, satellite freshness
+        └── components/      26 React panels
 ```
 
-## Status
+### Optional API Keys (all have free tiers or fallbacks)
 
-v0.1 — campus + CU lands wired, 12 map layers, 5 lens presets, prominent AQI badge, source catalog, Node API live behind Cloudflare Tunnel, web build green. Pending: Cloudflare Pages deploy (auth blocked).
+| Key | Service | Free tier | Without key |
+|---|---|---|---|
+| `GEMINI_API_KEY` | Google Gemini 2.5 Flash | 1M tokens/day | Chat disabled |
+| `AISSTREAM_TOKEN` | AISStream.io | Unlimited free | AIS vessels hidden |
+| `FACEBOOK_PAGE_TOKEN` + `FACEBOOK_PAGE_ID` | Meta Graph API | Free | Meta iframe embed works |
+| `FMP_API_KEY` | Financial Modeling Prep | 250 calls/day | Markets hidden |
+| `FRED_API_KEY` | Federal Reserve | Unlimited free | Forex/macro hidden |
+
+### Contributing
+
+The goal is for every Thai municipality to have one of these. Issues, PRs, and forks are welcome. If you build a version for another city, please open a PR adding it to the [known deployments list](DEPLOYMENTS.md).
+
+---
+
+## ภาษาไทย
+
+### คืออะไร?
+
+Chonburi Control Tower คือ **แดชบอร์ดข่าวกรองเมืองแบบเรียลไทม์ ฟรีและโอเพ่นซอร์ส** ที่ออกแบบมาสำหรับเทศบาลไทย ดึงข้อมูลจากกว่า 40 แหล่งมารวมในแผนที่เดียว ทั้งอุบัติเหตุจราจร คุณภาพอากาศ สภาพทะเล เขตประมง พื้นที่เสี่ยงน้ำท่วม ร้องเรียนประชาชน ตำแหน่งเรือ ภาพดาวเทียม และข้อมูลเปิดภาครัฐ และนำเสนอในรูปแบบที่ตอบคำถามสำคัญ: **"ตอนนี้ผมต้องทำอะไร?"**
+
+ใช้งานจริงที่ **[chonburi.nonarkara.org](https://chonburi.nonarkara.org)**
+
+### เรื่องราวที่มา
+
+แดชบอร์ดนี้เริ่มต้นจากการ fork แดชบอร์ดที่สร้างสำหรับจุฬาลงกรณ์มหาวิทยาลัย คำถามที่ตามมาคือ: **สถาปัตยกรรมเดียวกันสามารถรับใช้เทศบาลชายฝั่งทะเลได้หรือไม่?** เมืองที่มีการประมง ท่าเรือ ถนนที่น้ำท่วมบ่อย การเดินเรือ และนายกเทศมนตรีที่ต้องรู้ว่าวันนี้ชาวประมงออกเรือได้ปลอดภัยหรือเปล่า?
+
+คำตอบคือ ได้ — แต่ต้องรื้อสมมติฐานทั้งหมดเกี่ยวกับกรุงเทพฯ และ campus ออก และสร้างชั้นข้อมูลใหม่รอบภูมิศาสตร์และความกังวลจริงของชลบุรี บริบท EEC อ่าวไทย ชาวนากุ้งบ้านแสน เกษตรกรหอยนางรมอ่างศิลา บ้านเรือน 4,200 ครัวเรือนที่น้ำท่วมทุกน้ำขึ้นสูง — ล้วนไม่ใช่ปัญหากรุงเทพฯ
+
+### ฟีเจอร์หลัก
+
+- 🗺️ **แผนที่สด** พร้อม 3D อาคาร สีตาม landmark: 🟡 โรงแรม, 🟡 วัด, 🔵 หน่วยงานรัฐ, 🩵 ตำรวจ, 🟠 ดับเพลิง, 🔴 โรงพยาบาล, 🟣 โรงเรียน, 🟡 EGAT/PEA
+- 🌊 **สภาพทะเล** ความสูงคลื่น SST กระแสน้ำ การพยากรณ์ 24 ชม. คำตัดสิน "ออกเรือปลอดภัย / หยุดเรือ"
+- 🐟 **เขตประมง** อ่างศิลาหอยนางรม, บ้านแสนกุ้ง, บางพระหอย, ชาวประมงพื้นบ้าน, แหลมฉบัง offshore
+- 🚨 **โต๊ะนายกฯ** ข่าวทุกชิ้นถูก classify: FU ไปงานศพ, EM ไปที่เกิดเหตุ, PO ไกล่เกลี่ยตำรวจ-ประชาชน, HO แสดงความยินดี, FE เปิดงาน, IN ตามกรมช่าง, BZ ไปพิธีลงนาม, PU ไปเยี่ยมบุคลากรสาธารณสุข
+- 📡 **ดาวเทียม 11 ชั้น** ทั้ง Esri, VIIRS, MODIS, Himawari, IMERG, NDVI, LST, AOD, NO₂ พร้อมวันที่ข้อมูล (Y'DAY / 3D AGO / LIVE)
+
+### Fork สำหรับเมืองของคุณ — 5 นาที
+
+แก้ไขไฟล์เดียว `packages/shared/src/campus.ts`:
+
+```typescript
+// เปลี่ยนชื่อเมือง ค่า lat/lng และขอบเขตพื้นที่
+export const CHONBURI: CampusConfig = {
+  id: "your-city-id",
+  name: { en: "...", th: "...", zh: "..." },
+  center: [LNG, LAT],
+  innerBounds: [[LNG_SW, LAT_SW], [LNG_NE, LAT_NE]],
+  outerBounds: [[LNG_SW_WIDE, LAT_SW_WIDE], [LNG_NE_WIDE, LAT_NE_WIDE]],
+  defaultView: { longitude: LNG, latitude: LAT, zoom: 13.5, pitch: 0, bearing: 0 },
+};
+```
+
+จากนั้นอัปเดต keyword ข่าวในไฟล์ `apps/api/src/adapters/news.ts` และ deploy บน Cloudflare Pages (ฟรี)
+
+### ซอร์สข้อมูลที่ใช้
+
+ทุก API ที่ใช้มีแพลนฟรีหรือไม่ต้องใช้ key:
+- **Open-Meteo** (อากาศ + ทะเล + AQ) — ฟรีไม่จำกัด
+- **iTIC / Longdo** — ฟรี (ปิดกั้น IP บางส่วน ทดแทนด้วย Node tunnel)
+- **Traffy Fondue** — open API ทั่วประเทศ
+- **NASA GIBS** — ดาวเทียม ฟรีสาธารณะ
+- **OpenStreetMap** — อาคาร ถนน ลำน้ำ ฟรี
+- **data.go.th** — ข้อมูลเปิดภาครัฐไทย
+- **AISStream.io** — ตำแหน่งเรือ ฟรีพร้อม key
+
+### ปรัชญาการออกแบบ
+
+สร้างตาม Design DNA ของ Dr. Non: **Dieter Rams × Bauhaus × cyberpunk data-dense**
+- หน้าจอมืด สีพื้น near-black `#0a0e14` มี blue undertone
+- ONE accent: amber `#f59e0b` สำหรับการเน้นความสำคัญ
+- Palette data-encoded เท่านั้น: ไม่มีสีประดับ ทุกสีมีความหมาย
+- ขนาด font 3 ขนาด: display, body, micro
+- ไม่มี rounded corners ไม่มี drop shadows ไม่มี gradients
+
+---
+
+## Tech Stack
+
+| Layer | Tech |
+|---|---|
+| Frontend | React 19, Vite 6, TypeScript |
+| Map | deck.gl 9.3, MapLibre GL 5.7, react-map-gl 8 |
+| API | Hono 4.6, Node.js 20 (24/7 via launchd), Cloudflare Workers (serverless) |
+| Shared | pnpm workspace monorepo |
+| Deploy | Cloudflare Pages (web) + Workers (API) |
+| Data | Open-Meteo, NASA GIBS/FIRMS, Longdo/iTIC, Traffy Fondue, data.go.th |
+
+## License
+
+MIT. Fork freely. Build for your city.
+
+---
+
+*Built by [Dr. Non Arkara](https://nonarkara.org) · [SLIC Index](https://slic.nonarkara.org) × [depa](https://www.depa.or.th)*
