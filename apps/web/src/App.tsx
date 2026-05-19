@@ -72,6 +72,9 @@ import {
   waterwaysLayer,
   fisheriesLayer,
   floodRiskLayer,
+  templeSpiresLayer,
+  oldTownDistrictLayer,
+  type HeritageFeatureProps,
   CIVIC_PALETTE,
   type CivicKind,
   type AisVessel,
@@ -486,6 +489,11 @@ export default function App() {
         title = pick("name:en", "name", "name:th") ?? "Maritime feature";
         sub = pick("man_made", "amenity", "harbour", "seamark:type") ?? null;
         break;
+      case "temple-spires-base":
+      case "old-town-district":
+        title = pick("name") ?? pick("nameTh") ?? "Heritage site";
+        sub = pick("era") ?? null;
+        break;
       case "fisheries":
         title = pick("name") ?? "Fishery zone";
         sub = `${pick("kind") ?? ""} · ${pick("boats") ?? ""}${pick("yearly_yield_t") ? ` · ${pick("yearly_yield_t")} t/yr` : ""}`;
@@ -630,6 +638,9 @@ export default function App() {
   const fisheries = useGeoJson<FeatureCollection<Polygon | MultiPolygon, Record<string, unknown>>>(
     "/geo/chonburi-fisheries.geojson",
   );
+  const heritage = useGeoJson<FeatureCollection<Point | Polygon | MultiPolygon, HeritageFeatureProps>>(
+    "/geo/chonburi-heritage.geojson",
+  );
   const floodRisk = useGeoJson<FeatureCollection<Polygon | MultiPolygon, Record<string, unknown>>>(
     "/geo/chonburi-flood-risk.geojson",
   );
@@ -745,6 +756,20 @@ export default function App() {
     if (enabledLayers.has("waterways") && waterways) out.push(waterwaysLayer(waterways) as Layer);
     // Fishing zones
     if (enabledLayers.has("fisheries") && fisheries) out.push(fisheriesLayer(fisheries) as Layer);
+    // Heritage: old town district + temple spires (always show in 3D OPS/EXEC lenses)
+    if (heritage) {
+      const districtFc = {
+        type: "FeatureCollection" as const,
+        features: heritage.features.filter(f => f.properties.kind === "old-town-district"),
+      } as FeatureCollection<Polygon | MultiPolygon, HeritageFeatureProps>;
+      const spiresFc = {
+        type: "FeatureCollection" as const,
+        features: heritage.features.filter(f => f.properties.kind !== "old-town-district"),
+      } as FeatureCollection<Point, HeritageFeatureProps>;
+      const dist = oldTownDistrictLayer(districtFc);
+      if (dist) out.push(dist as Layer);
+      out.push(...(templeSpiresLayer(spiresFc) as Layer[]));
+    }
     // Flood-risk polygons
     if (enabledLayers.has("flood-risk-zones") && floodRisk) out.push(floodRiskLayer(floodRisk) as Layer);
     // Distance grid (1·5·10 km)
@@ -800,7 +825,7 @@ export default function App() {
     shuttleRoutes, shuttleStops, transitStations, transitLines, campusGates, neighborhoodBuildings, roads,
     shuttle.data, cctv.data, cityReports.data,
     iticEvents.data, bma, bmaAqStationList, electricityFc, waterFc, drainageFc, wifiFc,
-    civicPoints, waterways, fisheries, floodRisk,
+    civicPoints, waterways, fisheries, floodRisk, heritage,
     maritimePorts, maritimeFerries, maritimeNavAids, ais.data, datago.data,
     presence.lng, presence.lat, presence.accuracyM,
   ]);

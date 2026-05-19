@@ -1,0 +1,115 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "old-town-district",
+        "name": "Chonburi Old Town",
+        "nameTh": "ย่านเก่าเมืองชลบุรี",
+        "describe": "19th–early 20th century Chinese-Thai shophouse district along the waterfront. Pre-war commercial heritage: narrow 2-3 storey shop-houses, Teochew merchant architecture, Buddhist shrines and Chinese clan houses.",
+        "era": "1880–1945"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [100.9760, 13.3540],
+          [100.9830, 13.3540],
+          [100.9870, 13.3570],
+          [100.9885, 13.3620],
+          [100.9880, 13.3680],
+          [100.9850, 13.3720],
+          [100.9800, 13.3740],
+          [100.9750, 13.3720],
+          [100.9730, 13.3670],
+          [100.9735, 13.3600],
+          [100.9760, 13.3540]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "temple-spire",
+        "name": "Wat Yai Intharam",
+        "nameTh": "วัดใหญ่อินทาราม",
+        "height": 38,
+        "era": "Ayutthaya period, 17th c.",
+        "describe": "One of Chonburi's oldest and most revered temples. The main prang dates to the Ayutthaya period. Home to important Buddha images and royal connections."
+      },
+      "geometry": { "type": "Point", "coordinates": [100.9852, 13.3604] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "temple-spire",
+        "name": "Wat Tham Suea",
+        "nameTh": "วัดถ้ำเสือ",
+        "height": 45,
+        "era": "Ratanakosin period",
+        "describe": "Tiger Cave Temple — built into a limestone cliff face. Large Buddha image visible from the bay. Landmark for fishing boats returning to port."
+      },
+      "geometry": { "type": "Point", "coordinates": [101.0143, 13.3771] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "temple-spire",
+        "name": "Wat Srimuang",
+        "nameTh": "วัดศรีเมือง",
+        "height": 30,
+        "era": "19th century",
+        "describe": "Central city temple, near the old town market. Community centre for Bang Pla Soi district. Houses important Rattanakosin-era murals."
+      },
+      "geometry": { "type": "Point", "coordinates": [100.9844, 13.3622] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "temple-spire",
+        "name": "Wat Non Ket Yai",
+        "nameTh": "วัดหนองเกตุใหญ่",
+        "height": 28,
+        "era": "Ratanakosin period",
+        "describe": "Large urban temple, eastern quarter. Well-known for its annual boat racing festival on the canal."
+      },
+      "geometry": { "type": "Point", "coordinates": [101.0020, 13.3640] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "temple-spire",
+        "name": "Wat Ang Sila",
+        "nameTh": "วัดอ่างศิลา",
+        "height": 25,
+        "era": "19th century",
+        "describe": "Ang Sila fishing village temple. Blessing ceremonies for fishermen before the monsoon season. Mortar-and-pestle market nearby."
+      },
+      "geometry": { "type": "Point", "coordinates": [100.9290, 13.3460] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "chinese-shrine",
+        "name": "San Chao Pho Khao Yai",
+        "nameTh": "ศาลเจ้าพ่อเขาใหญ่",
+        "height": 18,
+        "era": "19th century",
+        "describe": "Principal Chinese Teochew shrine serving the old merchant community. Boat festival rituals. The spiritual anchor of the old town waterfront."
+      },
+      "geometry": { "type": "Point", "coordinates": [100.9847, 13.3618] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "chinese-shrine",
+        "name": "Chao Por Khao Yai (Bang Saen)",
+        "nameTh": "เทพเจ้าพ่อเขาใหญ่ บ้านแสน",
+        "height": 15,
+        "era": "20th century",
+        "describe": "Community shrine for Bang Saen fishing families. Lunar New Year ceremonies."
+      },
+      "geometry": { "type": "Point", "coordinates": [100.9270, 13.2854] }
+    }
+  ]
+}

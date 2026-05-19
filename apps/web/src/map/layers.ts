@@ -275,6 +275,16 @@ export interface BuildingProperties {
 function buildingHeightMeters(props: BuildingProperties): number {
   if (props.height) return props.height;
   if (props.levels) return props.levels * 3;
+  // Landmark minimum heights — the polygon may be the compound not the spire;
+  // enforce a minimum that reads correctly in the 3D skyline.
+  const kind = classifyBuilding(props);
+  if (kind === "temple") return 28; // chedi/prang minimum
+  if (kind === "church")          return 20; // bell tower minimum
+  if (kind === "mosque")          return 22; // minaret minimum
+  if (kind === "hospital")        return 18; // multi-storey minimum
+  if (kind === "government")      return 15; // civic building minimum
+  if (kind === "university")      return 15;
+  if (kind === "hotel")           return 20; // hotels tend tall
   return 9;
 }
 
@@ -1900,5 +1910,88 @@ export function floodRiskLayer(collection: FeatureCollection<Polygon | MultiPoly
     getLineWidth: 1.5,
     lineWidthUnits: "pixels",
     lineWidthMinPixels: 1,
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// HERITAGE LAYERS — temples, old town, Chinese shrines
+// ═══════════════════════════════════════════════════════════════════════
+
+export interface HeritageFeatureProps {
+  kind: "temple-spire" | "chinese-shrine" | "old-town-district";
+  name: string;
+  nameTh?: string;
+  height?: number;
+  era?: string;
+  describe?: string;
+}
+
+/**
+ * Temple spires — tall bright gold columns at known temple locations.
+ * A real Thai temple's prang/chedi towers 15-50 m; this layer renders
+ * it as a glowing gold column so it reads in the skyline from afar.
+ * Deck.gl ScatterplotLayer with 3D emulation via thick radius + color.
+ */
+export function templeSpiresLayer(
+  collection: FeatureCollection<Point, HeritageFeatureProps>,
+) {
+  const spires = collection.features.filter(
+    (f) => f.properties.kind === "temple-spire" || f.properties.kind === "chinese-shrine",
+  );
+
+  // Base disk — wide amber foundation
+  const base = new ScatterplotLayer<Feature<Point, HeritageFeatureProps>>({
+    id: "temple-spires-base",
+    data: spires,
+    pickable: true,
+    radiusUnits: "meters",
+    getPosition: (f) => f.geometry.coordinates as [number, number],
+    getRadius: (f) => f.properties.kind === "temple-spire" ? 14 : 8,
+    getFillColor: [251, 191, 36, 200],
+    getLineColor: [245, 158, 11, 255],
+    stroked: true,
+    lineWidthMinPixels: 1.5,
+  });
+
+  // Inner spire dot — bright, small, glowing
+  const spire = new ScatterplotLayer<Feature<Point, HeritageFeatureProps>>({
+    id: "temple-spires-tip",
+    data: spires,
+    pickable: false,
+    radiusUnits: "pixels",
+    getPosition: (f) => f.geometry.coordinates as [number, number],
+    getRadius: (f) => f.properties.kind === "temple-spire" ? 5 : 3,
+    getFillColor: [255, 255, 255, 240],
+    getLineColor: [251, 191, 36, 255],
+    stroked: true,
+    lineWidthMinPixels: 1.5,
+  });
+
+  return [base, spire];
+}
+
+/**
+ * Old town district boundary — hairline outline, warm amber fill at low
+ * opacity so buildings inside remain visible but the district reads as
+ * a distinct zone at all zoom levels.
+ */
+export function oldTownDistrictLayer(
+  collection: FeatureCollection<Polygon | MultiPolygon, HeritageFeatureProps>,
+) {
+  const districts = collection.features.filter(
+    (f) => f.properties.kind === "old-town-district",
+  );
+  if (!districts.length) return null;
+  return new GeoJsonLayer({
+    id: "old-town-district",
+    data: { type: "FeatureCollection", features: districts } as FeatureCollection,
+    pickable: true,
+    stroked: true,
+    filled: true,
+    getFillColor: [245, 158, 11, 18],   // very low opacity — just a haze
+    getLineColor: [245, 158, 11, 200],
+    getLineWidth: 2,
+    lineWidthUnits: "pixels",
+    lineWidthMinPixels: 1.5,
   });
 }
