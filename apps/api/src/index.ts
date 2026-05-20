@@ -22,6 +22,7 @@ import { chat, ChatError, type ChatMessage } from "./adapters/chat.js";
 import { fetchAisVessels } from "./adapters/ais.js";
 import { fetchDatagoPoints, fetchDatagoDatasets, fetchReservoirs, fetchDisasterStats, fetchFahfon, fetchProvincialKPIs } from "./adapters/datago.js";
 import { fetchFacebookPosts } from "./adapters/facebook.js";
+import { fetchGistdaPoi, fetchGistdaSolar } from "./adapters/gistda.js";
 import { fetchMarine } from "./adapters/marine.js";
 import { fetchTides } from "./adapters/tides.js";
 import { SOURCE_CATALOG } from "@chonburi/shared";
@@ -261,6 +262,11 @@ app.get("/api/datago/provincial-kpis", async (c) => {
 });
 app.get("/api/marine", async (c) => safeFeed(c, fetchMarine, "marine"));
 app.get("/api/tides",  async (c) => safeFeed(c, fetchTides, "tides"));
+app.get("/api/gistda/poi",   async (c) => safeFeed(c, fetchGistdaPoi, "gistda-poi"));
+app.get("/api/gistda/solar", async (c) => {
+  const month = c.req.query("month") ? Number(c.req.query("month")) : undefined;
+  return safeFeed(c, () => fetchGistdaSolar(month), "gistda-solar");
+});
 app.get("/api/social/facebook", async (c) =>
   safeFeed(c, () => fetchFacebookPosts({ FACEBOOK_PAGE_ID: c.env.FACEBOOK_PAGE_ID, FACEBOOK_PAGE_TOKEN: c.env.FACEBOOK_PAGE_TOKEN }), "facebook"),
 );

@@ -449,3 +449,121 @@ export async function fetchProvincialKPIs(token: string): Promise<NormalizedFeed
     };
   });
 }
+
+// ─── ROAD SAFETY — full breakdown ────────────────────────────────────
+
+export interface RoadSafetySnapshot {
+  year: number;
+  // Totals
+  totalDeaths: number;
+  totalInjured: number;
+  per100k: number | null;
+  // Monthly trend (12 months)
+  monthly: Array<{ month: number; deaths: number; injured: number }>;
+  // Top causes (latest month average)
+  topCauses: Array<{ cause: string; count: number }>;
+  // By district (top 5 deadliest)
+  byDistrict: Array<{ district: string; deaths: number; injured: number }>;
+  // YoY comparison (prev year)
+  prevYearDeaths: number | null;
+  prevYearInjured: number | null;
+}
+
+const RSC_RESOURCES = {
+  monthly:    "d90b68b9-ac28-4637-88b2-f4b0ab8bb6e4",  // monthly deaths+injured
+  causes:     "80d1850c-4e8d-44ba-8906-8625096f84a3",  // top 5 causes by month
+  byDistrict: "1cce857e-cb4f-421b-8acb-dc2486815ad2",  // by district
+};
+
+export async function fetchRoadSafety(token: string): Promise<NormalizedFeed<RoadSafetySnapshot>> {
+  return cached("datago-road-safety", 3600 * 6, async () => {
+    const fetchedAt = new Date().toISOString();
+
+    const [monthlyRaw, causesRaw, districtRaw] = await Promise.allSettled([
+      ckanFetch<Record<string, unknown>>(RSC_RESOURCES.monthly,    token, { limit: 100 }),
+      ckanFetch<Record<string, unknown>>(RSC_RESOURCES.causes,     token, { limit: 1000 }),
+      ckanFetch<Record<string, unknown>>(RSC_RESOURCES.byDistrict, token, { limit: 1321 }),
+    ]);
+
+    const ok = <T>(r: PromiseSettledResult<T>): T | null =>
+      r.status === "fulfilled" ? r.value : null;
+
+    const monthly  = ok(monthlyRaw)  ?? [];
+    const causes   = ok(causesRaw)   ?? [];
+    const district = ok(districtRaw) ?? [];
+
+    if (!monthly.length) {
+      return { features: [], meta: { source: "datago-road-safety", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const } };
+    }
+
+    // Latest year available
+    const latestYear = Math.max(...monthly.map(r => Number(r["ปี"] ?? 0)));
+    const prevYear = latestYear - 1;
+
+    // Monthly data for latest + prev year
+    const thisYearRows = monthly.filter(r => Number(r["ปี"]) === latestYear);
+    const prevYearRows = monthly.filter(r => Number(r["ปี"]) === prevYear);
+
+    const sumField = (rows: typeof monthly, field: string) =>
+      rows.reduce((s, r) => s + (parseThaiNum(r[field]) ?? 0), 0);
+
+    const totalDeaths   = sumField(thisYearRows, "เสียชีวิต(คน)");
+    const totalInjured  = sumField(thisYearRows, "บาดเจ็บ(คน)");
+    const prevDeaths    = prevYearRows.length ? sumField(prevYearRows, "เสียชีวิต(คน)") : null;
+    const prevInjured   = prevYearRows.length ? sumField(prevYearRows, "บาดเจ็บ(คน)") : null;
+
+    // Monthly trend
+    const monthlyTrend = Array.from({ length: 12 }, (_, i) => {
+      const m = i + 1;
+      const row = thisYearRows.find(r => Number(r["เดือน"]) === m);
+      return {
+        month: m,
+        deaths:  row ? (parseThaiNum(row["เสียชีวิต(คน)"]) ?? 0) : 0,
+        injured: row ? (parseThaiNum(row["บาดเจ็บ(คน)"])   ?? 0) : 0,
+      };
+    });
+
+    // Top causes — aggregate across months for latest year, rank 1 cause
+    const causeAgg: Record<string, number> = {};
+    causes.filter(r => Number(r["ปี"]) === latestYear && Number(r["อันดับ"]) === 1)
+      .forEach(r => {
+        const c = String(r["สาเหตุ"] ?? "");
+        if (c && c !== "ไม่มี") causeAgg[c] = (causeAgg[c] ?? 0) + (parseThaiNum(r["จำนวนครั้ง"]) ?? 0);
+      });
+    const topCauses = Object.entries(causeAgg)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([cause, count]) => ({ cause, count }));
+
+    // By district — latest year, aggregate deaths
+    const distDeaths: Record<string, { deaths: number; injured: number }> = {};
+    district.filter(r => Number(r["ปี"]) === latestYear)
+      .forEach(r => {
+        const d = String(r["อำเภอ"] ?? "");
+        if (!distDeaths[d]) distDeaths[d] = { deaths: 0, injured: 0 };
+        distDeaths[d].deaths += parseThaiNum(r["จำนวนผู้เสียชีวิต(คน)"]) ?? 0;
+      });
+    // Get injured from monthly district if available, else leave 0
+    const byDistrict = Object.entries(distDeaths)
+      .sort((a, b) => b[1].deaths - a[1].deaths)
+      .slice(0, 8)
+      .map(([district, v]) => ({ district, ...v }));
+
+    const snap: RoadSafetySnapshot = {
+      year: latestYear,
+      totalDeaths,
+      totalInjured,
+      per100k: null,   // need population denominator — can divide by provincial pop
+      monthly: monthlyTrend,
+      topCauses,
+      byDistrict,
+      prevYearDeaths: prevDeaths,
+      prevYearInjured: prevInjured,
+    };
+
+    return {
+      features: [snap],
+      meta: { source: "datago-road-safety", fetchedAt, ageMinutes: cacheAgeMinutes(fetchedAt), fallbackTier: "live" as const },
+    };
+  });
+}
