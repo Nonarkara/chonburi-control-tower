@@ -302,3 +302,150 @@ export async function fetchFahfon(token: string): Promise<NormalizedFeed<FahfonR
     return { features, meta: { source: "datago-fahfon", fetchedAt, ageMinutes: cacheAgeMinutes(fetchedAt), fallbackTier: "live" as const } };
   });
 }
+
+// ─── PROVINCIAL KPIs — combined fetch (one endpoint, all at once) ─────
+
+export interface ProvincialKPIs {
+  // Population
+  population: { total: number; male: number; female: number; year: number } | null;
+  // Tourism
+  tourism: {
+    totalVisitors: number | null;
+    thaiVisitors: number | null;
+    foreignVisitors: number | null;
+    revenueMillionBaht: number | null;
+    year: number | null;
+    topForeignNationality: string | null;
+    topForeignCount: number | null;
+  } | null;
+  // Hotel occupancy — most recent month
+  hotel: { occupancyPct: number | null; guestsThisMonth: number | null; year: number; month: number } | null;
+  // Accidents — latest year
+  accidents: { incidents: number; injured: number; deaths: number; per100k: number | null; year: number } | null;
+  // Accidents by district — hotspot
+  hotspotDistrict: { name: string; deaths: number; year: number } | null;
+  // Elderly + disabled (Bang Sarae sample)
+  welfare: { elderly: number; disabled: number } | null;
+}
+
+const RESOURCE = {
+  tourists:       "0baab228-e555-4dac-8621-fc38dcfb3a79",
+  foreignRanking: "34e4864a-2512-4825-bd04-518a478c72af",
+  hotelOccupancy: "bd5c400e-a6c0-4887-b67e-08acbbf4db44",
+  accidentOverview: "5715b22f-2185-4968-912e-b33a0a8e4725",
+  accidentByDistrict: "1cce857e-cb4f-421b-8acb-dc2486815ad2",
+  population: "70c1b513-b84a-47b4-aad5-82ae3a33a000",
+  elderly:    "95efccc9-aab4-4fa5-8735-7d1e8b037b25",
+  disabled:   "78904ec0-c044-49e8-a76a-edc1da1642fa",
+};
+
+function parseThaiNum(s: unknown): number | null {
+  if (s == null) return null;
+  const n = Number(String(s).replace(/,/g, "").trim());
+  return Number.isFinite(n) ? n : null;
+}
+
+export async function fetchProvincialKPIs(token: string): Promise<NormalizedFeed<ProvincialKPIs>> {
+  return cached("datago-provincial-kpis", 3600 * 6, async () => {
+    const fetchedAt = new Date().toISOString();
+
+    // Fetch all in parallel
+    const [tourists, foreign, hotel, accOverview, accDistrict, pop, elderly, disabled] =
+      await Promise.allSettled([
+        ckanFetch<Record<string, unknown>>(RESOURCE.tourists, token, { limit: 50 }),
+        ckanFetch<Record<string, unknown>>(RESOURCE.foreignRanking, token, { limit: 10 }),
+        ckanFetch<Record<string, unknown>>(RESOURCE.hotelOccupancy, token, { limit: 50 }),
+        ckanFetch<Record<string, unknown>>(RESOURCE.accidentOverview, token, { limit: 30 }),
+        ckanFetch<Record<string, unknown>>(RESOURCE.accidentByDistrict, token, { limit: 1321 }),
+        ckanFetch<Record<string, unknown>>(RESOURCE.population, token, { limit: 10 }),
+        ckanFetch<Record<string, unknown>>(RESOURCE.elderly, token, { limit: 10 }),
+        ckanFetch<Record<string, unknown>>(RESOURCE.disabled, token, { limit: 10 }),
+      ]);
+
+    const ok = <T>(r: PromiseSettledResult<T>): T | null =>
+      r.status === "fulfilled" ? r.value : null;
+
+    // ── Population ──────────────────────────────────────────────────
+    const popRows = ok(pop) ?? [];
+    const latestYear = Math.max(...popRows.map(r => Number(r["ปี"] ?? 0)));
+    const popYear = popRows.filter(r => Number(r["ปี"]) === latestYear);
+    const male   = parseThaiNum(popYear.find(r => String(r["เพศ"]).includes("ชาย"))?.[" จำนวนราษฎร"] ?? popYear.find(r => String(r["เพศ"]).includes("ชาย"))?.["จำนวนราษฎร"]);
+    const female = parseThaiNum(popYear.find(r => String(r["เพศ"]).includes("หญิง"))?.[" จำนวนราษฎร"] ?? popYear.find(r => String(r["เพศ"]).includes("หญิง"))?.["จำนวนราษฎร"]);
+    const population = (male != null && female != null)
+      ? { total: male + female, male, female, year: latestYear } : null;
+
+    // ── Tourism ─────────────────────────────────────────────────────
+    const tourRows = ok(tourists) ?? [];
+    const latestTourYear = Math.max(...tourRows.map(r => Number(r["ปี"] ?? 0)));
+    const tourYear = tourRows.filter(r => Number(r["ปี"]) === latestTourYear);
+    const thaiRow    = tourYear.find(r => String(r["นักท่องเที่ยว"] ?? "").includes("ไทย"));
+    const foreignRow = tourYear.find(r => !String(r["นักท่องเที่ยว"] ?? "").includes("ไทย"));
+    const foreignRanking = ok(foreign) ?? [];
+    const latestForeignYear = Math.max(...foreignRanking.map(r => Number(r["ปี"] ?? 0)));
+    const top1 = foreignRanking.find(r => Number(r["ปี"]) === latestForeignYear && Number(r["ลำดับ"]) === 1);
+    const tourism = {
+      year: latestTourYear,
+      totalVisitors: (parseThaiNum(thaiRow?.["จำนวน(คน)"]) ?? 0) + (parseThaiNum(foreignRow?.["จำนวน(คน)"]) ?? 0) || null,
+      thaiVisitors: parseThaiNum(thaiRow?.["จำนวน(คน)"]),
+      foreignVisitors: parseThaiNum(foreignRow?.["จำนวน(คน)"]),
+      revenueMillionBaht: parseThaiNum(thaiRow?.["รายได้ (ล้านบาท)"]),
+      topForeignNationality: String(top1?.["สัญชาติ"] ?? "—"),
+      topForeignCount: parseThaiNum(top1?.["จำนวน"]),
+    };
+
+    // ── Hotel occupancy ─────────────────────────────────────────────
+    const hotelRows = ok(hotel) ?? [];
+    const lastHotel = hotelRows[hotelRows.length - 1];
+    const hotelKpi = lastHotel ? {
+      occupancyPct: Number(lastHotel["อัตราการเข้าพัก"]) || null,
+      guestsThisMonth: parseThaiNum(lastHotel["จำนวนผู้เข้าพัก (คน)"]),
+      year: Number(lastHotel["ปี"]) || 0,
+      month: Number(lastHotel["เดือน"]) || 0,
+    } : null;
+
+    // ── Accidents ───────────────────────────────────────────────────
+    const accRows = ok(accOverview) ?? [];
+    const latestAccYear = Math.max(...accRows.map(r => Number(r["ปี"] ?? 0)));
+    const accYear = accRows.filter(r => Number(r["ปี"]) === latestAccYear);
+    const getAcc = (label: string) => accYear.find(r => String(r["รายการ"] ?? "").includes(label));
+    const accKpi = accYear.length > 0 ? {
+      year: latestAccYear,
+      incidents: parseThaiNum(getAcc("การเกิดอุบัติเหตุ")?.["จำนวน"]) ?? 0,
+      injured:   parseThaiNum(getAcc("บาดเจ็บ")?.["จำนวน"]) ?? 0,
+      deaths:    parseThaiNum(getAcc("เสียชีวิต")?.["จำนวน"]) ?? 0,
+      per100k:   parseThaiNum(getAcc("ต่อประชากร")?.["จำนวน"]),
+    } : null;
+
+    // ── Hotspot district ────────────────────────────────────────────
+    const distRows = ok(accDistrict) ?? [];
+    const latestDistYear = Math.max(...distRows.map(r => Number(r["ปี"] ?? 0)));
+    const distYear = distRows.filter(r => Number(r["ปี"]) === latestDistYear);
+    // Sum deaths per district
+    const distDeaths: Record<string, number> = {};
+    for (const r of distYear) {
+      const d = String(r["อำเภอ"] ?? "");
+      distDeaths[d] = (distDeaths[d] ?? 0) + (parseThaiNum(r["จำนวนผู้เสียชีวิต(คน)"]) ?? 0);
+    }
+    const [topDist, topDeaths] = Object.entries(distDeaths).sort((a, b) => b[1] - a[1])[0] ?? ["—", 0];
+    const hotspot = { name: topDist, deaths: topDeaths, year: latestDistYear };
+
+    // ── Welfare ─────────────────────────────────────────────────────
+    const elderlyRows = ok(elderly) ?? [];
+    const disabledRows = ok(disabled) ?? [];
+    const totalElderly = elderlyRows.reduce((s, r) => s + (parseThaiNum(r["จำนวนผู้มีสิทธิ"]) ?? 0), 0);
+    const totalDisabled = disabledRows.reduce((s, r) => s + (parseThaiNum(r["จำนวนคน"]) ?? 0), 0);
+    const welfare = (totalElderly || totalDisabled) ? { elderly: totalElderly, disabled: totalDisabled } : null;
+
+    const kpis: ProvincialKPIs = { population, tourism, hotel: hotelKpi, accidents: accKpi, hotspotDistrict: hotspot, welfare };
+
+    return {
+      features: [kpis],
+      meta: {
+        source: "datago-provincial-kpis",
+        fetchedAt,
+        ageMinutes: cacheAgeMinutes(fetchedAt),
+        fallbackTier: "live" as const,
+      },
+    };
+  });
+}

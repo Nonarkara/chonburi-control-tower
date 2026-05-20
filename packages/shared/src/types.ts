@@ -290,3 +290,72 @@ export interface MarketSnapshot {
   ticks: MarketTick[];
   thb: { vs: "USD" | "EUR" | "JPY" | "CNY"; rate: number | null }[];
 }
+
+// ── Digital Twin ────────────────────────────────────────────────────
+
+export type TwinKind =
+  | "building"
+  | "sensor"
+  | "road"
+  | "reservoir"
+  | "vessel"
+  | "zone"
+  | "poi"
+  | "bridge"
+  | "ferry"
+  | "port";
+
+export type TwinRelationPredicate =
+  | "contains"
+  | "monitors"
+  | "adjacent_to"
+  | "connected_to"
+  | "serves"
+  | "located_in"
+  | "part_of";
+
+export interface TwinObject {
+  id: string;
+  kind: TwinKind;
+  name: string;
+  nameTh?: string;
+  nameEn?: string;
+  lat: number;
+  lng: number;
+  geom?: unknown;
+  properties: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TwinRelation {
+  id: string;
+  subjectId: string;
+  predicate: TwinRelationPredicate;
+  objectId: string;
+  properties?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface TwinStatePoint {
+  time: string;
+  objectId: string;
+  metric: string;
+  value: number;
+  source: string;
+  properties?: Record<string, unknown>;
+}
+
+export type AdapterStatus = "healthy" | "degraded" | "down" | "unknown";
+
+export interface AdapterHealth {
+  name: string;
+  status: AdapterStatus;
+  lastSuccessAt: string | null;
+  lastErrorAt: string | null;
+  lastErrorMessage: string | null;
+  consecutiveFailures: number;
+  totalCalls: number;
+  totalErrors: number;
+  ageMinutes: number | null;
+}

@@ -18,6 +18,7 @@ interface Props {
   onOpenSheets: () => void;
   sheetsConfigured: boolean;
   academic: AcademicSnapshot | null;
+  systemStatus?: "healthy" | "degraded" | "down" | "unknown";
 }
 
 function formatDate(d: Date): string {
@@ -31,7 +32,7 @@ const TEMPO_COLOR: Record<AcademicSnapshot["tempo"], string> = {
   peak: "var(--bad)",
 };
 
-export function TopBar({ feeds, onOpenCatalog, catalogCount, viewMode, onCycleViewMode, onOpenManual, onOpenSheets, sheetsConfigured, academic }: Props) {
+export function TopBar({ feeds, onOpenCatalog, catalogCount, viewMode, onCycleViewMode, onOpenManual, onOpenSheets, sheetsConfigured, academic, systemStatus }: Props) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -97,6 +98,15 @@ export function TopBar({ feeds, onOpenCatalog, catalogCount, viewMode, onCycleVi
           <span className="dot live" style={{ marginRight: 5 }} />
           {liveCount}/{feeds.length} LIVE
         </span>
+        {systemStatus && systemStatus !== "healthy" && (
+          <span
+            className={`system-status-badge status-${systemStatus}`}
+            title={`System ${systemStatus.toUpperCase()} — check /api/health/detailed`}
+          >
+            <span className={`dot ${systemStatus}`} />
+            {systemStatus.toUpperCase()}
+          </span>
+        )}
         <button
           onClick={onOpenSheets}
           className={`mono sheets-btn ${sheetsConfigured ? "sheets-btn-live" : ""}`}

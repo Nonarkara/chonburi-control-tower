@@ -3158,3 +3158,57 @@
   .topbar .brand { gap: 6px; }
   .brand-wave { display: none; } /* wave is decorative on mobile — remove */
 }
+
+/* ── System health banner + badge ──────────────────────────────────────── */
+.system-banner {
+  position: fixed;
+  top: 48px; /* sits just below topbar */
+  left: 0;
+  right: 0;
+  z-index: 90;
+  padding: 6px 16px;
+  text-align: center;
+  font-size: var(--size-caption);
+  letter-spacing: 0.06em;
+  backdrop-filter: blur(6px);
+}
+.system-banner.banner-degraded {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warn);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.35);
+}
+.system-banner.banner-down {
+  background: rgba(248, 81, 73, 0.15);
+  color: var(--bad);
+  border-bottom: 1px solid rgba(248, 81, 73, 0.35);
+}
+.system-banner .banner-link {
+  color: inherit;
+  text-decoration: underline;
+  opacity: 0.85;
+}
+.system-banner .banner-link:hover { opacity: 1; }
+
+.system-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-left: 6px;
+}
+.system-status-badge.status-degraded {
+  background: rgba(245, 158, 11, 0.18);
+  color: var(--warn);
+}
+.system-status-badge.status-down {
+  background: rgba(248, 81, 73, 0.18);
+  color: var(--bad);
+}
+
+/* Dot helpers for degraded/down */
+.dot.degraded { background: var(--warn); }
+.dot.down     { background: var(--bad); }

@@ -15,6 +15,8 @@ import app from "./index.js";
 import { hydrateCacheFromDisk, enableCachePersistence, stopCachePersistence } from "./lib/persistence.js";
 import { hydrateNewsArchive } from "./lib/newsArchive.js";
 import { startAisStream } from "./adapters/ais.js";
+import { hydrateBuildingsFromGeoJSON } from "./lib/twinStore.js";
+import { startMqttBridge } from "./adapters/mqttBridge.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -63,6 +65,9 @@ const env = {
   AQICN_TOKEN: process.env.AQICN_TOKEN,
   AISSTREAM_TOKEN: process.env.AISSTREAM_TOKEN,
   DATA_GO_TH_TOKEN: process.env.DATA_GO_TH_TOKEN,
+  MQTT_BROKER_URL: process.env.MQTT_BROKER_URL,
+  MQTT_USERNAME: process.env.MQTT_USERNAME,
+  MQTT_PASSWORD: process.env.MQTT_PASSWORD,
 };
 
 // Start AIS WebSocket subscriber if token is provided. No-op without key.
@@ -70,6 +75,31 @@ if (process.env.AISSTREAM_TOKEN) {
   startAisStream(process.env.AISSTREAM_TOKEN);
 } else {
   console.log("[chonburi-api] AISSTREAM_TOKEN not set — AIS vessels will be empty");
+}
+
+// Hydrate twin store from building GeoJSON
+(function hydrateTwin() {
+  try {
+    const raw = readFileSync(resolve(__dirname, "../../web/public/geo/chonburi-buildings.geojson"), "utf8");
+    const count = hydrateBuildingsFromGeoJSON(JSON.parse(raw));
+    console.log(`[chonburi-api] twin store: ${count} buildings hydrated`);
+  } catch (err) {
+    console.error("[chonburi-api] twin hydration failed:", (err as Error).message);
+  }
+})();
+
+// Start MQTT bridge if broker URL is configured
+if (process.env.MQTT_BROKER_URL) {
+  startMqttBridge({
+    brokerUrl: process.env.MQTT_BROKER_URL,
+    clientId: `chonburi-api-${Date.now()}`,
+    username: process.env.MQTT_USERNAME,
+    password: process.env.MQTT_PASSWORD,
+    topics: process.env.MQTT_TOPICS?.split(",") ?? ["fahfon/+/data", "sensors/+/data"],
+  });
+  console.log(`[chonburi-api] MQTT bridge starting: ${process.env.MQTT_BROKER_URL}`);
+} else {
+  console.log("[chonburi-api] MQTT_BROKER_URL not set — skipping MQTT bridge");
 }
 
 await hydrateNewsArchive()
@@ -111,6 +141,8 @@ const PREWARM_PATHS = [
   "/api/tides",
   "/api/datago/points",
   "/api/datago/datasets",
+  "/api/datago/reservoirs",
+  "/api/datago/provincial-kpis",
 ];
 
 async function prewarmOnce() {

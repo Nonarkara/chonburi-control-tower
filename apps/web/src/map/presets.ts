@@ -31,6 +31,8 @@ export type LayerId =
   // Marine + risk
   | "fisheries"
   | "flood-risk-zones"
+  // 3D Tiles
+  | "tile3d-buildings"
   // Imagery
   | "satellite-esri"
   | "satellite-viirs-truecolor"
@@ -233,6 +235,8 @@ export const ALL_LAYERS: {
     describe: "Chonburi Town Municipality outer boundary (เทศบาลเมืองชลบุรี)." },
   { id: "municipality-buildings", label: "Buildings (OSM, 3D)",       swatch: "#0EA5E9", group: "municipality",
     describe: "All ~5,000 building footprints inside the municipality with height inferred from OSM tags or area heuristics. Click any building for name + levels; 3D mode extrudes them as boxes." },
+  { id: "tile3d-buildings",       label: "Buildings (3D Tiles)",       swatch: "#7DD3FC", group: "municipality",
+    describe: "Streaming 3D Tiles pilot for Chonburi city centre — generated from OSM footprints with real height extrusion. Replaces extruded GeoJSON with OGC-standard 3D Tiles." },
   { id: "neighborhood-buildings", label: "Skyline (tall ≥30 m)",      swatch: "#7DD3FC", group: "municipality",
     describe: "Tall buildings (≥ 30 m) in and around the municipality. Renders flat in 2D, extrudes in 3D for the skyline silhouette." },
   { id: "districts",              label: "District / sub-district",   swatch: "#FFFFFF", group: "municipality",

@@ -20,12 +20,15 @@ import { fetchExecutiveSnapshot, deriveAlerts } from "./adapters/executive.js";
 import { fetchMarkets } from "./adapters/markets.js";
 import { chat, ChatError, type ChatMessage } from "./adapters/chat.js";
 import { fetchAisVessels } from "./adapters/ais.js";
-import { fetchDatagoPoints, fetchDatagoDatasets, fetchReservoirs, fetchDisasterStats, fetchFahfon } from "./adapters/datago.js";
+import { fetchDatagoPoints, fetchDatagoDatasets, fetchReservoirs, fetchDisasterStats, fetchFahfon, fetchProvincialKPIs } from "./adapters/datago.js";
 import { fetchFacebookPosts } from "./adapters/facebook.js";
 import { fetchMarine } from "./adapters/marine.js";
 import { fetchTides } from "./adapters/tides.js";
 import { SOURCE_CATALOG } from "@chonburi/shared";
 import type { NormalizedFeed, AirQualityPoint, IncidentFeature, IntelligenceItem, ExecutiveSnapshot, MarketSnapshot } from "@chonburi/shared";
+import { recordAdapterSuccess, recordAdapterError, getAllHealth, getSystemStatus } from "./lib/health.js";
+import { getMqttStatus } from "./adapters/mqttBridge.js";
+import twinApp from "./routes/twin.js";
 
 type Bindings = {
   ENVIRONMENT?: string;
@@ -93,6 +96,11 @@ app.get("/", (c) =>
       "/api/datago/datasets",
       "/api/social/facebook",
       "/api/chat",
+      "/api/health/detailed",
+      "/api/twin/objects",
+      "/api/twin/relations",
+      "/api/twin/state",
+      "/api/twin/snapshot",
     ],
   }),
 );
@@ -106,6 +114,16 @@ app.get("/api/health", (c) =>
     env: c.env.ENVIRONMENT ?? "unknown",
   }),
 );
+
+app.get("/api/health/detailed", (c) => {
+  const sys = getSystemStatus();
+  return c.json({
+    system: sys,
+    adapters: getAllHealth(),
+    mqtt: getMqttStatus(),
+    at: new Date().toISOString(),
+  });
+});
 
 interface FeedMeta {
   meta: { ageMinutes: number; fallbackTier: string; source: string };
@@ -155,20 +173,24 @@ app.use("/api/*", async (c, next) => {
 async function safeFeed<T>(
   c: { header: (k: string, v: string) => void; json: (obj: unknown, status?: number) => Response },
   fetcher: () => Promise<NormalizedFeed<T>>,
+  adapterName?: string,
 ): Promise<Response> {
   try {
     const feed = await fetcher();
     setMetaHeaders(c, feed);
+    if (adapterName) recordAdapterSuccess(adapterName, feed.meta.ageMinutes);
     return c.json(feed);
   } catch (err) {
-    console.error("API error:", err);
-    return c.json({ error: "Internal server error" }, 500);
+    const message = (err as Error).message ?? "Internal server error";
+    console.error(`API error [${adapterName ?? "unknown"}]:`, message);
+    if (adapterName) recordAdapterError(adapterName, message);
+    return c.json({ error: message }, 500);
   }
 }
 
-app.get("/api/incidents/city-reports", async (c) => safeFeed(c, fetchCityReports));
-app.get("/api/incidents/itic", async (c) => safeFeed(c, fetchItic));
-app.get("/api/news", async (c) => safeFeed(c, fetchNews));
+app.get("/api/incidents/city-reports", async (c) => safeFeed(c, fetchCityReports, "city-reports"));
+app.get("/api/incidents/itic", async (c) => safeFeed(c, fetchItic, "itic"));
+app.get("/api/news", async (c) => safeFeed(c, fetchNews, "news"));
 
 app.get("/api/news/archive", async (c) => {
   const mod = await tryArchiveApi();
@@ -204,12 +226,12 @@ app.get("/api/news/stats", async (c) => {
   return c.json(await mod.newsArchiveStats());
 });
 
-app.get("/api/weather", async (c) => safeFeed(c, fetchWeather));
-app.get("/api/precip-nowcast", async (c) => safeFeed(c, fetchPrecipNowcast));
-app.get("/api/air-quality", async (c) => safeFeed(c, fetchAirQuality));
-app.get("/api/air-quality/trend", async (c) => safeFeed(c, fetchAirQualityTrend));
-app.get("/api/cctv/longdo", async (c) => safeFeed(c, fetchCctv));
-app.get("/api/trends", async (c) => safeFeed(c, fetchTrends));
+app.get("/api/weather", async (c) => safeFeed(c, fetchWeather, "weather"));
+app.get("/api/precip-nowcast", async (c) => safeFeed(c, fetchPrecipNowcast, "precip-nowcast"));
+app.get("/api/air-quality", async (c) => safeFeed(c, fetchAirQuality, "air-quality"));
+app.get("/api/air-quality/trend", async (c) => safeFeed(c, fetchAirQualityTrend, "air-quality-trend"));
+app.get("/api/cctv/longdo", async (c) => safeFeed(c, fetchCctv, "cctv"));
+app.get("/api/trends", async (c) => safeFeed(c, fetchTrends, "trends"));
 app.get("/api/maritime/ais", (c) => {
   const feed = fetchAisVessels();
   setMetaHeaders(c, feed);
@@ -220,26 +242,30 @@ app.get("/api/datago/points", (c) => {
   setMetaHeaders(c, feed);
   return c.json(feed);
 });
-app.get("/api/datago/datasets",  async (c) => safeFeed(c, fetchDatagoDatasets));
+app.get("/api/datago/datasets",  async (c) => safeFeed(c, fetchDatagoDatasets, "datago-datasets"));
 app.get("/api/datago/reservoirs", async (c) => {
   const token = c.env.DATA_GO_TH_TOKEN ?? "";
-  return safeFeed(c, () => fetchReservoirs(token));
+  return safeFeed(c, () => fetchReservoirs(token), "reservoirs");
 });
 app.get("/api/datago/disasters",  async (c) => {
   const token = c.env.DATA_GO_TH_TOKEN ?? "";
-  return safeFeed(c, () => fetchDisasterStats(token));
+  return safeFeed(c, () => fetchDisasterStats(token), "disasters");
 });
 app.get("/api/datago/fahfon",     async (c) => {
   const token = c.env.DATA_GO_TH_TOKEN ?? "";
-  return safeFeed(c, () => fetchFahfon(token));
+  return safeFeed(c, () => fetchFahfon(token), "fahfon");
 });
-app.get("/api/marine", async (c) => safeFeed(c, fetchMarine));
-app.get("/api/tides",  async (c) => safeFeed(c, fetchTides));
+app.get("/api/datago/provincial-kpis", async (c) => {
+  const token = c.env.DATA_GO_TH_TOKEN ?? "";
+  return safeFeed(c, () => fetchProvincialKPIs(token));
+});
+app.get("/api/marine", async (c) => safeFeed(c, fetchMarine, "marine"));
+app.get("/api/tides",  async (c) => safeFeed(c, fetchTides, "tides"));
 app.get("/api/social/facebook", async (c) =>
-  safeFeed(c, () => fetchFacebookPosts({ FACEBOOK_PAGE_ID: c.env.FACEBOOK_PAGE_ID, FACEBOOK_PAGE_TOKEN: c.env.FACEBOOK_PAGE_TOKEN })),
+  safeFeed(c, () => fetchFacebookPosts({ FACEBOOK_PAGE_ID: c.env.FACEBOOK_PAGE_ID, FACEBOOK_PAGE_TOKEN: c.env.FACEBOOK_PAGE_TOKEN }), "facebook"),
 );
 app.get("/api/markets", async (c) =>
-  safeFeed(c, () => fetchMarkets({ FMP_API_KEY: c.env.FMP_API_KEY, FRED_API_KEY: c.env.FRED_API_KEY })),
+  safeFeed(c, () => fetchMarkets({ FMP_API_KEY: c.env.FMP_API_KEY, FRED_API_KEY: c.env.FRED_API_KEY }), "markets"),
 );
 
 app.get("/api/executive", async (c) => {
@@ -321,5 +347,7 @@ app.post("/api/chat", async (c) => {
     return c.json({ error: "Internal error" }, 500);
   }
 });
+
+app.route("/api/twin", twinApp);
 
 export default app;

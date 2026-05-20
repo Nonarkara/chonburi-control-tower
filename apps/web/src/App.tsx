@@ -95,6 +95,7 @@ import {
   type NeighborhoodBuildingProps,
   type SurroundingBuildingProperties,
 } from "./map/layers";
+import { useTile3DLayer } from "./map/Tile3DLayer";
 import { ALL_LAYERS, LENSES, type LayerId, type LensId } from "./map/presets";
 
 import { TopBar } from "./components/TopBar";
@@ -106,6 +107,7 @@ import { NewsDesk } from "./components/NewsDesk";
 import { FacebookPanel } from "./components/FacebookPanel";
 import { CoastalBrief, type MarineSnapshot } from "./components/CoastalBrief";
 import { WaterPanel, type ReservoirStatus } from "./components/WaterPanel";
+import { ProvincialKPIs, type ProvincialKPIs as ProvincialKPIsType } from "./components/ProvincialKPIs";
 import { TidePanel, type TideSnapshot } from "./components/TidePanel";
 import { FisheryPanel } from "./components/FisheryPanel";
 import { SourceCatalog } from "./components/SourceCatalog";
@@ -120,6 +122,7 @@ import { useWorldWeather } from "./hooks/useWorldWeather";
 import { SpeedTestPanel } from "./components/SpeedTestPanel";
 import { DeviceCheckIn } from "./components/DeviceCheckIn";
 import { NewsTicker } from "./components/NewsTicker";
+import { useSystemHealth } from "./hooks/useSystemHealth";
 import { MarketsTicker } from "./components/MarketsTicker";
 import { MobileNav, type MobilePanel } from "./components/MobileNav";
 import { ChatBox } from "./components/ChatBox";
@@ -247,6 +250,7 @@ function escapeHtml(s: string): string {
 export default function App() {
   const { theme } = useTheme();
   const mapStyle = useMemo(() => basemapStyle(theme), [theme]);
+  const { health: systemHealth } = useSystemHealth(60_000);
   const campus = useGeoJson<FeatureCollection<Polygon | MultiPolygon, CampusZoneProperties>>(
     "/geo/chula-campus.geojson",
   );
@@ -614,6 +618,7 @@ export default function App() {
   const marine = useFeed<MarineSnapshot>(`${API_BASE}/api/marine`, 30 * 60_000);
   const tides = useFeed<TideSnapshot>(`${API_BASE}/api/tides`, 10 * 60_000);
   const reservoirs = useFeed<ReservoirStatus>(`${API_BASE}/api/datago/reservoirs`, 60 * 60_000);
+  const provincialKPIs = useFeed<ProvincialKPIsType>(`${API_BASE}/api/datago/provincial-kpis`, 6 * 60 * 60_000);
   // Shuttle and academic calendar not available in this deployment
   const shuttle = { data: [] as ShuttleVehicle[], fallbackTier: "unavailable" as const, ageMinutes: 0 };
   const academic = { data: [] as AcademicSnapshot[] };
@@ -713,6 +718,9 @@ export default function App() {
       out.push(neighborhoodBuildingsLayer(neighborhoodBuildings, { extruded: is3D, ghosted: isSubstructure }) as Layer);
     if (enabledLayers.has("surrounding-buildings") && surroundingBuildings)
       out.push(surroundingBuildingsLayer(surroundingBuildings, { extruded: is3D, ghosted: isSubstructure }) as Layer);
+    // 3D Tiles pilot — OGC-standard streaming buildings (replaces extruded GeoJSON when available)
+    const tile3dLayer = useTile3DLayer({ visible: enabledLayers.has("tile3d-buildings"), tilesetUrl: "/geo/3d-tiles/tileset.json" });
+    if (tile3dLayer) out.push(tile3dLayer as Layer);
     if (enabledLayers.has("road-network") && roads)
       out.push(roadNetworkLayer(roads as unknown as FeatureCollection<LineString, ClassifiedRoadProps>) as Layer);
     if (enabledLayers.has("transit-lines") && transitLines)
@@ -866,7 +874,24 @@ export default function App() {
         onOpenSheets={() => setSheetsOpen(true)}
         sheetsConfigured={sheetsConfigured}
         academic={academic.data[0] ?? null}
+        systemStatus={systemHealth?.system.status ?? "unknown"}
       />
+
+      {/* Degraded system banner */}
+      {systemHealth && systemHealth.system.status !== "healthy" && (
+        <div className={`system-banner banner-${systemHealth.system.status}`}>
+          <span className="mono">
+            SYSTEM {systemHealth.system.status.toUpperCase()} — {" "}
+            {systemHealth.system.down > 0 && `${systemHealth.system.down} adapter${systemHealth.system.down > 1 ? "s" : ""} down`}
+            {systemHealth.system.down > 0 && systemHealth.system.degraded > 0 && ", "}
+            {systemHealth.system.degraded > 0 && `${systemHealth.system.degraded} degraded`}
+            {" · "}
+            <a href={`${import.meta.env.VITE_API_BASE_URL ?? ""}/api/health/detailed`} target="_blank" rel="noreferrer" className="banner-link">
+              View details →
+            </a>
+          </span>
+        </div>
+      )}
 
       {/* ── World strip: Chonburi host + 3 user-editable clocks ── */}
       <WorldStrip
@@ -924,6 +949,14 @@ export default function App() {
                   data={reservoirs.data}
                   loading={reservoirs.fallbackTier === "loading"}
                   ageMinutes={reservoirs.ageMinutes}
+                />
+              </div>
+            )}
+            {provincialKPIs.data.length > 0 && (
+              <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+                <ProvincialKPIs
+                  data={provincialKPIs.data[0] ?? null}
+                  loading={provincialKPIs.fallbackTier === "loading"}
                 />
               </div>
             )}

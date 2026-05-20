@@ -1,0 +1,24 @@
+{
+  "asset": {
+    "version": "1.0",
+    "generator": "chonburi-3dtiles"
+  },
+  "geometricError": 500,
+  "root": {
+    "refine": "REPLACE",
+    "geometricError": 100,
+    "boundingVolume": {
+      "region": [
+        1.7621193375998052,
+        0.23286240825039511,
+        1.7626985830071447,
+        0.23344704747312098,
+        0,
+        28
+      ]
+    },
+    "content": {
+      "uri": "buildings.b3dm"
+    }
+  }
+}
