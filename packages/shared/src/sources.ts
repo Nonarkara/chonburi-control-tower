@@ -215,15 +215,15 @@ export const SOURCE_CATALOG: SourceEntry[] = [
     describe: "US AQI + PM2.5/PM10 from Copernicus reanalysis grid. Free, no key.",
   },
   {
-    id: "air4thai",
-    label: "Air4Thai stations",
+    id: "air4thai-legacy",
+    label: "Air4Thai stations (legacy)",
     vendor: "Pollution Control Department",
     category: "environment",
     status: "ready",
     endpoint: "http://air4thai.com/forweb/getAQI_JSON.php",
     apiPath: "/api/air-quality/stations",
     pollSeconds: 900,
-    describe: "Official Thai AQI station data. Bangkok-10t (Klong Toei) and 53t (Wang Thong Lang) closest to campus.",
+    describe: "Official Thai AQI station data — legacy endpoint.",
     docs: "http://air4thai.com/",
   },
   {

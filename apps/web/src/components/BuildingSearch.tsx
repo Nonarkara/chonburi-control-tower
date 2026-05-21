@@ -91,7 +91,7 @@ export function BuildingSearch({ buildings, onSelect }: Props) {
         type="search"
         placeholder={
           buildings
-            ? `Search ${index.length} buildings — try "engineering" or "วิศวกรรม"`
+            ? `Search ${index.length} landmarks of ${buildings.features.length.toLocaleString()} buildings — "city hall" / "วัด"`
             : "Loading buildings…"
         }
         value={q}

@@ -359,3 +359,43 @@ export interface AdapterHealth {
   totalErrors: number;
   ageMinutes: number | null;
 }
+
+// ── GISTDA (Thailand Geo-Informatics & Space Technology) ────────────
+
+export interface GistdaPoi {
+  id: number;
+  name: string;
+  nameEn: string;
+  category:
+    | "government"
+    | "school"
+    | "temple"
+    | "hospital"
+    | "hotel"
+    | "bank"
+    | "restaurant"
+    | "shopping"
+    | "transport"
+    | "sport"
+    | "agency"
+    | "other";
+  subcat: number;
+  road: string;
+  roadEn: string;
+  lat: number;
+  lng: number;
+  disabled: string;
+}
+
+export interface GistdaSolarBuilding {
+  id: number;
+  height: number;
+  area: number;
+  solarIrr: number; // kWh/m² monthly
+  roofType: string;
+  buildType: string;
+  month: string;
+  monthNum: number;
+  lat: number;
+  lng: number;
+}

@@ -3,22 +3,22 @@
     "version": "1.0",
     "generator": "chonburi-3dtiles"
   },
-  "geometricError": 500,
+  "geometricError": 2000,
   "root": {
     "refine": "REPLACE",
-    "geometricError": 100,
+    "geometricError": 500,
     "boundingVolume": {
       "region": [
-        1.7621193375998052,
-        0.23286240825039511,
-        1.7626985830071447,
-        0.23344704747312098,
+        1.7617497850247805,
+        0.23251046580650075,
+        1.7632350469537252,
+        0.23405333226923,
         0,
         28
       ]
     },
     "content": {
-      "uri": "buildings.b3dm"
+      "uri": "buildings.b3dm?v=c1ba79e8"
     }
   }
 }

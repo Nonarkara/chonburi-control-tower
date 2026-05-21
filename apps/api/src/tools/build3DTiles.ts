@@ -2,21 +2,16 @@
 /**
  * Build 3D Tiles from Chonburi building GeoJSON.
  *
- * This tool converts the existing OSM building footprint GeoJSON into:
- *  - A 3D Tiles tileset (tileset.json) referencing b3dm tiles
- *  - Individual .b3dm (Batched 3D Model) tiles per spatial bin
+ * Converts OSM building footprints into OGC 3D Tiles 1.0 (tileset.json + b3dm).
+ * Buildings are extruded using the `levels` property (fallback: 1 level = 3.5m).
+ * GISTDA LOD2 heights are used when available for greater accuracy.
  *
- * The buildings are extruded using the `levels` property (fallback: 1 level = 3.5m).
- * Output is written to apps/web/public/geo/3d-tiles/ for direct serving.
+ * Output: apps/web/public/geo/3d-tiles/
  *
  * Usage:
  *   npx tsx apps/api/src/tools/build3DTiles.ts
  *
- * Dependencies (dev):
- *   npm i -D @loaders.gl/3d-tables @loaders.gl/gltf @loaders.gl/math
- *
- * For now this generates a **simplified 3D Tiles 1.0 tileset** using handcrafted
- * glb batches. For production scale, migrate to Cesium ion or pg2b3dm.
+ * For production scale, migrate to Cesium ion or pg2b3dm.
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
@@ -50,12 +45,8 @@ function toRad(deg: number) {
   return (deg * Math.PI) / 180;
 }
 
-/**
- * Convert lat/lng/height (WGS84) to ECEF (Earth-Centered, Earth-Fixed) meters.
- * 3D Tiles uses ECEF for global positioning.
- */
 function llhToEcef(lat: number, lng: number, h: number): [number, number, number] {
-  const a = 6378137.0; // WGS84 semi-major axis
+  const a = 6378137.0;
   const e2 = 6.69437999013e-3;
   const latRad = toRad(lat);
   const lngRad = toRad(lng);
@@ -86,11 +77,7 @@ function loadBuildings(): Building[] {
     let ring: Array<[number, number]> = [];
     if (Array.isArray(coords) && Array.isArray(coords[0])) {
       if (Array.isArray(coords[0][0])) {
-        // Polygon: coords[0] is the outer ring
         ring = coords[0] as unknown as Array<[number, number]>;
-      } else {
-        // Flat array of points (shouldn't happen for Polygon but handle defensively)
-        ring = coords as unknown as Array<[number, number]>;
       }
     }
     if (!ring || ring.length < 3) continue;
@@ -104,77 +91,66 @@ function loadBuildings(): Building[] {
     const lat = sumLat / ring.length;
     const lng = sumLng / ring.length;
 
-    buildings.push({
-      id,
-      name,
-      lat,
-      lng,
-      heightM,
-      levels,
-      footprint: ring,
-      kind: String(props["building"] ?? "yes"),
-    });
+    buildings.push({ id, name, lat, lng, heightM, levels, footprint: ring, kind: String(props["building"] ?? "yes") });
   }
   return buildings;
 }
 
-/**
- * Build a minimal GLB (glTF 2.0 binary) representing a single building.
- * Returns a Uint8Array suitable for embedding in a b3dm batch.
- */
-function buildBuildingGlb(b: Building): Uint8Array {
-  // Compute local ECEF coordinates relative to building center
-  const [cx, cy, cz] = llhToEcef(b.lat, b.lng, 0);
-
+function buildCombinedGlb(buildings: Building[], tileCenter: [number, number, number]): Uint8Array {
+  // Global ECEF positions relative to tileCenter
   const positions: number[] = [];
   const indices: number[] = [];
 
-  // Base ring vertices
-  const baseIdx = positions.length / 3;
-  for (const [lng, lat] of b.footprint) {
-    const [x, y, z] = llhToEcef(lat, lng, 0);
-    positions.push(x - cx, y - cy, z - cz);
+  for (const b of buildings) {
+    const baseIdx = positions.length / 3;
+    const [cx, cy, cz] = llhToEcef(b.lat, b.lng, 0);
+
+    // Base ring
+    for (const [lng, lat] of b.footprint) {
+      const [x, y, z] = llhToEcef(lat, lng, 0);
+      positions.push(x - tileCenter[0], y - tileCenter[1], z - tileCenter[2]);
+    }
+
+    // Top ring
+    for (const [lng, lat] of b.footprint) {
+      const [x, y, z] = llhToEcef(lat, lng, b.heightM);
+      positions.push(x - tileCenter[0], y - tileCenter[1], z - tileCenter[2]);
+    }
+
+    const n = b.footprint.length;
+
+    // Walls
+    for (let i = 0; i < n; i++) {
+      const next = (i + 1) % n;
+      indices.push(baseIdx + i, baseIdx + topIdx(n) + i, baseIdx + next);
+      indices.push(baseIdx + next, baseIdx + topIdx(n) + i, baseIdx + topIdx(n) + next);
+    }
+
+    // Roof centroid
+    const centIdx = positions.length / 3;
+    let sumX = 0, sumY = 0, sumZ = 0;
+    for (let i = 0; i < n; i++) {
+      sumX += positions[(baseIdx + topIdx(n) + i) * 3];
+      sumY += positions[(baseIdx + topIdx(n) + i) * 3 + 1];
+      sumZ += positions[(baseIdx + topIdx(n) + i) * 3 + 2];
+    }
+    positions.push(sumX / n, sumY / n, sumZ / n);
+
+    // Roof fan
+    for (let i = 0; i < n; i++) {
+      const next = (i + 1) % n;
+      indices.push(centIdx, baseIdx + topIdx(n) + next, baseIdx + topIdx(n) + i);
+    }
   }
 
-  // Top ring vertices
-  const topIdx = positions.length / 3;
-  for (const [lng, lat] of b.footprint) {
-    const [x, y, z] = llhToEcef(lat, lng, b.heightM);
-    positions.push(x - cx, y - cy, z - cz);
-  }
+  function topIdx(n: number) { return n; }
 
-  const n = b.footprint.length;
-
-  // Wall triangles
-  for (let i = 0; i < n; i++) {
-    const next = (i + 1) % n;
-    // Two triangles per wall segment
-    indices.push(baseIdx + i, topIdx + i, baseIdx + next);
-    indices.push(baseIdx + next, topIdx + i, topIdx + next);
-  }
-
-  // Roof (fan triangulation from centroid of top ring)
-  const centIdx = positions.length / 3;
-  let sumX = 0;
-  let sumY = 0;
-  let sumZ = 0;
-  for (let i = 0; i < n; i++) {
-    sumX += positions[(topIdx + i) * 3];
-    sumY += positions[(topIdx + i) * 3 + 1];
-    sumZ += positions[(topIdx + i) * 3 + 2];
-  }
-  positions.push(sumX / n, sumY / n, sumZ / n);
-  for (let i = 0; i < n; i++) {
-    const next = (i + 1) % n;
-    indices.push(centIdx, topIdx + next, topIdx + i);
-  }
-
-  // ---- Minimal GLB encoder ----
   const floatBuffer = new Float32Array(positions);
   const indexBuffer = new Uint16Array(indices);
 
   const vertexByteLength = floatBuffer.byteLength;
   const indexByteLength = indexBuffer.byteLength;
+
   const accessorMin = [Infinity, Infinity, Infinity];
   const accessorMax = [-Infinity, -Infinity, -Infinity];
   for (let i = 0; i < positions.length; i += 3) {
@@ -193,20 +169,8 @@ function buildBuildingGlb(b: Building): Uint8Array {
     nodes: [{ mesh: 0 }],
     meshes: [{ primitives: [{ attributes: { POSITION: 0 }, indices: 1, mode: 4 }] }],
     accessors: [
-      {
-        bufferView: 0,
-        componentType: 5126,
-        count: positions.length / 3,
-        type: "VEC3",
-        min: accessorMin,
-        max: accessorMax,
-      },
-      {
-        bufferView: 1,
-        componentType: 5123,
-        count: indices.length,
-        type: "SCALAR",
-      },
+      { bufferView: 0, componentType: 5126, count: positions.length / 3, type: "VEC3", min: accessorMin, max: accessorMax },
+      { bufferView: 1, componentType: 5123, count: indices.length, type: "SCALAR" },
     ],
     bufferViews: [
       { buffer: 0, byteOffset: 0, byteLength: vertexByteLength, target: 34962 },
@@ -222,11 +186,11 @@ function buildBuildingGlb(b: Building): Uint8Array {
   const binChunkLength = vertexByteLength + indexByteLength + binPadding;
 
   const header = new Uint32Array(5);
-  header[0] = 0x46546c67; // magic "glTF"
-  header[1] = 2; // version
-  header[2] = 12 + 8 + jsonChunkLength + 8 + binChunkLength; // total length
+  header[0] = 0x46546c67;
+  header[1] = 2;
+  header[2] = 12 + 8 + jsonChunkLength + 8 + binChunkLength;
   header[3] = jsonChunkLength;
-  header[4] = 0x4e4f534a; // "JSON"
+  header[4] = 0x4e4f534a;
 
   const glb = new Uint8Array(header[2]);
   let offset = 0;
@@ -240,7 +204,7 @@ function buildBuildingGlb(b: Building): Uint8Array {
 
   const binHeader = new Uint32Array(2);
   binHeader[0] = binChunkLength;
-  binHeader[1] = 0x004e4942; // "BIN\0"
+  binHeader[1] = 0x004e4942;
   glb.set(new Uint8Array(binHeader.buffer), offset);
   offset += 8;
 
@@ -253,25 +217,25 @@ function buildBuildingGlb(b: Building): Uint8Array {
   return glb;
 }
 
-/**
- * Build a b3dm tile from a single building.
- * In production, batch many buildings per tile. Here we keep it simple.
- */
 function buildB3dm(glb: Uint8Array): Uint8Array {
   const featureTableJson = JSON.stringify({ BATCH_LENGTH: 1 });
   const fPadding = (4 - (featureTableJson.length % 4)) % 4;
   const fLen = featureTableJson.length + fPadding;
 
-  const header = new Uint32Array(5);
-  header[0] = 0x6233646d; // "b3dm"
-  header[1] = 1; // version
-  header[2] = 28 + fLen + glb.byteLength; // total length
-  header[3] = fLen;
-  header[4] = 0; // batch table length
+  // b3dm 1.0 header — 28 bytes (7 × uint32), little-endian
+  // magic: ASCII "b3dm" → bytes 0x62 0x33 0x64 0x6D → LE uint32 = 0x6D643362
+  const header = new Uint32Array(7);
+  header[0] = 0x6D643362; // magic "b3dm"
+  header[1] = 1;          // version
+  header[2] = 28 + fLen + glb.byteLength; // byteLength (total file)
+  header[3] = fLen;       // featureTableJSONByteLength
+  header[4] = 0;          // featureTableBinaryByteLength
+  header[5] = 0;          // batchTableJSONByteLength
+  header[6] = 0;          // batchTableBinaryByteLength
 
   const b3dm = new Uint8Array(header[2]);
   let o = 0;
-  b3dm.set(new Uint8Array(header.buffer), o); o += 20;
+  b3dm.set(new Uint8Array(header.buffer), o); o += 28;
   const fBytes = new TextEncoder().encode(featureTableJson);
   b3dm.set(fBytes, o); o += fBytes.length;
   for (let i = 0; i < fPadding; i++) b3dm[o++] = 0x20;
@@ -286,53 +250,15 @@ function main() {
 
   mkdirSync(OUTPUT_DIR, { recursive: true });
 
-  // For a pilot, pick the densest ~200 buildings around Chonburi city center
-  // (lat ~13.36, lng ~100.98) within a ~2km bounding box
-  const centerLat = 13.36;
-  const centerLng = 100.98;
-  const degreeDelta = 0.018; // ~2km
-  const pilot = buildings.filter(
-    (b) =>
-      b.lat >= centerLat - degreeDelta &&
-      b.lat <= centerLat + degreeDelta &&
-      b.lng >= centerLng - degreeDelta &&
-      b.lng <= centerLng + degreeDelta,
-  );
-  console.log(`[build3DTiles] Pilot district: ${pilot.length} buildings`);
+  // Build for ALL buildings in the municipality (not just a pilot district)
+  // Split into spatial tiles if needed. For now, one tile for simplicity.
+  const targetBuildings = buildings;
+  console.log(`[build3DTiles] Processing ${targetBuildings.length} buildings into 3D Tiles`);
 
-  // Build one tile containing all pilot buildings (batched)
-  // For simplicity in this MVP, we concatenate GLBs into a single b3dm
-  // with a feature table listing each building.
-  // In production use pg2b3dm or Cesium ion.
-
-  const tileGlbParts: Uint8Array[] = [];
-  for (const b of pilot.slice(0, 100)) {
-    try {
-      const glb = buildBuildingGlb(b);
-      tileGlbParts.push(glb);
-    } catch (err) {
-      console.warn(`[build3DTiles] Skip ${b.id}:`, (err as Error).message);
-    }
-  }
-
-  // Concatenate GLBs naively for the pilot (real tool would merge scenes)
-  const combinedLen = tileGlbParts.reduce((sum, g) => sum + g.byteLength, 0);
-  const combined = new Uint8Array(combinedLen);
-  let off = 0;
-  for (const g of tileGlbParts) {
-    combined.set(g, off);
-    off += g.byteLength;
-  }
-
-  const b3dm = buildB3dm(combined);
-  const tilePath = resolve(OUTPUT_DIR, "buildings.b3dm");
-  writeFileSync(tilePath, b3dm);
-  console.log(`[build3DTiles] Wrote ${tilePath} (${b3dm.byteLength} bytes)`);
-
-  // Compute bounding volume from pilot buildings
+  // Compute bounding volume and tile center
   let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
   let maxHeight = 0;
-  for (const b of pilot) {
+  for (const b of targetBuildings) {
     minLat = Math.min(minLat, b.lat);
     maxLat = Math.max(maxLat, b.lat);
     minLng = Math.min(minLng, b.lng);
@@ -340,20 +266,30 @@ function main() {
     maxHeight = Math.max(maxHeight, b.heightM);
   }
 
+  const centerLat = (minLat + maxLat) / 2;
+  const centerLng = (minLng + maxLng) / 2;
+  const tileCenter = llhToEcef(centerLat, centerLng, maxHeight / 2);
+
+  console.log("[build3DTiles] Building GLB...");
+  const glb = buildCombinedGlb(targetBuildings, tileCenter);
+  console.log(`[build3DTiles] GLB: ${glb.byteLength} bytes`);
+
+  const b3dm = buildB3dm(glb);
+  const tilePath = resolve(OUTPUT_DIR, "buildings.b3dm");
+  writeFileSync(tilePath, b3dm);
+  console.log(`[build3DTiles] Wrote ${tilePath} (${b3dm.byteLength} bytes)`);
+
   const tileset = {
     asset: { version: "1.0", generator: "chonburi-3dtiles" },
-    geometricError: 500,
+    geometricError: 2000,
     root: {
       refine: "REPLACE" as const,
-      geometricError: 100,
+      geometricError: 500,
       boundingVolume: {
         region: [
-          toRad(minLng),
-          toRad(minLat),
-          toRad(maxLng),
-          toRad(maxLat),
-          0,
-          maxHeight,
+          toRad(minLng), toRad(minLat),
+          toRad(maxLng), toRad(maxLat),
+          0, maxHeight,
         ],
       },
       content: { uri: "buildings.b3dm" },

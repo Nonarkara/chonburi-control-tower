@@ -33,6 +33,9 @@ export type LayerId =
   | "flood-risk-zones"
   // 3D Tiles
   | "tile3d-buildings"
+  // GISTDA
+  | "gistda-pois"
+  | "gistda-solar"
   // Imagery
   | "satellite-esri"
   | "satellite-viirs-truecolor"
@@ -83,7 +86,7 @@ export const LENSES: Lens[] = [
     id: "executive",
     label: "EXEC",
     describe:
-      "Executive — strategic view. Municipal boundary + buildings + Esri satellite + maritime + districts. For the mayor and leadership team.",
+      "Strategic — high-altitude view. Municipal boundary, satellite, districts, port + transit + open-data POIs. Pair with the OPS sidebar for a province-wide read.",
     layers: [
       "municipality-boundary",
       "municipality-buildings",
@@ -94,6 +97,7 @@ export const LENSES: Lens[] = [
       "transit-stations",
       "road-network",
       "datago-points",
+      "gistda-pois",
     ],
   },
   {
@@ -111,6 +115,8 @@ export const LENSES: Lens[] = [
       "incidents-itic",
       "cctv-cameras",
       "ais-vessels",
+      "gistda-pois",
+      "tile3d-buildings",
     ],
   },
   {
@@ -154,6 +160,7 @@ export const LENSES: Lens[] = [
       "municipality-buildings",
       "satellite-esri",
       "flood-prone-areas",
+      "gistda-solar",
     ],
   },
   {
@@ -289,6 +296,12 @@ export const ALL_LAYERS: {
     describe: "Coastal fishing economy: Ang Sila oysters · Bang Saen shrimp · Bang Phra mussels · Chonburi Bay artisanal · Koh Si Chang offshore. Click for boat count + yield." },
   { id: "flood-risk-zones",  label: "Coastal flood-risk zones",   swatch: "#EF4444", group: "environment",
     describe: "Hand-authored polygons of historical flood-prone areas (king-tide, storm-surge, drainage-backflow). Hover for severity + household count. Replace with municipal GIS when supplied." },
+
+  // ─── GISTDA ────────────────────────────────────────────────────────────
+  { id: "gistda-pois",       label: "GISTDA POI Digital Twin",   swatch: "#F59E0B", group: "open-data",
+    describe: "Thailand GISTDA POI Digital Twin — 1,000 authoritative points: government offices, schools, temples, hospitals, hotels, banks, restaurants, shopping, transport, sport. Thai + English names, disabled-access flags." },
+  { id: "gistda-solar",      label: "GISTDA Solar LOD2",         swatch: "#FBBF24", group: "environment",
+    describe: "GISTDA LOD2 building solar irradiance for Chonburi city centre — real measured height, footprint area, and monthly solar potential (kWh/m²). Blue=low, green=medium, yellow=high, red=excellent rooftop solar." },
 
   // ─── Imagery ───────────────────────────────────────────────────────────
   { id: "satellite-esri",    label: "Satellite (Esri HD)",      swatch: "#60A5FA", group: "imagery",

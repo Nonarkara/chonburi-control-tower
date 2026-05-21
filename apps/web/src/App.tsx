@@ -15,6 +15,8 @@ import type {
   MarketSnapshot,
   PrecipNowcast,
   WeatherSnapshot,
+  GistdaPoi,
+  GistdaSolarBuilding,
 } from "@chonburi/shared";
 
 import { useFeed } from "./hooks/useFeed";
@@ -94,6 +96,8 @@ import {
   type ClassifiedRoadProps,
   type NeighborhoodBuildingProps,
   type SurroundingBuildingProperties,
+  gistdaPoiLayer,
+  gistdaSolarLayer,
 } from "./map/layers";
 import { useTile3DLayer } from "./map/Tile3DLayer";
 import { ALL_LAYERS, LENSES, type LayerId, type LensId } from "./map/presets";
@@ -126,9 +130,9 @@ import { useSystemHealth } from "./hooks/useSystemHealth";
 import { MarketsTicker } from "./components/MarketsTicker";
 import { MobileNav, type MobilePanel } from "./components/MobileNav";
 import { ChatBox } from "./components/ChatBox";
-import { ExecutiveBrief } from "./components/ExecutiveBrief";
-import { PeerComparison } from "./components/PeerComparison";
-import { StrategicAlerts } from "./components/StrategicAlerts";
+// ExecutiveBrief / PeerComparison / StrategicAlerts removed from the mayor's
+// view — they were university-flavoured (QS rankings, enrollment, "presidential
+// attention"). To bring them back, rebuild against provincial / municipal data.
 import { useDevicePresence } from "./hooks/useDevicePresence";
 import { useIsMobile } from "./hooks/useMediaQuery";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
@@ -488,6 +492,14 @@ export default function App() {
         title = pick("name", "nameEn") ?? "data.go.th POI";
         sub = `${(p as { category?: string }).category ?? ""} · ${(p as { source?: string }).source ?? ""}`;
         break;
+      case "gistda-pois":
+        title = pick("name", "nameEn") ?? "GISTDA POI";
+        sub = `${(p as { category?: string }).category ?? ""} · ${(p as { road?: string }).road ?? ""}`;
+        break;
+      case "gistda-solar":
+        title = `Building #${pick("id") ?? ""}`;
+        sub = `${(p as { solarIrr?: number }).solarIrr ?? "—"} kWh/m² · ${(p as { roofType?: string }).roofType ?? ""} · ${(p as { height?: number }).height ?? "—"} m`;
+        break;
       case "port-infrastructure":
       case "ferry-terminals":
       case "navigation-aids":
@@ -619,6 +631,8 @@ export default function App() {
   const tides = useFeed<TideSnapshot>(`${API_BASE}/api/tides`, 10 * 60_000);
   const reservoirs = useFeed<ReservoirStatus>(`${API_BASE}/api/datago/reservoirs`, 60 * 60_000);
   const provincialKPIs = useFeed<ProvincialKPIsType>(`${API_BASE}/api/datago/provincial-kpis`, 6 * 60 * 60_000);
+  const gistdaPois = useFeed<GistdaPoi>(`${API_BASE}/api/gistda/poi`, 60 * 60_000);
+  const gistdaSolar = useFeed<GistdaSolarBuilding>(`${API_BASE}/api/gistda/solar`, 6 * 60 * 60_000);
   // Shuttle and academic calendar not available in this deployment
   const shuttle = { data: [] as ShuttleVehicle[], fallbackTier: "unavailable" as const, ageMinutes: 0 };
   const academic = { data: [] as AcademicSnapshot[] };
@@ -696,6 +710,12 @@ export default function App() {
     return buildTrafficSamples(roads, hour, { isWeekend });
   }, [roads, hour, isWeekend]);
 
+  // 3D Tiles pilot — must be called at top level (Rules of Hooks)
+  const tile3dLayer = useTile3DLayer({
+    visible: enabledLayers.has("tile3d-buildings"),
+    tilesetUrl: "/geo/3d-tiles/tileset.json",
+  });
+
   const layers = useMemo<Layer[]>(() => {
     const out: Layer[] = [];
     // Imagery first — renders beneath all vector data
@@ -719,7 +739,6 @@ export default function App() {
     if (enabledLayers.has("surrounding-buildings") && surroundingBuildings)
       out.push(surroundingBuildingsLayer(surroundingBuildings, { extruded: is3D, ghosted: isSubstructure }) as Layer);
     // 3D Tiles pilot — OGC-standard streaming buildings (replaces extruded GeoJSON when available)
-    const tile3dLayer = useTile3DLayer({ visible: enabledLayers.has("tile3d-buildings"), tilesetUrl: "/geo/3d-tiles/tileset.json" });
     if (tile3dLayer) out.push(tile3dLayer as Layer);
     if (enabledLayers.has("road-network") && roads)
       out.push(roadNetworkLayer(roads as unknown as FeatureCollection<LineString, ClassifiedRoadProps>) as Layer);
@@ -760,6 +779,10 @@ export default function App() {
     if (enabledLayers.has("ais-vessels") && ais.data.length > 0) out.push(aisVesselsLayer(ais.data) as Layer);
     // Open data
     if (enabledLayers.has("datago-points") && datago.data.length > 0) out.push(datagoPointsLayer(datago.data) as Layer);
+    // GISTDA POI Digital Twin (authoritative Thai government POIs)
+    if (enabledLayers.has("gistda-pois") && gistdaPois.data.length > 0) out.push(gistdaPoiLayer(gistdaPois.data) as Layer);
+    // GISTDA LOD2 Solar Irradiance (building rooftop solar potential)
+    if (enabledLayers.has("gistda-solar") && gistdaSolar.data.length > 0) out.push(gistdaSolarLayer(gistdaSolar.data) as Layer);
     // Civic POIs (province-wide OSM: hospitals/schools/police/fire/temples/markets/...)
     if (enabledLayers.has("civic-points") && civicPoints) out.push(civicPointsLayer(civicPoints) as Layer);
     // Waterways (canals + rivers + drains)
@@ -837,7 +860,9 @@ export default function App() {
     iticEvents.data, bma, bmaAqStationList, electricityFc, waterFc, drainageFc, wifiFc,
     civicPoints, waterways, fisheries, floodRisk, heritage,
     maritimePorts, maritimeFerries, maritimeNavAids, ais.data, datago.data,
+    gistdaPois.data, gistdaSolar.data,
     presence.lng, presence.lat, presence.accuracyM,
+    tile3dLayer,
   ]);
 
   const feedHealth = useMemo(() => [
@@ -911,80 +936,75 @@ export default function App() {
         loading={markets.fallbackTier === "loading"}
       />
 
-      {/* ── Left sidebar: operational or executive brief ── */}
-      <aside className={`left-bar ${lens === "executive" ? "left-bar-exec" : ""}`}>
-        {lens === "executive" ? (
-          <>
-            <ExecutiveBrief
-              data={executive.data[0] ?? null}
-              loading={executive.fallbackTier === "loading"}
+      {/* ── Left sidebar: provincial Chonburi brief.
+          EXEC vs OPS share the same sidebar — the lens only changes the map
+          layer set (EXEC = strategic, OPS = day-to-day). The legacy Chula
+          ExecutiveBrief / StrategicAlerts / PeerComparison panels were built
+          for a university and don't belong on a city mayor's desk. ── */}
+      <aside className="left-bar">
+        {provincialKPIs.data.length > 0 && (
+          <div className="left-section">
+            <ProvincialKPIs
+              data={provincialKPIs.data[0] ?? null}
+              loading={provincialKPIs.fallbackTier === "loading"}
             />
-          </>
-        ) : (
-          <>
-            <AqiBadge trend={aqiTrend.data[0] ?? null} loading={aqiTrend.fallbackTier === "loading"} />
-            <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
-              <CoastalBrief
-                data={marine.data[0] ?? null}
-                loading={marine.fallbackTier === "loading"}
-                ageMinutes={marine.ageMinutes}
-              />
-            </div>
-            <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
-              <TidePanel
-                data={tides.data[0] ?? null}
-                loading={tides.fallbackTier === "loading"}
-              />
-            </div>
-            <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
-              <FisheryPanel
-                marine={marine.data[0] ?? null}
-                tide={tides.data[0] ?? null}
-                precipMm={precip.data[0]?.nowMm ?? null}
-              />
-            </div>
-            {reservoirs.data.length > 0 && (
-              <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
-                <WaterPanel
-                  data={reservoirs.data}
-                  loading={reservoirs.fallbackTier === "loading"}
-                  ageMinutes={reservoirs.ageMinutes}
-                />
-              </div>
-            )}
-            {provincialKPIs.data.length > 0 && (
-              <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
-                <ProvincialKPIs
-                  data={provincialKPIs.data[0] ?? null}
-                  loading={provincialKPIs.fallbackTier === "loading"}
-                />
-              </div>
-            )}
-            <PmcuBrief
-              hour={hour}
-              isWeekend={isWeekend}
-              iticEvents={iticEvents.data}
-              cityReports={cityReports.data}
-              trafficSampleCount={trafficSamples.length}
-              cuLands={cuLands}
-            />
-            <div className="left-section">
-              <DeviceCheckIn presence={presence} onRequest={requestDevice} onClear={clearDevice} />
-            </div>
-            <div className="left-section">
-              <SpeedTestPanel />
-            </div>
-            <div className="left-section">
-              <span className="eyebrow mono">Municipal Brief</span>
-              <KpiStrip
-                cityReports={cityReports.data}
-                iticEvents={iticEvents.data}
-                airQuality={airQuality.data}
-                weather={weather.data}
-              />
-            </div>
-          </>
+          </div>
         )}
+        <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+          <AqiBadge trend={aqiTrend.data[0] ?? null} loading={aqiTrend.fallbackTier === "loading"} />
+        </div>
+        <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+          <CoastalBrief
+            data={marine.data[0] ?? null}
+            loading={marine.fallbackTier === "loading"}
+            ageMinutes={marine.ageMinutes}
+          />
+        </div>
+        <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+          <TidePanel
+            data={tides.data[0] ?? null}
+            loading={tides.fallbackTier === "loading"}
+          />
+        </div>
+        <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+          <FisheryPanel
+            marine={marine.data[0] ?? null}
+            tide={tides.data[0] ?? null}
+            precipMm={precip.data[0]?.nowMm ?? null}
+          />
+        </div>
+        {reservoirs.data.length > 0 && (
+          <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+            <WaterPanel
+              data={reservoirs.data}
+              loading={reservoirs.fallbackTier === "loading"}
+              ageMinutes={reservoirs.ageMinutes}
+            />
+          </div>
+        )}
+        <PmcuBrief
+          hour={hour}
+          isWeekend={isWeekend}
+          iticEvents={iticEvents.data}
+          cityReports={cityReports.data}
+          trafficSampleCount={trafficSamples.length}
+          cuLands={cuLands}
+        />
+        <div className="left-section">
+          <DeviceCheckIn presence={presence} onRequest={requestDevice} onClear={clearDevice} />
+        </div>
+        <div className="left-section">
+          <SpeedTestPanel />
+        </div>
+        <div className="left-section">
+          <span className="eyebrow mono">Municipal Brief</span>
+          <KpiStrip
+            cityReports={cityReports.data}
+            iticEvents={iticEvents.data}
+            airQuality={airQuality.data}
+            weather={weather.data}
+          />
+        </div>
       </aside>
 
       {/* ── Map center — nothing overlaps this ── */}
@@ -1049,13 +1069,10 @@ export default function App() {
         </div>
       </main>
 
-      {/* ── Right sidebar: news (scrollable) + layer controls ── */}
+      {/* ── Right sidebar: news (scrollable) + layer controls.
+          StrategicAlerts and PeerComparison were Chula-university panels —
+          removed until rebuilt with provincial peer data (Rayong, Chachoengsao). ── */}
       <aside className="right-bar">
-        {lens === "executive" && executive.data[0] && (
-          <div className="right-alerts">
-            <StrategicAlerts alerts={executive.data[0].alerts} />
-          </div>
-        )}
         <div className="right-trends">
           <TrendsPanel
             snapshots={trends.data}
@@ -1064,11 +1081,6 @@ export default function App() {
             onRefresh={trends.refetch}
           />
         </div>
-        {lens === "executive" && executive.data[0] && (
-          <div className="right-peers">
-            <PeerComparison peers={executive.data[0].peers} />
-          </div>
-        )}
         <div className="right-news">
           <NewsDesk
             items={news.data}

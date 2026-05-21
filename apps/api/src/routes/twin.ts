@@ -20,7 +20,7 @@ const twinApp = new Hono();
 
 // ---- Objects ----
 
-twinApp.get("/api/twin/objects", (c) => {
+twinApp.get("/api/twin/objects", async (c) => {
   const q = c.req.query();
   const kind = q.kind as TwinKind | undefined;
   const limit = q.limit ? Math.min(parseInt(q.limit, 10) || 100, 1000) : 100;
@@ -31,12 +31,12 @@ twinApp.get("/api/twin/objects", (c) => {
       bbox = parts as [number, number, number, number];
     }
   }
-  const items = findTwinObjects({ kind, bbox, limit });
+  const items = await findTwinObjects({ kind, bbox, limit });
   return c.json({ items, count: items.length });
 });
 
-twinApp.get("/api/twin/objects/:id", (c) => {
-  const obj = getTwinObject(c.req.param("id"));
+twinApp.get("/api/twin/objects/:id", async (c) => {
+  const obj = await getTwinObject(c.req.param("id"));
   if (!obj) return c.json({ error: "Not found" }, 404);
   return c.json(obj);
 });
@@ -46,7 +46,7 @@ twinApp.post("/api/twin/objects", async (c) => {
   if (!body.id || !body.kind || !body.name) {
     return c.json({ error: "Required: id, kind, name" }, 400);
   }
-  const obj = upsertTwinObject({
+  const obj = await upsertTwinObject({
     id: body.id,
     kind: body.kind as TwinKind,
     name: body.name,
@@ -62,17 +62,17 @@ twinApp.post("/api/twin/objects", async (c) => {
   return c.json(obj, 201);
 });
 
-twinApp.delete("/api/twin/objects/:id", (c) => {
-  const ok = deleteTwinObject(c.req.param("id"));
+twinApp.delete("/api/twin/objects/:id", async (c) => {
+  const ok = await deleteTwinObject(c.req.param("id"));
   if (!ok) return c.json({ error: "Not found" }, 404);
   return c.json({ ok: true });
 });
 
 // ---- Relations ----
 
-twinApp.get("/api/twin/relations", (c) => {
+twinApp.get("/api/twin/relations", async (c) => {
   const q = c.req.query();
-  const items = getTwinRelations({
+  const items = await getTwinRelations({
     subjectId: q.subjectId,
     objectId: q.objectId,
     predicate: q.predicate as TwinRelationPredicate | undefined,
@@ -90,7 +90,7 @@ twinApp.post("/api/twin/relations", async (c) => {
   if (!body.subjectId || !body.predicate || !body.objectId) {
     return c.json({ error: "Required: subjectId, predicate, objectId" }, 400);
   }
-  const rel = addTwinRelation({
+  const rel = await addTwinRelation({
     id: `${body.subjectId}-${body.predicate}-${body.objectId}-${Date.now()}`,
     subjectId: body.subjectId,
     predicate: body.predicate,
@@ -101,18 +101,18 @@ twinApp.post("/api/twin/relations", async (c) => {
   return c.json(rel, 201);
 });
 
-twinApp.get("/api/twin/objects/:id/related", (c) => {
-  const items = getRelatedObjects(c.req.param("id"));
+twinApp.get("/api/twin/objects/:id/related", async (c) => {
+  const items = await getRelatedObjects(c.req.param("id"));
   return c.json({ items, count: items.length });
 });
 
 // ---- State (time series) ----
 
-twinApp.get("/api/twin/state", (c) => {
+twinApp.get("/api/twin/state", async (c) => {
   const q = c.req.query();
   const objectId = q.objectId;
   if (!objectId) return c.json({ error: "Required query: objectId" }, 400);
-  const items = getTwinState({
+  const items = await getTwinState({
     objectId,
     metric: q.metric,
     since: q.since,
@@ -122,11 +122,11 @@ twinApp.get("/api/twin/state", (c) => {
   return c.json({ items, count: items.length });
 });
 
-twinApp.get("/api/twin/state/latest", (c) => {
+twinApp.get("/api/twin/state/latest", async (c) => {
   const q = c.req.query();
   const objectId = q.objectId;
   if (!objectId) return c.json({ error: "Required query: objectId" }, 400);
-  const point = getTwinStateLatest({ objectId, metric: q.metric });
+  const point = await getTwinStateLatest({ objectId, metric: q.metric });
   if (!point) return c.json({ error: "No state found" }, 404);
   return c.json(point);
 });
@@ -142,7 +142,7 @@ twinApp.post("/api/twin/state", async (c) => {
   if (!body.objectId || !body.metric || typeof body.value !== "number" || !body.source) {
     return c.json({ error: "Required: objectId, metric, value, source" }, 400);
   }
-  const point = writeTwinState({
+  const point = await writeTwinState({
     time: new Date().toISOString(),
     objectId: body.objectId,
     metric: body.metric,
@@ -155,6 +155,6 @@ twinApp.post("/api/twin/state", async (c) => {
 
 // ---- Diagnostics ----
 
-twinApp.get("/api/twin/snapshot", (c) => c.json(twinSnapshot()));
+twinApp.get("/api/twin/snapshot", async (c) => c.json(await twinSnapshot()));
 
 export default twinApp;

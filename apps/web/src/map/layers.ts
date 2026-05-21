@@ -339,7 +339,9 @@ export function classifyBuilding(props: BuildingProperties): LandmarkKind {
   if (nm.includes("โรงพยาบาล") || nm.includes("hospital")) return "hospital";
   if (nm.includes("วัด") || nm.includes("temple") || nm.includes("wat ")) return "temple";
   if (nm.includes("สถานีตำรวจ") || nm.includes("police")) return "police";
-  if (buildingHeightMeters(props) >= 50) return "tall";
+  // Compute height directly here to avoid recursion (buildingHeightMeters calls back into classifyBuilding)
+  const directHeight = props.height ?? (props.levels ? props.levels * 3 : 0);
+  if (directHeight >= 50) return "tall";
 
   // Residential / household — every house, apartment, row-house
   // Warm terracotta so households read as warm inhabited fabric vs blue civic.
@@ -1993,5 +1995,76 @@ export function oldTownDistrictLayer(
     getLineWidth: 2,
     lineWidthUnits: "pixels",
     lineWidthMinPixels: 1.5,
+  });
+}
+
+// ── GISTDA (Thailand Geo-Informatics & Space Technology) layers ─────────
+
+import type { GistdaPoi, GistdaSolarBuilding } from "@chonburi/shared";
+
+const GISTDA_POI_COLOR: Record<GistdaPoi["category"], [number, number, number]> = {
+  government: [56, 189, 248],   // sky-400
+  school: [167, 139, 250],      // violet
+  temple: [251, 191, 36],       // gold
+  hospital: [239, 68, 68],      // red
+  hotel: [245, 158, 11],        // amber
+  bank: [16, 185, 129],         // emerald
+  restaurant: [248, 113, 113],  // pink
+  shopping: [236, 72, 153],     // fuchsia
+  transport: [34, 211, 238],    // cyan
+  sport: [52, 211, 153],        // green
+  agency: [148, 163, 184],      // slate
+  other: [200, 200, 200],       // grey
+};
+
+export function gistdaPoiLayer(pois: GistdaPoi[]) {
+  return new ScatterplotLayer<GistdaPoi>({
+    id: "gistda-pois",
+    data: pois,
+    getPosition: (p) => [p.lng, p.lat],
+    getRadius: (p) => {
+      if (p.category === "hospital") return 28;
+      if (p.category === "temple" || p.category === "hotel") return 24;
+      if (p.category === "school" || p.category === "government") return 20;
+      return 14;
+    },
+    radiusMinPixels: 4,
+    radiusMaxPixels: 12,
+    getFillColor: (p) => {
+      const c = GISTDA_POI_COLOR[p.category] ?? [200, 200, 200];
+      return [c[0], c[1], c[2], 220] as [number, number, number, number];
+    },
+    stroked: true,
+    getLineColor: [10, 14, 20, 240],
+    lineWidthMinPixels: 1.5,
+    pickable: true,
+  });
+}
+
+/**
+ * Solar irradiance overlay from GISTDA LOD2 buildings.
+ * Each building is rendered as a vertical column whose height is proportional
+ * to solar potential (kWh/m²). Colour: blue → green → yellow → red.
+ */
+export function gistdaSolarLayer(buildings: GistdaSolarBuilding[]) {
+  return new ScatterplotLayer<GistdaSolarBuilding>({
+    id: "gistda-solar",
+    data: buildings,
+    getPosition: (b) => [b.lng, b.lat],
+    getRadius: (b) => Math.max(10, Math.min(b.area / 80, 60)),
+    radiusMinPixels: 3,
+    radiusMaxPixels: 20,
+    getFillColor: (b) => {
+      const irr = b.solarIrr;
+      // Blue (low) → green → yellow → red (high)
+      if (irr < 80) return [56, 189, 248, 200] as [number, number, number, number];
+      if (irr < 120) return [52, 211, 153, 210] as [number, number, number, number];
+      if (irr < 160) return [250, 204, 21, 220] as [number, number, number, number];
+      return [239, 68, 68, 230] as [number, number, number, number];
+    },
+    stroked: true,
+    getLineColor: [10, 14, 20, 200],
+    lineWidthMinPixels: 1,
+    pickable: true,
   });
 }

@@ -15,8 +15,9 @@ import app from "./index.js";
 import { hydrateCacheFromDisk, enableCachePersistence, stopCachePersistence } from "./lib/persistence.js";
 import { hydrateNewsArchive } from "./lib/newsArchive.js";
 import { startAisStream } from "./adapters/ais.js";
-import { hydrateBuildingsFromGeoJSON } from "./lib/twinStore.js";
+import { hydrateBuildingsFromGeoJSON, flushMemoryToDb } from "./lib/twinStore.js";
 import { startMqttBridge } from "./adapters/mqttBridge.js";
+import { initTwinDb } from "./lib/twinDb.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -68,6 +69,7 @@ const env = {
   MQTT_BROKER_URL: process.env.MQTT_BROKER_URL,
   MQTT_USERNAME: process.env.MQTT_USERNAME,
   MQTT_PASSWORD: process.env.MQTT_PASSWORD,
+  DATABASE_URL: process.env.DATABASE_URL,
 };
 
 // Start AIS WebSocket subscriber if token is provided. No-op without key.
@@ -76,6 +78,11 @@ if (process.env.AISSTREAM_TOKEN) {
 } else {
   console.log("[chonburi-api] AISSTREAM_TOKEN not set — AIS vessels will be empty");
 }
+
+// Initialise twin database (PostgreSQL/PostGIS) if available
+await initTwinDb()
+  .then((ok) => console.log(`[chonburi-api] twin DB: ${ok ? "connected" : "not configured (in-memory only)`"}`))
+  .catch((err) => console.error("[chonburi-api] twin DB init failed:", err));
 
 // Hydrate twin store from building GeoJSON
 (function hydrateTwin() {
@@ -87,6 +94,11 @@ if (process.env.AISSTREAM_TOKEN) {
     console.error("[chonburi-api] twin hydration failed:", (err as Error).message);
   }
 })();
+
+// Flush in-memory buildings to PostgreSQL
+await flushMemoryToDb()
+  .then((n) => { if (n > 0) console.log(`[chonburi-api] twin store: ${n} buildings persisted to DB`); })
+  .catch((err) => console.error("[chonburi-api] twin DB flush failed:", err));
 
 // Start MQTT bridge if broker URL is configured
 if (process.env.MQTT_BROKER_URL) {
