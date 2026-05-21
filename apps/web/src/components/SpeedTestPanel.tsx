@@ -4,13 +4,12 @@ import { useEffect, useRef, useState } from "react";
  * In-browser WiFi/network speed gauge.
  *
  * We don't pull a heavyweight Speedtest SDK — instead we time the download
- * of a known asset (the CU map PNG, ~1.1 MB) and compute Mbps. RTT is taken
- * from `navigator.connection.rtt` when available, otherwise the time-to-
- * first-byte of the fetch.
+ * of a known asset (~1.1 MB) and compute Mbps. RTT is taken from
+ * `navigator.connection.rtt` when available, otherwise the time-to-first-byte
+ * of the fetch.
  *
  * Result is stored in localStorage so the WiFi layer can refresh against
- * the user's measured speed at next reload. We don't post to the API —
- * the writer would have to be the device that's actually on campus.
+ * the user's measured speed at next reload.
  */
 
 const ASSET_URL = "/maps/cu-map-2015.png"; // ~1.1 MB image we already ship

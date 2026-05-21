@@ -26,22 +26,22 @@ const FEEDS: Feed[] = [
     id: "google-news-chonburi-en",
     label: "Google News (EN)",
     url:
-      "https://news.google.com/rss/search?q=%22Chonburi+Municipality%22+OR+%22Eastern+Economic+Corridor%22+OR+%22EEC+Thailand%22&hl=en-TH&gl=TH&ceid=TH:en",
+      "https://news.google.com/rss/search?q=%22Chonburi%22+OR+%22Eastern+Economic+Corridor%22+OR+%22EEC+Thailand%22+OR+%22Laem+Chabang%22+OR+%22Si+Racha%22&hl=en-TH&gl=TH&ceid=TH:en",
     trust: 0.75,
   },
   {
     id: "google-news-chonburi-th",
     label: "Google News (TH)",
     url:
-      "https://news.google.com/rss/search?q=%E0%B9%80%E0%B8%97%E0%B8%A8%E0%B8%9A%E0%B8%B2%E0%B8%A5%E0%B9%80%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%87%E0%B8%8A%E0%B8%A5%E0%B8%9A%E0%B8%B8%E0%B8%A3%E0%B8%B5+OR+%E0%B8%AD%E0%B8%B5%E0%B8%AD%E0%B8%B5%E0%B8%8B%E0%B8%B5+OR+%E0%B8%8A%E0%B8%A5%E0%B8%9A%E0%B8%B8%E0%B8%A3%E0%B8%B5&hl=th&gl=TH&ceid=TH:th",
+      "https://news.google.com/rss/search?q=%E0%B8%8A%E0%B8%A5%E0%B8%9A%E0%B8%B8%E0%B8%A3%E0%B8%B5+OR+%E0%B9%80%E0%B8%97%E0%B8%A8%E0%B8%9A%E0%B8%B2%E0%B8%A5%E0%B9%80%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%87%E0%B8%8A%E0%B8%A5%E0%B8%9A%E0%B8%B8%E0%B8%A3%E0%B8%B5+OR+%E0%B8%AD%E0%B8%B5%E0%B8%AD%E0%B8%B5%E0%B8%8B%E0%B8%B5+OR+%E0%B9%81%E0%B8%AB%E0%B8%A5%E0%B8%A1%E0%B8%89%E0%B8%9A%E0%B8%B1%E0%B8%87+OR+%E0%B8%A8%E0%B8%A3%E0%B8%B5%E0%B8%A3%E0%B8%B2%E0%B8%8A%E0%B8%B2&hl=th&gl=TH&ceid=TH:th",
     trust: 0.78,
   },
   {
-    id: "google-news-chonburi-zh",
-    label: "Google News (中文)",
+    id: "google-news-chonburi-crime-th",
+    label: "Google News Crime (TH)",
     url:
-      "https://news.google.com/rss/search?q=%E6%98%A5%E6%AD%A6%E9%87%8C+OR+EEC%E4%B8%9C%E9%83%A8%E7%BB%8F%E6%B5%8E%E8%B5%B0%E5%BB%8A&hl=zh-CN&gl=TH&ceid=TH:zh-CN",
-    trust: 0.72,
+      "https://news.google.com/rss/search?q=%E0%B8%AD%E0%B8%B8%E0%B8%9A%E0%B8%B1%E0%B8%95%E0%B8%B4%E0%B9%80%E0%B8%AB%E0%B8%95%E0%B8%B8+%E0%B8%8A%E0%B8%A5%E0%B8%9A%E0%B8%B8%E0%B8%A3%E0%B8%B5+OR+%E0%B8%88%E0%B8%B1%E0%B8%9A%E0%B8%81%E0%B8%B8%E0%B8%A1+%E0%B8%8A%E0%B8%A5%E0%B8%9A%E0%B8%B8%E0%B8%A3%E0%B8%B5+OR+%E0%B8%95%E0%B8%B3%E0%B8%A3%E0%B8%A7%E0%B8%88+%E0%B8%8A%E0%B8%A5%E0%B8%9A%E0%B8%B8%E0%B8%A3%E0%B8%B5+OR+%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%97%E0%B9%88%E0%B8%A7%E0%B8%A1+%E0%B8%8A%E0%B8%A5%E0%B8%9A%E0%B8%B8%E0%B8%A3%E0%B8%B5&hl=th&gl=TH&ceid=TH:th",
+    trust: 0.80,
   },
   {
     id: "bangkok-post-thailand",
@@ -49,7 +49,23 @@ const FEEDS: Feed[] = [
     url: "https://www.bangkokpost.com/rss/data/thailand.xml",
     trust: 0.85,
   },
+  {
+    id: "thai-pbs-news",
+    label: "Thai PBS",
+    url: "https://news.thaipbs.or.th/rss/news.xml",
+    trust: 0.82,
+  },
+  {
+    id: "matichon-online",
+    label: "Matichon",
+    url: "https://www.matichon.co.th/feed",
+    trust: 0.78,
+  },
 ];
+
+// Reject news older than this many days — the mayor should not see month-old
+// stories that are embarrassing or irrelevant.
+const MAX_AGE_DAYS = 7;
 
 const FIELD_RE = (tag: string) => new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i");
 const CDATA_RE = /<!\[CDATA\[([\s\S]*?)\]\]>/;
@@ -92,13 +108,54 @@ function scoreItem(item: { title: string; summary: string }, trust: number): num
     "chonburi", "ชลบุรี", "eec", "อีอีซี",
     "ban saen", "บ้านแสน", "laem chabang", "แหลมฉบัง",
     "si racha", "ศรีราชา", "municipality", "เทศบาล",
+    "bang saen", "บางแสน", "muang chonburi", "เมืองชลบุรี",
   ]) {
     if (text.includes(kw)) s += 8;
   }
-  for (const kw of ["accident", "อุบัติเหตุ", "flood", "น้ำท่วม", "protest", "ประท้วง", "haze", "ฝุ่น"]) {
+  for (const kw of ["accident", "อุบัติเหตุ", "flood", "น้ำท่วม", "protest", "ประท้วง", "haze", "ฝุ่น", "fire", "ไฟไหม้", "crime", "อาชญากรรม"]) {
     if (text.includes(kw)) s += 6;
   }
   return Math.min(100, Math.round(s));
+}
+
+// ── Location extraction ───────────────────────────────────────────────
+// Known places inside Chonburi Town Municipality that the mayor cares about.
+// Extracted from news text and pinned on the map so the mayor can see
+// "market fire = THIS market", "accident at THIS temple", etc.
+
+interface KnownPlace {
+  name: string;
+  aliases: string[];
+  lat: number;
+  lng: number;
+}
+
+const KNOWN_PLACES: KnownPlace[] = [
+  { name: "Talat Chonburi", aliases: ["ตลาดชลบุรี", "talat chonburi", "chonburi market", "ตลาดสดชลบุรี", "talad chonburi"], lat: 13.3619, lng: 100.9841 },
+  { name: "Wat Yai Intharam", aliases: ["วัดใหญ่อินทาราม", "wat yai", "wat yai intharam", "วัดใหญ่"], lat: 13.3625, lng: 100.9855 },
+  { name: "Chonburi City Hall", aliases: ["ศาลากลางชลบุรี", "city hall", "เทศบาลเมืองชลบุรี", "chonburi municipality"], lat: 13.3611, lng: 100.9847 },
+  { name: "Chonburi Railway Station", aliases: ["สถานีรถไฟชลบุรี", "chonburi station", "railway station"], lat: 13.3585, lng: 100.9830 },
+  { name: "Bang Saen Beach", aliases: ["หาดบางแสน", "bang saen", "bangsaen", "บางแสน"], lat: 13.2900, lng: 100.9200 },
+  { name: "Laem Chabang Port", aliases: ["แหลมฉบัง", "laem chabang", "laemchabang", "ท่าเรือแหลมฉบัง"], lat: 13.0883, lng: 100.8833 },
+  { name: "Si Racha", aliases: ["ศรีราชา", "si racha", "siracha", "อำเภอศรีราชา"], lat: 13.1737, lng: 100.9310 },
+  { name: "Central Chonburi", aliases: ["เซ็นทรัลชลบุรี", "central chonburi", "central plaza chonburi"], lat: 13.3620, lng: 100.9835 },
+  { name: "Chonburi Hospital", aliases: ["โรงพยาบาลชลบุรี", "chonburi hospital", "hospital chonburi"], lat: 13.3630, lng: 100.9860 },
+  { name: "Ang Sila", aliases: ["อ่างศิลา", "ang sila", "angsila"], lat: 13.3400, lng: 100.9300 },
+  { name: "Nong Mon Market", aliases: ["ตลาดหนองมน", "nong mon", "nongmon", "หนองมน"], lat: 13.2750, lng: 100.9250 },
+  { name: "Koh Loi", aliases: ["เกาะลอย", "koh loi", "kohloy"], lat: 13.3550, lng: 100.9780 },
+  { name: "Sukhumvit Road", aliases: ["ถนนสุขุมวิท", "sukhumvit", "sukhumvit road", "highway 3"], lat: 13.3610, lng: 100.9850 },
+];
+
+function extractLocation(text: string): { lat: number; lng: number; placeName: string } | null {
+  const lower = text.toLowerCase();
+  for (const place of KNOWN_PLACES) {
+    for (const alias of place.aliases) {
+      if (lower.includes(alias.toLowerCase())) {
+        return { lat: place.lat, lng: place.lng, placeName: place.name };
+      }
+    }
+  }
+  return null;
 }
 
 /**
@@ -168,6 +225,7 @@ async function parseFeed(feed: Feed): Promise<IntelligenceItem[]> {
   const itemRe = /<item>([\s\S]*?)<\/item>/g;
   const items: IntelligenceItem[] = [];
   const now = new Date();
+  const cutoff = new Date(now.getTime() - MAX_AGE_DAYS * 24 * 60 * 60 * 1000);
   let match: RegExpExecArray | null;
   while ((match = itemRe.exec(xml)) !== null) {
     const block = match[1];
@@ -179,21 +237,32 @@ async function parseFeed(feed: Feed): Promise<IntelligenceItem[]> {
 
     if (!title || !link) continue;
 
+    const parsedDate = parseDate(pubDate, now);
+    // Freshness gate — reject stale items so the mayor never sees
+    // month-old embarrassing stories.
+    if (parsedDate < cutoff) continue;
+
     const tags = actionTags({ title, summary: description });
+    const loc = extractLocation(`${title} ${description}`);
     const it: IntelligenceItem = {
       id: `${feed.id}-${link}`,
       title,
       summary: description.slice(0, 280),
       source,
       sourceUrl: link,
-      publishedAt: parseDate(pubDate, now).toISOString(),
+      publishedAt: parsedDate.toISOString(),
       tags,
       score: 0,
       kind: "news",
+      lat: loc?.lat ?? null,
+      lng: loc?.lng ?? null,
+      placeName: loc?.placeName ?? null,
     };
     it.score = scoreItem(it, feed.trust);
     // Boost actionable items so they float to the top of the news desk
     if (tags.includes("EM") || tags.includes("FU") || tags.includes("PO")) it.score += 15;
+    // Boost geolocated items — the mayor can see them on the map
+    if (loc) it.score += 10;
     items.push(it);
   }
   return items;

@@ -174,6 +174,12 @@ export interface IntelligenceItem {
   score: number;
   kind: IntelligenceKind;
   imageUrl?: string;
+  /** Geocoded latitude when a known place is mentioned in the story */
+  lat: number | null;
+  /** Geocoded longitude when a known place is mentioned in the story */
+  lng: number | null;
+  /** Name of the matched place (e.g. "Talat Chonburi") */
+  placeName: string | null;
 }
 
 // ---- Campus GeoJSON ----
@@ -396,6 +402,16 @@ export interface GistdaSolarBuilding {
   buildType: string;
   month: string;
   monthNum: number;
+  lat: number;
+  lng: number;
+}
+
+export interface GistdaLandUse {
+  id: number;
+  code: string;
+  name: string;
+  nameEn: string;
+  area: number;
   lat: number;
   lng: number;
 }

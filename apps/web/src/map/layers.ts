@@ -1998,9 +1998,54 @@ export function oldTownDistrictLayer(
   });
 }
 
+// ── NEWS PINS — geocoded headlines on the map ───────────────────────────
+// When a news item mentions a known place (market, temple, hospital …),
+// we pin it so the mayor can see "criminal activity at THIS market".
+
+import type { IntelligenceItem } from "@chonburi/shared";
+
+const NEWS_TAG_COLOR: Record<string, [number, number, number]> = {
+  EM: [239, 68, 68],    // emergency — red
+  PO: [251, 146, 60],   // police — orange
+  FU: [167, 139, 250],  // funeral — violet
+  IN: [56, 189, 248],   // infrastructure — sky
+  BZ: [245, 158, 11],   // business — amber
+  PU: [251, 113, 133],  // public health — pink
+  FE: [250, 204, 21],   // festival — yellow
+  HO: [52, 211, 153],   // honour — green
+};
+
+export function newsPinsLayer(items: IntelligenceItem[]) {
+  const pinned = items.filter((it) => it.lat != null && it.lng != null);
+  return new ScatterplotLayer<IntelligenceItem>({
+    id: "news-pins",
+    data: pinned,
+    getPosition: (it) => [it.lng!, it.lat!],
+    getRadius: (it) => {
+      // Emergency / police items get bigger pins
+      if (it.tags.includes("EM")) return 32;
+      if (it.tags.includes("PO")) return 26;
+      return 18;
+    },
+    radiusMinPixels: 5,
+    radiusMaxPixels: 14,
+    getFillColor: (it) => {
+      const tag = it.tags.find((t) => t in NEWS_TAG_COLOR);
+      const c = tag ? NEWS_TAG_COLOR[tag] : [148, 163, 184];
+      return [c[0], c[1], c[2], 230] as [number, number, number, number];
+    },
+    stroked: true,
+    getLineColor: [255, 255, 255, 240],
+    lineWidthMinPixels: 2,
+    pickable: true,
+    // Subtle pulse effect via radius animation would need extra work;
+    // for now the bright colour + white stroke makes them stand out.
+  });
+}
+
 // ── GISTDA (Thailand Geo-Informatics & Space Technology) layers ─────────
 
-import type { GistdaPoi, GistdaSolarBuilding } from "@chonburi/shared";
+import type { GistdaPoi, GistdaSolarBuilding, GistdaLandUse } from "@chonburi/shared";
 
 const GISTDA_POI_COLOR: Record<GistdaPoi["category"], [number, number, number]> = {
   government: [56, 189, 248],   // sky-400
@@ -2064,6 +2109,47 @@ export function gistdaSolarLayer(buildings: GistdaSolarBuilding[]) {
     },
     stroked: true,
     getLineColor: [10, 14, 20, 200],
+    lineWidthMinPixels: 1,
+    pickable: true,
+  });
+}
+
+const LANDUSE_COLOR: Record<string, [number, number, number]> = {
+  residential: [210, 110, 65],   // warm terracotta
+  commercial:  [245, 158, 11],   // amber
+  industrial:  [148, 163, 184],  // slate
+  agricultural:[52, 211, 153],   // green
+  forest:      [16, 185, 129],   // emerald
+  water:       [56, 189, 248],   // sky
+  transport:   [167, 139, 250],  // violet
+  recreation:  [250, 204, 21],   // yellow
+  other:       [200, 200, 200],  // grey
+};
+
+export function gistdaLandUseLayer(parcels: GistdaLandUse[]) {
+  return new ScatterplotLayer<GistdaLandUse>({
+    id: "gistda-landuse",
+    data: parcels,
+    getPosition: (p) => [p.lng, p.lat],
+    getRadius: (p) => Math.max(12, Math.min(p.area / 200, 80)),
+    radiusMinPixels: 3,
+    radiusMaxPixels: 18,
+    getFillColor: (p) => {
+      const code = p.code.toLowerCase();
+      let key = "other";
+      if (code.includes("res") || code.includes("urb")) key = "residential";
+      else if (code.includes("com") || code.includes("biz")) key = "commercial";
+      else if (code.includes("ind")) key = "industrial";
+      else if (code.includes("agr") || code.includes("farm")) key = "agricultural";
+      else if (code.includes("for") || code.includes("wood")) key = "forest";
+      else if (code.includes("wat") || code.includes("riv")) key = "water";
+      else if (code.includes("trans") || code.includes("road")) key = "transport";
+      else if (code.includes("rec") || code.includes("park")) key = "recreation";
+      const c = LANDUSE_COLOR[key] ?? LANDUSE_COLOR.other;
+      return [c[0], c[1], c[2], 180] as [number, number, number, number];
+    },
+    stroked: true,
+    getLineColor: [255, 255, 255, 160],
     lineWidthMinPixels: 1,
     pickable: true,
   });

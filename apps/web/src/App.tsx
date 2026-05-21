@@ -17,6 +17,7 @@ import type {
   WeatherSnapshot,
   GistdaPoi,
   GistdaSolarBuilding,
+  GistdaLandUse,
 } from "@chonburi/shared";
 
 import { useFeed } from "./hooks/useFeed";
@@ -98,6 +99,8 @@ import {
   type SurroundingBuildingProperties,
   gistdaPoiLayer,
   gistdaSolarLayer,
+  gistdaLandUseLayer,
+  newsPinsLayer,
 } from "./map/layers";
 import { useTile3DLayer } from "./map/Tile3DLayer";
 import { ALL_LAYERS, LENSES, type LayerId, type LensId } from "./map/presets";
@@ -311,11 +314,14 @@ export default function App() {
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>("map");
 
   // Controlled map viewState — needed so building-search and click can fly the camera.
+  // Tight bounds: the mayor should never accidentally scroll to Bangkok.
   const [viewState, setViewState] = useState({
     ...CHONBURI.defaultView,
-    minZoom: 12,
+    minZoom: 13,
     maxZoom: 20,
     transitionDuration: 0,
+    // react-map-gl / deck.gl maxBounds: [west, south, east, north]
+    maxBounds: [CHONBURI.outerBounds[0][0], CHONBURI.outerBounds[0][1], CHONBURI.outerBounds[1][0], CHONBURI.outerBounds[1][1]] as [number, number, number, number],
   });
 
   // Selected building for the popup card.
@@ -332,7 +338,7 @@ export default function App() {
     }));
   }, []);
   const handleMapClick = useCallback((info: { layer?: { id?: string } | null; object?: unknown; coordinate?: number[] }) => {
-    if (info.layer?.id === "campus-buildings" && info.object) {
+    if ((info.layer?.id === "municipality-buildings" || info.layer?.id === "campus-buildings") && info.object) {
       const f = info.object as { properties: BuildingProperties; geometry: { coordinates: number[][][] | number[][][][] } };
       setSelectedBuilding(f.properties);
       const [lng, lat] = info.coordinate ?? [viewState.longitude, viewState.latitude];
@@ -428,7 +434,7 @@ export default function App() {
           if (typeof n === "string") return n;
           if (n && typeof n === "object") return n.en ?? null;
           return null;
-        })() ?? "CU land";
+        })() ?? "Municipal land";
         sub = pick("describe", "operator");
         break;
       case "incidents-itic":
@@ -449,7 +455,7 @@ export default function App() {
         sub = pick("vendor");
         break;
       case "cu-shuttle-vehicles":
-        title = `CU Shuttle Line ${pick("line") ?? ""}`;
+        title = `Shuttle Line ${pick("line") ?? ""}`;
         sub = `${pick("occupancy") ?? "—"} occupancy`;
         break;
       case "cu-shuttle-stops":
@@ -462,7 +468,7 @@ export default function App() {
       case "cu-shuttle-line-3":
       case "cu-shuttle-line-4":
       case "cu-shuttle-line-5":
-        title = pick("label") ?? "CU Shuttle";
+        title = pick("label") ?? "Shuttle";
         sub = pick("ref");
         break;
       case "transit-stations":
@@ -500,6 +506,17 @@ export default function App() {
         title = `Building #${pick("id") ?? ""}`;
         sub = `${(p as { solarIrr?: number }).solarIrr ?? "—"} kWh/m² · ${(p as { roofType?: string }).roofType ?? ""} · ${(p as { height?: number }).height ?? "—"} m`;
         break;
+      case "news-pins": {
+        const tags = (p as { tags?: string[] }).tags ?? [];
+        title = pick("title") ?? "News";
+        sub = `${tags.join(" ")} · ${pick("source") ?? ""}`;
+        break;
+      }
+      case "gistda-landuse": {
+        title = pick("name", "nameEn") ?? "Land parcel";
+        sub = `${pick("code") ?? ""} · ${Math.round(Number((p as { area?: number }).area ?? 0))} m²`;
+        break;
+      }
       case "port-infrastructure":
       case "ferry-terminals":
       case "navigation-aids":
@@ -633,6 +650,7 @@ export default function App() {
   const provincialKPIs = useFeed<ProvincialKPIsType>(`${API_BASE}/api/datago/provincial-kpis`, 6 * 60 * 60_000);
   const gistdaPois = useFeed<GistdaPoi>(`${API_BASE}/api/gistda/poi`, 60 * 60_000);
   const gistdaSolar = useFeed<GistdaSolarBuilding>(`${API_BASE}/api/gistda/solar`, 6 * 60 * 60_000);
+  const gistdaLandUse = useFeed<GistdaLandUse>(`${API_BASE}/api/gistda/landuse`, 60 * 60_000);
   // Shuttle and academic calendar not available in this deployment
   const shuttle = { data: [] as ShuttleVehicle[], fallbackTier: "unavailable" as const, ageMinutes: 0 };
   const academic = { data: [] as AcademicSnapshot[] };
@@ -726,7 +744,7 @@ export default function App() {
     // Only Esri HD (maxZoom:19), Himawari (WMS), and terrain stay in deck.gl.
     if (enabledLayers.has("satellite-terrain")) out.push(openTopoTerrainLayer(0.6) as Layer);
     if (enabledLayers.has("satellite-himawari")) out.push(himawariInfraredLayer(0.55) as Layer);
-    // CU paper map (raster) — sits above satellites, below vectors so it can be read alongside building outlines.
+    // Municipal paper map (raster) — sits above satellites, below vectors so it can be read alongside building outlines.
     if (enabledLayers.has("cu-map-2015")) out.push(cuMapOverlay() as Layer);
     if (enabledLayers.has("bma-parks") && bma?.parks) out.push(bmaParksLayer(bma.parks) as Layer);
     if (enabledLayers.has("cu-lands") && cuLands) out.push(cuLandsLayer(cuLands) as Layer);
@@ -783,6 +801,10 @@ export default function App() {
     if (enabledLayers.has("gistda-pois") && gistdaPois.data.length > 0) out.push(gistdaPoiLayer(gistdaPois.data) as Layer);
     // GISTDA LOD2 Solar Irradiance (building rooftop solar potential)
     if (enabledLayers.has("gistda-solar") && gistdaSolar.data.length > 0) out.push(gistdaSolarLayer(gistdaSolar.data) as Layer);
+    // GISTDA Land Use / Land Cover
+    if (enabledLayers.has("gistda-landuse") && gistdaLandUse.data.length > 0) out.push(gistdaLandUseLayer(gistdaLandUse.data) as Layer);
+    // News pins — geocoded headlines so the mayor sees "which market" at a glance
+    if (enabledLayers.has("news-pins") && news.data.length > 0) out.push(newsPinsLayer(news.data) as Layer);
     // Civic POIs (province-wide OSM: hospitals/schools/police/fire/temples/markets/...)
     if (enabledLayers.has("civic-points") && civicPoints) out.push(civicPointsLayer(civicPoints) as Layer);
     // Waterways (canals + rivers + drains)
@@ -860,7 +882,7 @@ export default function App() {
     iticEvents.data, bma, bmaAqStationList, electricityFc, waterFc, drainageFc, wifiFc,
     civicPoints, waterways, fisheries, floodRisk, heritage,
     maritimePorts, maritimeFerries, maritimeNavAids, ais.data, datago.data,
-    gistdaPois.data, gistdaSolar.data,
+    gistdaPois.data, gistdaSolar.data, gistdaLandUse.data, news.data,
     presence.lng, presence.lat, presence.accuracyM,
     tile3dLayer,
   ]);
@@ -1118,8 +1140,8 @@ export default function App() {
           onWeekendToggle={setIsWeekend}
         />
         <div className="bottom-stats">
-          <span>{trafficSamples.length} ROADS · {layers.length} LAYERS</span>
-          <span>{civicPoints?.features.length ?? 0} CIVIC · {cctv.data.length} CCTV · {ais.data.length} AIS</span>
+          <span>{buildings?.features.length ?? 0} BUILDINGS · {trafficSamples.length} ROADS · {layers.length} LAYERS</span>
+          <span>{civicPoints?.features.length ?? 0} CIVIC · {cctv.data.length} CCTV · {gistdaPois.data.length} GISTDA</span>
         </div>
       </div>
 

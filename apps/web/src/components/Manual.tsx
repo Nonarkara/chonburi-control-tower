@@ -70,7 +70,7 @@ export function Manual({ open, onClose }: Props) {
                 <tr><td className="mono">MOB</td><td>Mobility</td><td>Traffic heatmap, iTIC events, all 5 shuttle lines, BTS/MRT, CCTV.</td></tr>
                 <tr><td className="mono">ENV</td><td>Environment</td><td>Esri high-res satellite + green spaces + AQ. Regional satellites opt-in.</td></tr>
                 <tr><td className="mono">SAF</td><td>Safety</td><td>Citizen reports + iTIC + hospital/fire/police POIs + CCTV + flood.</td></tr>
-                <tr><td className="mono">VIB</td><td>Vibes</td><td>Pretty view — CU lands + MODIS true-color satellite for presentations.</td></tr>
+                <tr><td className="mono">VIB</td><td>Vibes</td><td>Pretty view — municipal boundary + MODIS true-color satellite for presentations.</td></tr>
                 <tr><td className="mono">UTL</td><td>Utilities</td><td>Underground stack — electricity, water, drainage + WiFi heatmap.</td></tr>
               </tbody>
             </table>
@@ -132,13 +132,13 @@ export function Manual({ open, onClose }: Props) {
                 </ul>
               </div>
               <div>
-                <h4 className="manual-h4">CU shuttle lines</h4>
+                <h4 className="manual-h4">Transit lines</h4>
                 <ul className="manual-swatches">
-                  <li><span className="sw" style={{ background: "#EF4444" }}/> Line 1 (red) — runs Saturday</li>
-                  <li><span className="sw" style={{ background: "#38BDF8" }}/> Line 2 (blue) — runs Saturday</li>
-                  <li><span className="sw" style={{ background: "#34D399" }}/> Line 3 (green) — weekday only</li>
-                  <li><span className="sw" style={{ background: "#FBBF24" }}/> Line 4 (yellow) — weekday only</li>
-                  <li><span className="sw" style={{ background: "#A78BFA" }}/> Line 5 (purple) — weekday only</li>
+                  <li><span className="sw" style={{ background: "#EF4444" }}/> Bus line 1 — runs Saturday</li>
+                  <li><span className="sw" style={{ background: "#38BDF8" }}/> Bus line 2 — runs Saturday</li>
+                  <li><span className="sw" style={{ background: "#34D399" }}/> Bus line 3 — weekday only</li>
+                  <li><span className="sw" style={{ background: "#FBBF24" }}/> Bus line 4 — weekday only</li>
+                  <li><span className="sw" style={{ background: "#A78BFA" }}/> Bus line 5 — weekday only</li>
                 </ul>
               </div>
               <div>

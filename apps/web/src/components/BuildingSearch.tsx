@@ -91,8 +91,8 @@ export function BuildingSearch({ buildings, onSelect }: Props) {
         type="search"
         placeholder={
           buildings
-            ? `Search ${index.length} landmarks of ${buildings.features.length.toLocaleString()} buildings — "city hall" / "วัด"`
-            : "Loading buildings…"
+            ? `Search ${index.length} named landmarks among ${buildings.features.length.toLocaleString()} buildings in Chonburi Town — "city hall" / "วัด" / "ตลาด"`
+            : "Loading Chonburi buildings…"
         }
         value={q}
         onChange={(e) => {

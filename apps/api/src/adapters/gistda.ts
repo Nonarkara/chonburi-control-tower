@@ -6,8 +6,10 @@
  * THEOS-2 satellite ordering and higher-rate queries.
  *
  * Wired endpoints:
- *   /api/gistda/poi     — POI Digital Twin (schools, temples, gov, hotels …)
- *   /api/gistda/solar   — LOD2 building solar irradiance (Chonburi)
+ *   /api/gistda/poi       — POI Digital Twin (schools, temples, gov, hotels …)
+ *   /api/gistda/solar     — LOD2 building solar irradiance (Chonburi)
+ *   /api/gistda/landuse   — Land use / land cover classification
+ *   /api/gistda/buildings — Building footprints (LOD1)
  */
 
 import type { NormalizedFeed } from "@chonburi/shared";
@@ -85,8 +87,9 @@ export async function fetchGistdaPoi(): Promise<NormalizedFeed<GistdaPoi>> {
   return cached("gistda-poi", 3600 * 6, async () => {
     const fetchedAt = new Date().toISOString();
     const [lng0, lat0] = CHONBURI.center;
+    // Tight bounds: Chonburi Town Municipality (~4 km²) + small buffer
     const bbox: [number, number, number, number] = [
-      lng0 - 0.08, lat0 - 0.08, lng0 + 0.08, lat0 + 0.08,
+      lng0 - 0.025, lat0 - 0.025, lng0 + 0.025, lat0 + 0.025,
     ];
     const url = arcgisQuery(
       "POI_Map_Service", 0,
@@ -145,8 +148,9 @@ export async function fetchGistdaSolar(month?: number): Promise<NormalizedFeed<G
   return cached(cacheKey, 3600 * 24, async () => {
     const fetchedAt = new Date().toISOString();
     const [lng0, lat0] = CHONBURI.center;
+    // Tight bounds: Chonburi Town Municipality (~4 km²) + small buffer
     const bbox: [number, number, number, number] = [
-      lng0 - 0.04, lat0 - 0.04, lng0 + 0.04, lat0 + 0.04,
+      lng0 - 0.025, lat0 - 0.025, lng0 + 0.025, lat0 + 0.025,
     ];
     // Filter by month number (smonth_num field)
     const where = `sun_irr IS NOT NULL AND smonth_num = '${m}'`;
@@ -188,6 +192,69 @@ export async function fetchGistdaSolar(month?: number): Promise<NormalizedFeed<G
       features,
       meta: {
         source: "gistda-solar-lod2",
+        fetchedAt,
+        ageMinutes: cacheAgeMinutes(fetchedAt),
+        fallbackTier: features.length > 0 ? "live" : "unavailable",
+      },
+    };
+  });
+}
+
+// ── GISTDA Land Use / Land Cover ────────────────────────────────────────
+
+export interface GistdaLandUse {
+  id: number;
+  code: string;
+  name: string;
+  nameEn: string;
+  area: number;
+  lat: number;
+  lng: number;
+}
+
+export async function fetchGistdaLandUse(): Promise<NormalizedFeed<GistdaLandUse>> {
+  return cached("gistda-landuse", 3600 * 12, async () => {
+    const fetchedAt = new Date().toISOString();
+    const [lng0, lat0] = CHONBURI.center;
+    const bbox: [number, number, number, number] = [
+      lng0 - 0.03, lat0 - 0.03, lng0 + 0.03, lat0 + 0.03,
+    ];
+    const url = arcgisQuery(
+      "LandUse_Map_Service", 0,
+      "1=1",
+      "OBJECTID,LU_CODE,LU_NAME,LU_NAME_EN,Shape_Area",
+      bbox,
+      1000,
+    );
+
+    interface ArcGisFeatureSet {
+      features?: Array<{ attributes?: Record<string, unknown>; geometry?: { x?: number; y?: number } }>;
+    }
+    const data = await fetchJsonOrNull<ArcGisFeatureSet>(url);
+    if (!data?.features?.length) {
+      return { features: [], meta: { source: "gistda-landuse", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const } };
+    }
+
+    const features: GistdaLandUse[] = data.features
+      .filter(f => f.geometry?.x && f.geometry?.y)
+      .map(f => {
+        const a = f.attributes ?? {};
+        return {
+          id: Number(a["OBJECTID"] ?? 0),
+          code: String(a["LU_CODE"] ?? ""),
+          name: String(a["LU_NAME"] ?? ""),
+          nameEn: String(a["LU_NAME_EN"] ?? ""),
+          area: Number(a["Shape_Area"] ?? 0),
+          lat: f.geometry!.y!,
+          lng: f.geometry!.x!,
+        };
+      })
+      .filter(p => p.name.length > 0);
+
+    return {
+      features,
+      meta: {
+        source: "gistda-landuse",
         fetchedAt,
         ageMinutes: cacheAgeMinutes(fetchedAt),
         fallbackTier: features.length > 0 ? "live" : "unavailable",

@@ -36,6 +36,9 @@ export type LayerId =
   // GISTDA
   | "gistda-pois"
   | "gistda-solar"
+  | "gistda-landuse"
+  // News
+  | "news-pins"
   // Imagery
   | "satellite-esri"
   | "satellite-viirs-truecolor"
@@ -86,11 +89,10 @@ export const LENSES: Lens[] = [
     id: "executive",
     label: "EXEC",
     describe:
-      "Strategic — high-altitude view. Municipal boundary, satellite, districts, port + transit + open-data POIs. Pair with the OPS sidebar for a province-wide read.",
+      "Strategic — municipal boundary, satellite, port + transit + open-data POIs. Focused on Chonburi Town Municipality (~4 km²).",
     layers: [
       "municipality-boundary",
       "municipality-buildings",
-      "districts",
       "satellite-esri",
       "maritime-overlay",
       "port-infrastructure",
@@ -103,19 +105,18 @@ export const LENSES: Lens[] = [
   {
     id: "operations",
     label: "OPS",
-    describe: "Operations — buildings, road network, civic POIs (hospitals/police/fire/schools), waterways, live traffic, incidents, CCTV, AIS vessels. The default day-to-day view.",
+    describe: "Operations — every building in 3D, road network, civic POIs (hospitals/police/fire/schools/markets), live traffic, incidents, CCTV. The default day-to-day view for the municipality.",
     layers: [
       "municipality-boundary",
       "municipality-buildings",
       "road-network",
       "civic-points",
-      "waterways",
       "traffic-heatmap",
       "incidents-city-reports",
       "incidents-itic",
       "cctv-cameras",
-      "ais-vessels",
       "gistda-pois",
+      "news-pins",
       "tile3d-buildings",
     ],
   },
@@ -302,6 +303,12 @@ export const ALL_LAYERS: {
     describe: "Thailand GISTDA POI Digital Twin — 1,000 authoritative points: government offices, schools, temples, hospitals, hotels, banks, restaurants, shopping, transport, sport. Thai + English names, disabled-access flags." },
   { id: "gistda-solar",      label: "GISTDA Solar LOD2",         swatch: "#FBBF24", group: "environment",
     describe: "GISTDA LOD2 building solar irradiance for Chonburi city centre — real measured height, footprint area, and monthly solar potential (kWh/m²). Blue=low, green=medium, yellow=high, red=excellent rooftop solar." },
+  { id: "gistda-landuse",    label: "GISTDA Land Use",           swatch: "#34D399", group: "open-data",
+    describe: "GISTDA land use / land cover classification for Chonburi Town — residential, commercial, industrial, agricultural, forest, water, transport, recreation. Colour-coded by category." },
+
+  // ─── News ──────────────────────────────────────────────────────────────
+  { id: "news-pins",         label: "Geocoded news pins",        swatch: "#EF4444", group: "incidents",
+    describe: "News headlines that mention a known location (market, temple, hospital, etc.) are pinned on the map so the mayor can see exactly which market had the incident." },
 
   // ─── Imagery ───────────────────────────────────────────────────────────
   { id: "satellite-esri",    label: "Satellite (Esri HD)",      swatch: "#60A5FA", group: "imagery",

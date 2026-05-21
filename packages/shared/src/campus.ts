@@ -23,14 +23,17 @@ export const CHONBURI: CampusConfig = {
     th: "เทศบาลเมืองชลบุรี",
     zh: "春武里市镇市政府",
   },
+  // Chonburi Town Municipality (เทศบาลเมืองชลบุรี) — ~4.2 km²
+  // Tight focus on the municipal centre: city hall, main market, old town,
+  // railway station, and the commercial core along Klang Mueang / Sukhumvit.
   center: [100.9847, 13.3611],
   innerBounds: [
-    [100.968, 13.348],
-    [101.000, 13.375],
+    [100.975, 13.352], // SW corner — ~2 km from centre
+    [100.995, 13.370], // NE corner — ~2 km from centre
   ],
   outerBounds: [
-    [100.940, 13.320],
-    [101.030, 13.410],
+    [100.965, 13.342], // allow slight overscroll but not to Bangkok
+    [101.005, 13.380],
   ],
   surroundingRoads: [
     "Sukhumvit Highway",
@@ -39,10 +42,12 @@ export const CHONBURI: CampusConfig = {
     "Pha Nat Road",
     "Si Racha Road",
   ],
+  // Start zoomed in to street level so the mayor sees *their* streets first.
+  // Zoom 15.2 ≈ 700 m across the viewport — enough for 2-3 city blocks.
   defaultView: {
     longitude: 100.9847,
     latitude: 13.3611,
-    zoom: 13.5,
+    zoom: 15.2,
     pitch: 50,
     bearing: -18,
   },
