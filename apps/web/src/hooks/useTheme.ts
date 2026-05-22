@@ -11,8 +11,10 @@ function readSavedTheme(): Theme | null {
 }
 
 function systemTheme(): Theme {
-  if (typeof window === "undefined") return "dark";
-  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  // This dashboard is designed for dark mode — tactical dark palette, cyan
+  // buildings on near-black basemap. Light mode exists as a toggle but dark
+  // is the correct default regardless of OS preference.
+  return "dark";
 }
 
 export function useTheme(): { theme: Theme; setTheme: (t: Theme) => void; toggle: () => void } {
@@ -24,18 +26,6 @@ export function useTheme(): { theme: Theme; setTheme: (t: Theme) => void; toggle
     root.setAttribute("data-theme", theme);
     root.style.colorScheme = theme;
   }, [theme]);
-
-  // Follow system preference if the user hasn't explicitly chosen
-  useEffect(() => {
-    if (readSavedTheme()) return;
-    const mq = window.matchMedia("(prefers-color-scheme: light)");
-    const onChange = (e: MediaQueryListEvent) => {
-      if (readSavedTheme()) return;
-      setThemeState(e.matches ? "light" : "dark");
-    };
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
 
   const setTheme = (t: Theme) => {
     try {
