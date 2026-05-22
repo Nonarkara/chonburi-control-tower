@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_BASE } from "../lib/apiBase";
 
 export type SystemStatus = "healthy" | "degraded" | "down" | "unknown";
 
@@ -26,8 +27,6 @@ interface HealthResponse {
   mqtt: { connected: boolean; messageCount: number; lastError: string | null };
   at: string;
 }
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
 export function useSystemHealth(pollMs = 30_000) {
   const [health, setHealth] = useState<HealthResponse | null>(null);

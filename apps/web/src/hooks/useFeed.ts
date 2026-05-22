@@ -12,6 +12,7 @@ interface FeedState<T> {
 const STORAGE_PREFIX = "chonburi:feed:";
 const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000;
 const UNAVAILABLE_AFTER_FAILS = 3;
+const REQUEST_TIMEOUT_MS = 10_000;
 
 function storageKey(path: string): string {
   return `${STORAGE_PREFIX}${path}`;
@@ -44,12 +45,32 @@ const emptyInitial = <T,>(): FeedState<T> => ({
   error: null,
 });
 
+async function fetchOnce(url: string, signal: AbortSignal): Promise<Response> {
+  const ctrl = new AbortController();
+  let timedOut = false;
+  const timeoutId = window.setTimeout(() => {
+    timedOut = true;
+    ctrl.abort();
+  }, REQUEST_TIMEOUT_MS);
+  const abort = () => ctrl.abort();
+  signal.addEventListener("abort", abort, { once: true });
+  try {
+    return await fetch(url, { signal: ctrl.signal, cache: "no-store" });
+  } catch (err) {
+    if (timedOut) throw new Error(`Request timed out after ${REQUEST_TIMEOUT_MS / 1000}s`);
+    throw err;
+  } finally {
+    window.clearTimeout(timeoutId);
+    signal.removeEventListener("abort", abort);
+  }
+}
+
 async function fetchWithRetry(url: string, signal: AbortSignal, retries = 2): Promise<Response> {
   let lastErr: Error | undefined;
   for (let i = 0; i <= retries; i++) {
     if (signal.aborted) throw new DOMException("Aborted", "AbortError");
     try {
-      const res = await fetch(url, { signal, cache: "no-store" });
+      const res = await fetchOnce(url, signal);
       if (res.ok) return res;
       if (res.status < 500 && res.status !== 429) throw new Error(`${res.status} ${res.statusText}`);
       lastErr = new Error(`${res.status} ${res.statusText}`);
@@ -86,7 +107,7 @@ export function useFeed<T>(path: string, pollMs: number): FeedState<T> & { refet
         failCount.current = 0;
         setState((prev) => {
           // Short-circuit when upstream hasn't moved — same fetchedAt means same payload.
-          // Avoids cascading re-renders of bangkokPulse, chips, tickers on every poll.
+          // Avoids cascading re-renders of dashboard chips and tickers on every poll.
           if (
             prev.loadedAt === json.meta.fetchedAt &&
             prev.fallbackTier === json.meta.fallbackTier &&

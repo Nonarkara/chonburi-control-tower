@@ -270,11 +270,30 @@ export interface BuildingProperties {
   office?: string | null;
   healthcare?: string | null;
   shop?: string | null;
+  // Microsoft Building Footprints marker
+  source?: string | null;
+}
+
+function finitePositive(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) return value;
+  if (typeof value === "string") {
+    const parsed = Number.parseFloat(value.replace(/[^\d.]/g, ""));
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return null;
 }
 
 function buildingHeightMeters(props: BuildingProperties): number {
-  if (props.height) return props.height;
-  if (props.levels) return props.levels * 3;
+  const raw = props as BuildingProperties & {
+    "building:levels"?: number | string | null;
+    height?: number | string | null;
+  };
+  const height = finitePositive(raw.height);
+  if (height) return Math.max(height, 8);
+
+  const levels = finitePositive(props.levels) ?? finitePositive(raw["building:levels"]);
+  if (levels) return Math.max(levels * 4.2, 10);
+
   // Landmark minimum heights — the polygon may be the compound not the spire;
   // enforce a minimum that reads correctly in the 3D skyline.
   const kind = classifyBuilding(props);
@@ -285,7 +304,7 @@ function buildingHeightMeters(props: BuildingProperties): number {
   if (kind === "government")      return 15; // civic building minimum
   if (kind === "university")      return 15;
   if (kind === "hotel")           return 20; // hotels tend tall
-  return 9;
+  return 10;
 }
 
 /**
@@ -304,10 +323,14 @@ function buildingHeightMeters(props: BuildingProperties): number {
  *   tall (≥50m) → sky-300        — skyline marker, height gradient continues
  */
 export type LandmarkKind =
-  | "residential"   // houses, apartments — warm terracotta; every household
+  | "residential"                // houses, row-houses — warm terracotta
+  | "commercial" | "industrial"  // shops/retail, warehouses/factories
+  | "office"                     // office buildings — teal
   | "hotel" | "temple" | "church" | "mosque"
   | "government" | "police" | "fire" | "hospital" | "clinic"
-  | "school" | "university" | "power" | "tall" | null;
+  | "school" | "university" | "power" | "tall"
+  | "ms-generic"                 // Microsoft Footprints — warm sand (untagged residential fabric)
+  | null;
 
 export function classifyBuilding(props: BuildingProperties): LandmarkKind {
   const a  = (props.amenity    ?? "").toLowerCase();
@@ -318,8 +341,9 @@ export function classifyBuilding(props: BuildingProperties): LandmarkKind {
   const hc = (props.healthcare ?? "").toLowerCase();
   const of = (props.office     ?? "").toLowerCase();
   const nm = ((props.name ?? "") + " " + (props.nameEn ?? "") + " " + (props.nameTh ?? "")).toLowerCase();
+  const src = (props.source ?? "").toLowerCase();
 
-  // Civic + landmark priority
+  // Civic + landmark priority (highest specificity first)
   if (a === "hospital"  || hc === "hospital") return "hospital";
   if (a === "clinic"    || hc === "clinic" || hc === "doctor") return "clinic";
   if (a === "police")   return "police";
@@ -340,8 +364,27 @@ export function classifyBuilding(props: BuildingProperties): LandmarkKind {
   if (nm.includes("วัด") || nm.includes("temple") || nm.includes("wat ")) return "temple";
   if (nm.includes("สถานีตำรวจ") || nm.includes("police")) return "police";
   // Compute height directly here to avoid recursion (buildingHeightMeters calls back into classifyBuilding)
-  const directHeight = props.height ?? (props.levels ? props.levels * 3 : 0);
+  const directHeight = finitePositive(props.height) ?? (finitePositive(props.levels) ? finitePositive(props.levels)! * 4.2 : 0);
   if (directHeight >= 50) return "tall";
+
+  // Commercial / retail / F&B
+  if (
+    b === "commercial" || b === "retail" || b === "shop" || b === "supermarket" ||
+    b === "mall" || b === "kiosk" ||
+    a === "marketplace" || a === "supermarket" || a === "fuel" ||
+    a === "restaurant" || a === "cafe" || a === "fast_food" || a === "bar" || a === "food_court" ||
+    (props.shop as string | undefined)
+  ) return "commercial";
+
+  // Industrial / storage
+  if (
+    b === "industrial" || b === "warehouse" || b === "factory" ||
+    b === "storage_tank" || b === "storage"
+  ) return "industrial";
+
+  // Office
+  if (b === "office" || of === "company" || of === "ngo" || a === "bank" || a === "post_office")
+    return "office";
 
   // Residential / household — every house, apartment, row-house
   // Warm terracotta so households read as warm inhabited fabric vs blue civic.
@@ -352,34 +395,46 @@ export function classifyBuilding(props: BuildingProperties): LandmarkKind {
     b === "hut" || b === "cabin"
   ) return "residential";
 
+  // Microsoft Global Building Footprints — untagged, assumed residential fabric
+  // Warm sand/stone so they read as the background city mass.
+  if (src === "ms-footprints") return "ms-generic";
+
   return null;
 }
 
-// Landmark fill colours — one decision per category, legible in both 2D + 3D.
-// Amber = civic importance (hotels, power). Semantic palette for safety/health.
+// Landmark fill colours — one decision per category, legible in dark 3D.
+// Reading guide: red=health, gold=culture, cyan=civic, violet=education,
+//                amber=commerce, steel=industry, teal=office, sand=fabric.
 const LANDMARK_COLOR: Record<NonNullable<LandmarkKind>, [number, number, number]> = {
-  residential: [210, 110, 65],  // warm terracotta — household fabric, distinct from blue civic
-  hotel:       [245, 158, 11],  // amber — tourism anchor
-  temple:     [251, 191, 36],   // bright gold — cultural backbone
-  church:     [253, 224, 71],   // pale gold
-  mosque:     [250, 204, 21],   // gold variant
-  government: [56,  189, 248],  // sky-400 — public institutions
-  police:     [34,  211, 238],  // cyan — safety
-  fire:       [251, 146, 60],   // orange — emergency
-  hospital:   [239,  68,  68],  // red — health
-  clinic:     [251, 113, 133],  // pink-red
-  school:     [167, 139, 250],  // violet — education
-  university: [196, 181, 253],  // light violet
-  power:      [245, 158, 11],   // amber — EGAT/PEA infrastructure
-  tall:       [125, 211, 252],  // sky-300 — skyline marker
+  "ms-generic":  [165, 138, 112],  // warm sand — background residential fabric (20K buildings)
+  residential:   [210, 110,  65],  // terracotta — OSM-tagged houses / apartments
+  commercial:    [245, 158,  11],  // amber — shops, retail, markets, F&B
+  industrial:    [120, 130, 140],  // steel grey — warehouses, factories
+  office:        [ 45, 170, 160],  // teal — offices, banks, post offices
+  hotel:         [251, 191,  36],  // gold — tourism anchor
+  temple:        [253, 224,  71],  // bright gold — cultural backbone
+  church:        [253, 186, 116],  // pale peach — Christian worship
+  mosque:        [134, 239, 172],  // mint green — Islamic worship
+  government:    [ 56, 189, 248],  // sky-400 — city hall + public institutions
+  police:        [ 34, 211, 238],  // cyan — safety infrastructure
+  fire:          [251, 146,  60],  // orange — emergency response
+  hospital:      [239,  68,  68],  // red — health anchor
+  clinic:        [251, 113, 133],  // pink-red — clinics / doctors
+  school:        [167, 139, 250],  // violet — education
+  university:    [196, 181, 253],  // light violet
+  power:         [245, 158,  11],  // amber — EGAT / PEA infrastructure
+  tall:          [125, 211, 252],  // sky-300 — skyline height marker
 };
 
-// Height ramp for ordinary (non-landmark) buildings in 3D.
+// Height ramp for buildings that don't fit a named category.
+// More gradations so the cityscape reads as height-differentiated rather than flat.
 function heightColor(h: number): [number, number, number] {
-  if (h >= 50) return [125, 211, 252]; // sky-300 — very tall
-  if (h >= 30) return [56,  189, 248]; // sky-400
-  if (h >= 15) return [14,  165, 233]; // sky-500
-  return             [3,   105, 161];  // sky-700 — low-rise
+  if (h >= 50) return [125, 211, 252]; // sky-300  — high-rise
+  if (h >= 30) return [ 56, 189, 248]; // sky-400  — mid-high
+  if (h >= 20) return [ 14, 165, 233]; // sky-500  — mid-rise
+  if (h >= 12) return [ 59, 130, 246]; // blue-500 — 3–4 floors
+  if (h >=  7) return [ 99, 102, 241]; // indigo   — 2 floors
+  return             [148,  103,  89]; // warm clay — 1 floor / unknown
 }
 
 /**
@@ -409,8 +464,9 @@ export function buildingsLayer(
     filled: true,
     pickable: true,
     extruded,
+    elevationScale: extruded && !ghosted ? 1.65 : 1,
     material: extruded && !ghosted
-      ? { ambient: 0.65, diffuse: 0.75, shininess: 18, specularColor: [255, 240, 200] }
+      ? { ambient: 0.72, diffuse: 0.82, shininess: 24, specularColor: [255, 245, 220] }
       : false,
     getFillColor: ((f: Feature<Polygon | MultiPolygon, BuildingProperties>) => {
       const kind = classifyBuilding(f.properties);
@@ -424,7 +480,7 @@ export function buildingsLayer(
           return [c[0], c[1], c[2], 230] as [number, number, number, number];
         }
         const c = heightColor(buildingHeightMeters(f.properties));
-        return [c[0], c[1], c[2], 200] as [number, number, number, number];
+        return [c[0], c[1], c[2], 218] as [number, number, number, number];
       }
       // 2D flat view — landmarks stand out, ordinary buildings are dim
       if (kind) {
@@ -443,11 +499,11 @@ export function buildingsLayer(
       }
       return f.properties.name
         ? [14, 165, 233, lineA] as [number, number, number, number]
-        : [80, 110, 140, lineA] as [number, number, number, number];
+        : [15, 23, 42, lineA] as [number, number, number, number];
     }) as unknown as [number, number, number, number],
     getLineWidth: ((f: Feature<Polygon | MultiPolygon, BuildingProperties>) =>
       classifyBuilding(f.properties) ? 1.2 : 0.6) as unknown as number,
-    lineWidthMinPixels: 0.5,
+    lineWidthMinPixels: extruded && !ghosted ? 0.7 : 0.5,
     getElevation: ((f: Feature<Polygon | MultiPolygon, BuildingProperties>) =>
       buildingHeightMeters(f.properties)) as unknown as number,
     opacity: ghosted ? 0.35 : 1,

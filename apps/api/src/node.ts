@@ -81,7 +81,7 @@ if (process.env.AISSTREAM_TOKEN) {
 
 // Initialise twin database (PostgreSQL/PostGIS) if available
 await initTwinDb()
-  .then((ok) => console.log(`[chonburi-api] twin DB: ${ok ? "connected" : "not configured (in-memory only)`"}`))
+  .then((ok) => console.log(`[chonburi-api] twin DB: ${ok ? "connected" : "not configured (in-memory only)"}`))
   .catch((err) => console.error("[chonburi-api] twin DB init failed:", err));
 
 // Hydrate twin store from building GeoJSON

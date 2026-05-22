@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_BASE } from "../lib/apiBase";
 
 export interface TwinRelatedItem {
   relation: { id: string; predicate: string; properties?: Record<string, unknown> };
@@ -20,8 +21,6 @@ interface TwinBuildingData {
   related: TwinRelatedItem[];
   state: TwinStatePoint[];
 }
-
-const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
 
 export function useTwinBuilding(buildingId: string | null) {
   const [data, setData] = useState<TwinBuildingData>({ object: null, related: [], state: [] });

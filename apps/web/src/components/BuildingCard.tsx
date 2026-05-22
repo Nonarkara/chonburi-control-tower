@@ -1,5 +1,6 @@
 import type { BuildingProperties } from "../map/layers";
 import { useTwinBuilding } from "../hooks/useTwinBuilding";
+import { API_BASE } from "../lib/apiBase";
 
 interface Props {
   building: BuildingProperties | null;
@@ -106,7 +107,7 @@ export function BuildingCard({ building, onClose }: Props) {
       {/* Link to full twin object */}
       {twin.object && (
         <a
-          href={`${import.meta.env.VITE_API_BASE_URL ?? ""}/api/twin/objects/${encodeURIComponent(osmId)}`}
+          href={`${API_BASE}/api/twin/objects/${encodeURIComponent(osmId)}`}
           target="_blank"
           rel="noreferrer"
           className="building-card-link mono"

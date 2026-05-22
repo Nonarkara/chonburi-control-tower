@@ -263,15 +263,9 @@ export default function App() {
   const buildings = useGeoJson<FeatureCollection<Polygon | MultiPolygon, BuildingProperties>>(
     "/geo/chonburi-buildings.geojson",
   );
-  const surroundingBuildings = useGeoJson<FeatureCollection<Polygon | MultiPolygon, SurroundingBuildingProperties>>(
-    "/geo/surrounding-buildings.geojson",
-  );
-  const districts = useGeoJson<FeatureCollection<Polygon | MultiPolygon, DistrictProperties>>(
-    "/geo/bangkok-districts.geojson",
-  );
-  const floodAreas = useGeoJson<FeatureCollection<Polygon | MultiPolygon, FloodAreaProperties>>(
-    "/geo/flood-prone-areas.geojson",
-  );
+  // surrounding-buildings, bangkok-districts, flood-prone-areas removed —
+  // all three files contain Chula/Bangkok coordinates and are invisible in
+  // the Chonburi viewport. Use chonburi-flood-risk.geojson for flood zones.
   const cuLands = useGeoJson<FeatureCollection<Polygon | MultiPolygon, CuLandProperties>>(
     "/geo/cu-lands.geojson",
   );
@@ -281,9 +275,7 @@ export default function App() {
   const transitStations = useGeoJson<FeatureCollection<Point, StationProps>>("/geo/transit-stations.geojson");
   const transitLines = useGeoJson<FeatureCollection<LineString, TransitLineProps>>("/geo/transit-lines.geojson");
   const campusGates = useGeoJson<FeatureCollection<Point, GateProps>>("/geo/chula-gates.geojson");
-  const neighborhoodBuildings = useGeoJson<FeatureCollection<Polygon | MultiPolygon, NeighborhoodBuildingProps>>(
-    "/geo/neighborhood-tall-buildings.geojson",
-  );
+  // neighborhood-tall-buildings.geojson is at Chula coordinates — removed.
   // Underground utilities + WiFi survey (hand-authored, see /public/geo/*)
   const electricityFc = useGeoJson<FeatureCollection<Geometry, Record<string, unknown>>>("/geo/cu-electricity.geojson");
   const waterFc = useGeoJson<FeatureCollection<Geometry, Record<string, unknown>>>("/geo/cu-water.geojson");
@@ -750,10 +742,6 @@ export default function App() {
       out.push(campusBoundaryLayer(campus) as Layer);
     if ((enabledLayers.has("municipality-buildings") || enabledLayers.has("campus-buildings")) && buildings)
       out.push(buildingsLayer(buildings, { extruded: is3D, ghosted: isSubstructure }) as Layer);
-    if (enabledLayers.has("neighborhood-buildings") && neighborhoodBuildings)
-      out.push(neighborhoodBuildingsLayer(neighborhoodBuildings, { extruded: is3D, ghosted: isSubstructure }) as Layer);
-    if (enabledLayers.has("surrounding-buildings") && surroundingBuildings)
-      out.push(surroundingBuildingsLayer(surroundingBuildings, { extruded: is3D, ghosted: isSubstructure }) as Layer);
     // 3D Tiles pilot — OGC-standard streaming buildings (replaces extruded GeoJSON when available)
     if (tile3dLayer) out.push(tile3dLayer as Layer);
     if (enabledLayers.has("road-network") && roads)
@@ -762,12 +750,6 @@ export default function App() {
       out.push(transitLinesLayer(transitLines) as Layer);
     if (enabledLayers.has("campus-gates") && campusGates)
       out.push(campusGatesLayer(campusGates) as Layer);
-    if (enabledLayers.has("bangkok-districts") && districts) {
-      out.push(districtBoundariesLayer(districts) as Layer);
-      out.push(districtLabelsLayer(districts) as Layer);
-    }
-    if (enabledLayers.has("flood-prone-areas") && floodAreas)
-      out.push(floodProneAreasLayer(floodAreas) as Layer);
     if (enabledLayers.has("bma-pois") && bma && bma.pois.length > 0) out.push(bmaPoiLayer(bma.pois) as Layer);
     if (enabledLayers.has("bma-aq-stations") && bmaAqStationList.length > 0) out.push(bmaAqStationsLayer(bmaAqStationList) as Layer);
     if (enabledLayers.has("traffic-heatmap") && trafficSamples.length > 0) out.push(trafficHeatmapLayer(trafficSamples) as Layer);
@@ -874,8 +856,8 @@ export default function App() {
     return out;
   }, [
     enabledLayers, viewState.zoom, is3D, isSubstructure, campus, buildings,
-    surroundingBuildings, districts, floodAreas, cuLands, trafficSamples,
-    shuttleRoutes, shuttleStops, transitStations, transitLines, campusGates, neighborhoodBuildings, roads,
+    cuLands, trafficSamples,
+    shuttleRoutes, shuttleStops, transitStations, transitLines, campusGates, roads,
     shuttle.data, cctv.data, cityReports.data,
     iticEvents.data, bma, bmaAqStationList, electricityFc, waterFc, drainageFc, wifiFc,
     civicPoints, waterways, fisheries, floodRisk, heritage,

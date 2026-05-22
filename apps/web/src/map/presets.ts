@@ -117,7 +117,6 @@ export const LENSES: Lens[] = [
       "cctv-cameras",
       "gistda-pois",
       "news-pins",
-      "tile3d-buildings",
     ],
   },
   {
@@ -241,16 +240,10 @@ export const ALL_LAYERS: {
   // ─── Municipality ──────────────────────────────────────────────────────
   { id: "municipality-boundary",  label: "Municipal boundary",        swatch: "#0EA5E9", group: "municipality",
     describe: "Chonburi Town Municipality outer boundary (เทศบาลเมืองชลบุรี)." },
-  { id: "municipality-buildings", label: "Buildings (OSM, 3D)",       swatch: "#0EA5E9", group: "municipality",
-    describe: "All ~5,000 building footprints inside the municipality with height inferred from OSM tags or area heuristics. Click any building for name + levels; 3D mode extrudes them as boxes." },
+  { id: "municipality-buildings", label: "Buildings (OSM + MS, 3D)",  swatch: "#0EA5E9", group: "municipality",
+    describe: "20,877 building footprints — OSM/Bing named landmarks (hospitals, temples, hotels) plus Microsoft Building Footprints for the full fabric. Height from levels tag or 2-storey default. Colour-coded by type in 3D." },
   { id: "tile3d-buildings",       label: "Buildings (3D Tiles)",       swatch: "#7DD3FC", group: "municipality",
-    describe: "Streaming 3D Tiles pilot for Chonburi city centre — generated from OSM footprints with real height extrusion. Replaces extruded GeoJSON with OGC-standard 3D Tiles." },
-  { id: "neighborhood-buildings", label: "Skyline (tall ≥30 m)",      swatch: "#7DD3FC", group: "municipality",
-    describe: "Tall buildings (≥ 30 m) in and around the municipality. Renders flat in 2D, extrudes in 3D for the skyline silhouette." },
-  { id: "districts",              label: "District / sub-district",   swatch: "#FFFFFF", group: "municipality",
-    describe: "Chonburi province sub-districts (tambons): Bang Pla Soi, Mueang, Saen Suk, Don Hua Lo." },
-  { id: "flood-prone-areas",      label: "Flood-prone areas",         swatch: "#EF4444", group: "environment",
-    describe: "Historical coastal flood-prone zones based on Department of Disaster Prevention records." },
+    describe: "Experimental OGC 3D Tiles stream for Chonburi city centre. Toggle on to compare against the GeoJSON layer." },
 
   // ─── Maritime (NEW) ────────────────────────────────────────────────────
   { id: "maritime-overlay",       label: "OpenSeaMap overlay",        swatch: "#22D3EE", group: "maritime",

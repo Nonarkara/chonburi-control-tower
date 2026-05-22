@@ -20,7 +20,7 @@ const twinApp = new Hono();
 
 // ---- Objects ----
 
-twinApp.get("/api/twin/objects", async (c) => {
+twinApp.get("/objects", async (c) => {
   const q = c.req.query();
   const kind = q.kind as TwinKind | undefined;
   const limit = q.limit ? Math.min(parseInt(q.limit, 10) || 100, 1000) : 100;
@@ -35,13 +35,13 @@ twinApp.get("/api/twin/objects", async (c) => {
   return c.json({ items, count: items.length });
 });
 
-twinApp.get("/api/twin/objects/:id", async (c) => {
+twinApp.get("/objects/:id", async (c) => {
   const obj = await getTwinObject(c.req.param("id"));
   if (!obj) return c.json({ error: "Not found" }, 404);
   return c.json(obj);
 });
 
-twinApp.post("/api/twin/objects", async (c) => {
+twinApp.post("/objects", async (c) => {
   const body = (await c.req.json().catch(() => ({}))) as Partial<TwinObject>;
   if (!body.id || !body.kind || !body.name) {
     return c.json({ error: "Required: id, kind, name" }, 400);
@@ -62,7 +62,7 @@ twinApp.post("/api/twin/objects", async (c) => {
   return c.json(obj, 201);
 });
 
-twinApp.delete("/api/twin/objects/:id", async (c) => {
+twinApp.delete("/objects/:id", async (c) => {
   const ok = await deleteTwinObject(c.req.param("id"));
   if (!ok) return c.json({ error: "Not found" }, 404);
   return c.json({ ok: true });
@@ -70,7 +70,7 @@ twinApp.delete("/api/twin/objects/:id", async (c) => {
 
 // ---- Relations ----
 
-twinApp.get("/api/twin/relations", async (c) => {
+twinApp.get("/relations", async (c) => {
   const q = c.req.query();
   const items = await getTwinRelations({
     subjectId: q.subjectId,
@@ -80,7 +80,7 @@ twinApp.get("/api/twin/relations", async (c) => {
   return c.json({ items, count: items.length });
 });
 
-twinApp.post("/api/twin/relations", async (c) => {
+twinApp.post("/relations", async (c) => {
   const body = (await c.req.json().catch(() => ({}))) as {
     subjectId: string;
     predicate: TwinRelationPredicate;
@@ -101,14 +101,14 @@ twinApp.post("/api/twin/relations", async (c) => {
   return c.json(rel, 201);
 });
 
-twinApp.get("/api/twin/objects/:id/related", async (c) => {
+twinApp.get("/objects/:id/related", async (c) => {
   const items = await getRelatedObjects(c.req.param("id"));
   return c.json({ items, count: items.length });
 });
 
 // ---- State (time series) ----
 
-twinApp.get("/api/twin/state", async (c) => {
+twinApp.get("/state", async (c) => {
   const q = c.req.query();
   const objectId = q.objectId;
   if (!objectId) return c.json({ error: "Required query: objectId" }, 400);
@@ -122,7 +122,7 @@ twinApp.get("/api/twin/state", async (c) => {
   return c.json({ items, count: items.length });
 });
 
-twinApp.get("/api/twin/state/latest", async (c) => {
+twinApp.get("/state/latest", async (c) => {
   const q = c.req.query();
   const objectId = q.objectId;
   if (!objectId) return c.json({ error: "Required query: objectId" }, 400);
@@ -131,7 +131,7 @@ twinApp.get("/api/twin/state/latest", async (c) => {
   return c.json(point);
 });
 
-twinApp.post("/api/twin/state", async (c) => {
+twinApp.post("/state", async (c) => {
   const body = (await c.req.json().catch(() => ({}))) as {
     objectId: string;
     metric: string;
@@ -155,6 +155,6 @@ twinApp.post("/api/twin/state", async (c) => {
 
 // ---- Diagnostics ----
 
-twinApp.get("/api/twin/snapshot", async (c) => c.json(await twinSnapshot()));
+twinApp.get("/snapshot", async (c) => c.json(await twinSnapshot()));
 
 export default twinApp;
