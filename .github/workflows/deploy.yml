@@ -3,7 +3,7 @@ name: Build + Deploy → Cloudflare Pages
 on:
   push:
     branches: [main]
-  workflow_dispatch: # allow manual re-run from GitHub UI
+  workflow_dispatch:
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Build & deploy web app
+    name: Build & deploy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,8 +36,10 @@ jobs:
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
 
+      - name: Restore wrangler auth
+        run: |
+          mkdir -p ~/.wrangler/config
+          echo "${{ secrets.WRANGLER_CONFIG }}" > ~/.wrangler/config/default.toml
+
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: pages deploy apps/web/dist --project-name chonburi-control-tower --commit-dirty=true
+        run: npx wrangler pages deploy apps/web/dist --project-name chonburi-control-tower --commit-dirty=true
