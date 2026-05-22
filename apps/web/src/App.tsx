@@ -133,6 +133,7 @@ import { useSystemHealth } from "./hooks/useSystemHealth";
 import { MarketsTicker } from "./components/MarketsTicker";
 import { MobileNav, type MobilePanel } from "./components/MobileNav";
 import { ChatBox } from "./components/ChatBox";
+import { API_BASE } from "./lib/apiBase";
 // ExecutiveBrief / PeerComparison / StrategicAlerts removed from the mayor's
 // view — they were university-flavoured (QS rankings, enrollment, "presidential
 // attention"). To bring them back, rebuild against provincial / municipal data.
@@ -140,8 +141,6 @@ import { useDevicePresence } from "./hooks/useDevicePresence";
 import { useIsMobile } from "./hooks/useMediaQuery";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { useTheme } from "./hooks/useTheme";
-
-const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
 
 /**
  * Basemap — CARTO no-labels at the bottom, labels rendered on TOP via a
@@ -320,8 +319,7 @@ export default function App() {
     minZoom: 13,
     maxZoom: 20,
     transitionDuration: 0,
-    // react-map-gl / deck.gl maxBounds: [west, south, east, north]
-    maxBounds: [CHONBURI.outerBounds[0][0], CHONBURI.outerBounds[0][1], CHONBURI.outerBounds[1][0], CHONBURI.outerBounds[1][1]] as [number, number, number, number],
+    maxBounds: CHONBURI.outerBounds,
   });
 
   // Selected building for the popup card.
@@ -382,7 +380,7 @@ export default function App() {
   useEffect(() => {
     setViewState((prev) => ({
       ...prev,
-      pitch: viewMode === "2D" ? 0 : viewMode === "3D" ? 50 : 62,
+      pitch: viewMode === "2D" ? 0 : viewMode === "3D" ? 60 : 72,
       bearing: viewMode === "2D" ? 0 : viewMode === "3D" ? -18 : -28,
       transitionDuration: 700,
     }));
@@ -933,7 +931,7 @@ export default function App() {
             {systemHealth.system.down > 0 && systemHealth.system.degraded > 0 && ", "}
             {systemHealth.system.degraded > 0 && `${systemHealth.system.degraded} degraded`}
             {" · "}
-            <a href={`${import.meta.env.VITE_API_BASE_URL ?? ""}/api/health/detailed`} target="_blank" rel="noreferrer" className="banner-link">
+            <a href={`${API_BASE}/api/health/detailed`} target="_blank" rel="noreferrer" className="banner-link">
               View details →
             </a>
           </span>

@@ -42,13 +42,14 @@ export const CHONBURI: CampusConfig = {
     "Pha Nat Road",
     "Si Racha Road",
   ],
-  // Start zoomed in to street level so the mayor sees *their* streets first.
-  // Zoom 15.2 ≈ 700 m across the viewport — enough for 2-3 city blocks.
+  // Open at a city-block level with a dramatic pitch so 3D buildings read
+  // immediately. Zoom 14.5 ≈ 1.5 km across — shows the full municipal core.
+  // Pitch 60° makes even 2-storey shophouses extrude visibly.
   defaultView: {
     longitude: 100.9847,
     latitude: 13.3611,
-    zoom: 15.2,
-    pitch: 50,
+    zoom: 14.5,
+    pitch: 60,
     bearing: -18,
   },
 };
