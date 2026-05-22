@@ -868,6 +868,36 @@ export default function App() {
     tile3dLayer,
   ]);
 
+  // Feature counts — passed to LayerPalette so every toggle shows a number,
+  // making it immediately obvious whether the layer has data or not.
+  const layerCounts = useMemo(() => ({
+    "municipality-buildings": buildings?.features.length ?? 0,
+    "road-network":           roads?.features.length ?? 0,
+    "transit-stations":       transitStations?.features.length ?? 0,
+    "transit-lines":          transitLines?.features.length ?? 0,
+    "civic-points":           civicPoints?.features.length ?? 0,
+    "waterways":              waterways?.features.length ?? 0,
+    "fisheries":              fisheries?.features.length ?? 0,
+    "flood-risk-zones":       floodRisk?.features.length ?? 0,
+    "port-infrastructure":    maritimePorts?.features.length ?? 0,
+    "ferry-terminals":        maritimeFerries?.features.length ?? 0,
+    "navigation-aids":        maritimeNavAids?.features.length ?? 0,
+    "ais-vessels":            ais.data.length,
+    "cctv-cameras":           cctv.data.length,
+    "incidents-itic":         iticEvents.data.length,
+    "incidents-city-reports": cityReports.data.length,
+    "datago-points":          datago.data.length,
+    "gistda-pois":            gistdaPois.data.length,
+    "gistda-solar":           gistdaSolar.data.length,
+    "gistda-landuse":         gistdaLandUse.data.length,
+    "news-pins":              news.data.filter((n) => n.lat != null).length,
+  } as Record<string, number>), [
+    buildings, roads, transitStations, transitLines, civicPoints, waterways,
+    fisheries, floodRisk, maritimePorts, maritimeFerries, maritimeNavAids,
+    ais.data, cctv.data, iticEvents.data, cityReports.data, datago.data,
+    gistdaPois.data, gistdaSolar.data, gistdaLandUse.data, news.data,
+  ]);
+
   const feedHealth = useMemo(() => [
     { label: "NEWS", tier: news.fallbackTier, ageMinutes: news.ageMinutes },
     { label: "CR", tier: cityReports.fallbackTier, ageMinutes: cityReports.ageMinutes },
@@ -1117,6 +1147,7 @@ export default function App() {
             onLensChange={onLensChange}
             enabled={enabledLayers}
             onToggleLayer={onToggleLayer}
+            counts={layerCounts}
           />
         </div>
       </aside>

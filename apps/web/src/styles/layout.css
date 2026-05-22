@@ -712,6 +712,11 @@
 .modal-filter button { font-size: 0.64rem; padding: 5px 10px; letter-spacing: 0.08em; }
 .modal-body { overflow: auto; padding: 10px 20px 20px; }
 
+/* ── Layer count badge ───────────────────────────── */
+.layer-count      { font-size: 0.60rem; letter-spacing: 0.04em; padding: 0 4px; }
+.layer-count-ok   { color: var(--data); }
+.layer-count-zero { color: var(--bad); opacity: 0.65; }
+
 /* ── Standards alignment ─────────────────────────── */
 .pill-standard {
   background: transparent;

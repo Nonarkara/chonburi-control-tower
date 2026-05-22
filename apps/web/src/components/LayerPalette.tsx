@@ -14,11 +14,14 @@ interface Props {
   onLensChange: (l: LensId) => void;
   enabled: Set<LayerId>;
   onToggleLayer: (id: LayerId) => void;
+  /** Feature counts per layer — when present, shown next to each label so
+   *  the operator immediately sees "AIS 0" vs "AIS 14" without looking at the map. */
+  counts?: Partial<Record<LayerId, number>>;
 }
 
 const GROUP_ORDER: LayerGroup[] = ["municipality", "maritime", "mobility", "incidents", "open-data", "environment", "imagery"];
 
-export function LayerPalette({ lens, onLensChange, enabled, onToggleLayer }: Props) {
+export function LayerPalette({ lens, onLensChange, enabled, onToggleLayer, counts }: Props) {
   // group → list of layers (preserve declaration order within each group)
   const grouped = useMemo(() => {
     const m = new Map<LayerGroup, typeof ALL_LAYERS>();
@@ -122,7 +125,16 @@ export function LayerPalette({ lens, onLensChange, enabled, onToggleLayer }: Pro
                                 {freshness.label}
                               </span>
                             )}
-                            <span className="mono caption">{isOn ? "on" : "off"}</span>
+                            {counts != null && counts[l.id] != null ? (
+                              <span
+                                className={`mono caption layer-count ${counts[l.id]! > 0 ? "layer-count-ok" : "layer-count-zero"}`}
+                                title={`${counts[l.id]!.toLocaleString()} features loaded`}
+                              >
+                                {counts[l.id]!.toLocaleString()}
+                              </span>
+                            ) : (
+                              <span className="mono caption">{isOn ? "on" : "off"}</span>
+                            )}
                           </span>
                         </div>
                       );
