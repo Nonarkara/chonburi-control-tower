@@ -77,6 +77,37 @@ export function SourceCatalog({ open, onClose }: Props) {
           ))}
         </div>
 
+        <div className="modal-standards">
+          <header className="catalog-section-head">
+            <span className="lcars-bar" />
+            <span className="eyebrow mono">FRAMEWORK ALIGNMENT</span>
+          </header>
+          <div className="standards-grid mono">
+            <div className="standard-card">
+              <div className="standard-title">UNDP · JTC</div>
+              <div className="standard-subtitle">Digital Twins for Cities, Jul 2025</div>
+              <div className="standard-badge">LEVEL 2 — INFORMATIVE</div>
+              <div className="standard-desc caption">
+                Real-time multi-source feeds · 3D building fabric · Live sensor data ·
+                Municipal ops dashboard · Citizen intelligence interface (ASK CTM).
+                Next: Level 3 Predictive — wire twin_state time-series into trend models.
+              </div>
+            </div>
+            <div className="standard-card">
+              <div className="standard-title">ADB</div>
+              <div className="standard-subtitle">Digital Twin Framework: A Practical Guide, May 2025</div>
+              <div className="standard-badge">DIGITAL TWIN LITE · 4/5 FOUNDATIONS</div>
+              <div className="standard-desc caption">
+                ✓ F1 Data flow (AIS · weather · CCTV · GISTDA · news) ·
+                ✓ F2 Dynamic 3D representation (20K buildings · satellite · vector layers) ·
+                ✓ F3 Purpose-built (municipal ops + mayor's desk) ·
+                ✓ F4 Continuous updates (3-min to 6-hr refresh per source) ·
+                ◯ F5 Maturing insights — twin_state DB foundation ready, predictive models pending.
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="modal-body">
           {grouped.map(([cat, items]) => (
             <section key={cat} className="catalog-section">

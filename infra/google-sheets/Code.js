@@ -1,10 +1,10 @@
 /**
- * CCT-01 · Chula Control Tower — Google Sheets Live Data Feed
+ * CTM-01 · Chonburi Control Tower — Google Sheets Live Data Feed
  * ─────────────────────────────────────────────────────────────
  * SETUP (one-time, ~2 minutes):
  *
  *   1. Open Google Sheets → sheets.new
- *   2. Rename the file: "CCT-01 · Chula Control Tower · Live Data"
+ *   2. Rename the file: "CTM-01 · Chonburi Town Center · EarthAlpha + Live Data"
  *   3. Menu → Extensions → Apps Script
  *   4. Delete the default code, paste THIS entire file, save
  *   5. Click ▷ Run → select "setup" → authorize when prompted
@@ -14,19 +14,19 @@
  * Refresh cadence:
  *   • Live feeds (Weather, AQ, News, Markets, Executive, …) auto-refresh
  *     every 5 minutes via a time-based trigger.
- *   • Static reference tabs (BTS/MRT stations, gates, buildings,
- *     PMCU lands, BMA POIs) are pulled once at setup, re-pullable via the
- *     CCT-01 menu → "Refresh static data".
- *   • Placeholder tabs (Enrollment, Energy, Waste, …) ship empty with
- *     proper headers, ready to receive feeds from official Chula
- *     pipelines once those are connected. See PLACEHOLDER_TABS below for
- *     the expected schema and the upstream contact for each.
+ *   • Static reference tabs (buildings, roads, waterways, fisheries,
+ *     flood-risk areas, ports, piers, navigation aids) are pulled once at
+ *     setup, re-pullable via the CTM-01 menu → "Refresh static data".
+ *   • EarthAlphaObservations is a typed collection sheet for this area:
+ *     operators can validate satellite/GISTDA observations, add field notes,
+ *     and mark which map layers or municipal actions are affected.
  *
- * Data source: https://chula-api.nonarkara.org
- * Dashboard:   https://chula-control-tower-b0r.pages.dev
+ * Data source: https://chonburi-api.nonarkara.org
+ * Dashboard:   https://chonburi.nonarkara.org
  */
 
-var API = "https://chula-api.nonarkara.org";
+var API = "https://chonburi-api.nonarkara.org";
+var WEB = "https://chonburi.nonarkara.org";
 
 var HEADER_BG = "#0f0f1a";
 var HEADER_COLOR = "#e83898";
@@ -41,6 +41,15 @@ function getSheet(name) {
 function get(path) {
   var opts = { muteHttpExceptions: true, followRedirects: true };
   var res = UrlFetchApp.fetch(API + path, opts);
+  if (res.getResponseCode() !== 200) {
+    throw new Error("HTTP " + res.getResponseCode() + " from " + path);
+  }
+  return JSON.parse(res.getContentText());
+}
+
+function getStaticGeo(path) {
+  var opts = { muteHttpExceptions: true, followRedirects: true };
+  var res = UrlFetchApp.fetch(WEB + path, opts);
   if (res.getResponseCode() !== 200) {
     throw new Error("HTTP " + res.getResponseCode() + " from " + path);
   }
@@ -73,14 +82,13 @@ function val(v) {
 
 function refreshWeather(ts) {
   var d = get("/api/weather");
-  var w = d.weather || {};
+  var w = (d.features && d.features[0]) || d.weather || {};
   var tier = (d.meta && d.meta.fallbackTier) || "—";
   clearAndWrite(getSheet("Weather"),
-    ["Fetched At", "Temp °C", "Feels Like °C", "Humidity %", "Wind km/h",
-     "Rain Now mm", "Rain Today mm", "UV Index", "Condition", "Tier"],
-    [[ts, val(w.temp_c), val(w.feels_like_c), val(w.humidity_pct),
-       val(w.wind_kph), val(w.rain_now_mm), val(w.rain_today_mm),
-       val(w.uv_index), val(w.condition), tier]]
+    ["Fetched At", "Observed At", "Temp °C", "Feels Like °C", "Humidity %", "Wind km/h",
+     "Precip mm", "Condition", "Tier"],
+    [[ts, val(w.observedAt), val(w.tempC), val(w.feelsLikeC), val(w.humidity),
+       val(w.windKmh), val(w.precipMm), val(w.condition), tier]]
   );
   return "1 row";
 }
@@ -88,34 +96,33 @@ function refreshWeather(ts) {
 function refreshAirQuality(ts) {
   var d = get("/api/air-quality");
   var pts = d.features || [];
-  var rows = pts.map(function(f) {
-    var p = f.properties || {};
-    return [ts, val(p.stationName), val(p.aqi), val(p.pm25), val(p.pm10),
-            val(p.no2), val(p.o3), val(p.aqiCategory), val(p.source)];
+  var rows = pts.map(function(p) {
+    return [ts, val(p.observedAt), val(p.station), val(p.aqi), val(p.pm25),
+            val(p.category), val(p.lat), val(p.lng), val(p.source)];
   });
   clearAndWrite(getSheet("AirQuality"),
-    ["Fetched At", "Station", "AQI (US)", "PM2.5 µg/m³", "PM10 µg/m³",
-     "NO₂ µg/m³", "O₃ µg/m³", "Category", "Source"],
-    rows.length ? rows : [[ts, "(no station data)", "—", "—", "—", "—", "—", "—", "—"]]
+    ["Fetched At", "Observed At", "Station", "AQI (US)", "PM2.5 µg/m³",
+     "Category", "Lat", "Lng", "Source"],
+    rows.length ? rows : [[ts, "—", "(no station data)", "—", "—", "—", "—", "—", "—"]]
   );
   return rows.length + " stations";
 }
 
 function refreshAqTrend(ts) {
   var d = get("/api/air-quality/trend");
-  var rows = (d.features || []).flatMap(function(stn) {
+  var rows = [];
+  (d.features || []).forEach(function(stn) {
     var name = stn.station || "—";
     var current = stn.current || {};
     var forecast = stn.next8h || [];
-    var out = [[ts, name, "now", val(current.aqi), val(current.pm25), val(stn.category)]];
+    rows.push([ts, name, "now", val(current.observedAt), val(current.aqi), val(current.pm25), val(stn.category), val(stn.source)]);
     forecast.forEach(function(f) {
-      out.push([ts, name, f.at, val(f.aqi), val(f.pm25), "—"]);
+      rows.push([ts, name, "forecast", f.at, val(f.aqi), val(f.pm25), "—", val(stn.source)]);
     });
-    return out;
   });
   clearAndWrite(getSheet("AqiTrend"),
-    ["Fetched At", "Station", "At", "AQI", "PM2.5", "Category"],
-    rows.length ? rows : [[ts, "(no trend data)", "—", "—", "—", "—"]]
+    ["Fetched At", "Station", "Kind", "At", "AQI", "PM2.5", "Category", "Source"],
+    rows.length ? rows : [[ts, "(no trend data)", "—", "—", "—", "—", "—", "—"]]
   );
   return rows.length + " hourly points";
 }
@@ -125,13 +132,10 @@ function refreshIncidents(ts) {
   var itic = get("/api/incidents/itic");
 
   function toRow(src) {
-    return function(f) {
-      var p = f.properties || {};
-      var c = f.geometry && f.geometry.coordinates;
-      return [ts, src, val(p.type), val(p.status),
-              (p.description || "").slice(0, 300),
-              c ? c[1] : "—", c ? c[0] : "—",
-              val(p.reportedAt || p.timestamp)];
+    return function(p) {
+      return [ts, src, val(p.category), val(p.severity), val(p.status),
+              val(p.title), (p.description || "").slice(0, 300),
+              val(p.lat), val(p.lng), val(p.reportedAt), val(p.reporterPlatform)];
     };
   }
 
@@ -139,8 +143,8 @@ function refreshIncidents(ts) {
     .concat((itic.features || []).map(toRow("iTIC/Longdo")));
 
   clearAndWrite(getSheet("Incidents"),
-    ["Fetched At", "Source", "Type", "Status", "Description", "Lat", "Lng", "Reported At"],
-    rows.length ? rows : [[ts, "(none)", "—", "—", "No open incidents near campus", "—", "—", "—"]]
+    ["Fetched At", "Source", "Category", "Severity", "Status", "Title", "Description", "Lat", "Lng", "Reported At", "Platform"],
+    rows.length ? rows : [[ts, "(none)", "—", "—", "—", "No open incidents near Chonburi", "—", "—", "—", "—", "—"]]
   );
   return rows.length + " events";
 }
@@ -159,7 +163,7 @@ function refreshNews(ts) {
   return rows.length + " headlines";
 }
 
-// PR-facing rolling archive — every unique Chula-related story this server
+// PR-facing rolling archive — every unique Chonburi-related story this server
 // has ever seen, newest first. Capped at 1000 to keep the sheet responsive;
 // the canonical store is /api/news/archive on the API.
 function refreshNewsArchive(ts) {
@@ -202,32 +206,23 @@ function refreshNewsDigest(ts) {
   return rows.length + " digest rows";
 }
 
-function refreshShuttle(ts) {
-  var d = get("/api/transit/cu-shuttle");
-  var buses = d.vehicles || d.features || [];
-  var rows = buses.map(function(b) {
-    var p = b.properties || b;
-    var c = b.geometry && b.geometry.coordinates;
-    return [ts, val(p.lineId || p.routeId), val(p.lineName), val(p.vehicleId),
-            c ? c[1] : "—", c ? c[0] : "—",
-            val(p.speed), val(p.heading), val(p.updatedAt || p.timestamp)];
-  });
-  clearAndWrite(getSheet("ShuttleLive"),
-    ["Fetched At", "Line ID", "Line Name", "Vehicle ID", "Lat", "Lng",
-     "Speed km/h", "Heading", "Updated At"],
-    rows.length ? rows : [[ts, "—", "—", "—", "—", "—", "—", "—", "(no live vehicles)"]]
-  );
-  return rows.length + " vehicles";
-}
-
 function refreshTrends(ts) {
   var d = get("/api/trends");
-  var rows = (d.series || d.features || []).map(function(s) {
-    return [ts, val(s.keyword), val(s.value), val(s.geo || "TH"), val(s.updatedAt)];
+  var rows = [];
+  (d.features || []).forEach(function(s) {
+    (s.interestOverTime || []).forEach(function(pt) {
+      rows.push([ts, val(s.lang), val(s.keyword), val(s.geo || "TH"), "interest", val(pt.time), val(pt.value), "—"]);
+    });
+    (s.relatedTop || []).forEach(function(q) {
+      rows.push([ts, val(s.lang), val(s.keyword), val(s.geo || "TH"), "related-top", val(q.query), val(q.value), val(q.link)]);
+    });
+    (s.relatedRising || []).forEach(function(q) {
+      rows.push([ts, val(s.lang), val(s.keyword), val(s.geo || "TH"), "related-rising", val(q.query), val(q.value), val(q.link)]);
+    });
   });
   clearAndWrite(getSheet("Trends"),
-    ["Fetched At", "Keyword", "Score 0–100", "Geo", "Updated At"],
-    rows.length ? rows : [[ts, "Chulalongkorn", "—", "TH", "—"]]
+    ["Fetched At", "Lang", "Keyword", "Geo", "Kind", "Time / Query", "Score", "Link"],
+    rows.length ? rows : [[ts, "—", "Chonburi EEC", "TH", "—", "—", "—", "—"]]
   );
   return rows.length + " keywords";
 }
@@ -264,22 +259,22 @@ function refreshExecutive(ts) {
   // Enrollment
   if (ex.enrollment) {
     var e = ex.enrollment;
-    rows.push([ts, "enrollment", "total", "Total students", e.total]);
-    rows.push([ts, "enrollment", "undergrad", "Undergraduate", e.undergraduate]);
-    rows.push([ts, "enrollment", "graduate", "Graduate", e.graduate]);
-    rows.push([ts, "enrollment", "international", "International", e.international + " (" + e.internationalPct + "%)"]);
-    rows.push([ts, "enrollment", "faculties", "Faculties", e.faculties]);
-    rows.push([ts, "enrollment", "ratio", "Student:Faculty", e.studentFacultyRatio]);
+    rows.push([ts, "population", "total", "Municipal population estimate", e.total]);
+    rows.push([ts, "population", "registeredHouseholds", "Registered households", e.undergraduate || "—"]);
+    rows.push([ts, "population", "workers", "Worker / visitor load", e.graduate || "—"]);
+    rows.push([ts, "population", "visitors", "Visitor share", e.international + " (" + e.internationalPct + "%)"]);
+    rows.push([ts, "population", "districts", "Municipal districts / zones", e.faculties || "—"]);
+    rows.push([ts, "population", "ratio", "Service load ratio", e.studentFacultyRatio]);
   }
   // Research
   if (ex.research) {
     var r = ex.research;
-    rows.push([ts, "research", "publications", "Publications 2024", r.publications2024]);
-    rows.push([ts, "research", "citations", "Citations 2024", r.citations2024]);
-    rows.push([ts, "research", "hIndex", "h-index", r.hIndex]);
-    rows.push([ts, "research", "topFields", "Top fields", (r.topFields || []).join(", ")]);
-    rows.push([ts, "research", "fundingMThb", "Funding M฿", r.researchFundingMThb]);
-    rows.push([ts, "research", "patents", "Patents filed", r.patentsFiled]);
+    rows.push([ts, "planning", "reports", "Planning / municipal reports", r.publications2024]);
+    rows.push([ts, "planning", "citations", "Referenced datasets", r.citations2024]);
+    rows.push([ts, "planning", "hIndex", "Evidence index", r.hIndex]);
+    rows.push([ts, "planning", "topFields", "Focus areas", (r.topFields || []).join(", ")]);
+    rows.push([ts, "planning", "fundingMThb", "Project funding M฿", r.researchFundingMThb]);
+    rows.push([ts, "planning", "patents", "Innovation filings", r.patentsFiled]);
   }
   // Finance
   if (ex.finance) {
@@ -297,7 +292,7 @@ function refreshExecutive(ts) {
   // Peers
   (ex.peers || []).forEach(function(p) {
     rows.push([ts, "peer", p.name, p.country,
-               "QS #" + p.qsWorldRank + " · THE #" + p.theWorldRank + " · " + p.studentsTotal + " students"]);
+               "population/context " + p.studentsTotal]);
   });
   // Alerts
   (ex.alerts || []).forEach(function(a) {
@@ -313,11 +308,9 @@ function refreshExecutive(ts) {
 
 function refreshCctv(ts) {
   var d = get("/api/cctv/longdo");
-  var rows = (d.features || []).map(function(f) {
-    var p = f.properties || {};
-    var c = f.geometry && f.geometry.coordinates;
+  var rows = (d.features || []).map(function(p) {
     return [ts, val(p.id), val(p.name), val(p.vendor),
-            c ? c[1] : "—", c ? c[0] : "—", val(p.imageUrl)];
+            val(p.lat), val(p.lng), val(p.imageUrl || p.streamUrl)];
   });
   clearAndWrite(getSheet("CCTV"),
     ["Fetched At", "ID", "Name", "Vendor", "Lat", "Lng", "Stream URL"],
@@ -326,107 +319,310 @@ function refreshCctv(ts) {
   return rows.length + " cameras";
 }
 
-// ── STATIC adapters — pulled once at setup, refreshable via menu ──────
-
-function refreshTransitStations(ts) {
-  // Static GeoJSON in the web app, but exposing through API isn't wired —
-  // we pull from the published Pages site instead so this works without
-  // depending on /apps/api routes for static files.
-  var url = "https://chula-control-tower-b0r.pages.dev/geo/transit-stations.geojson";
-  var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-  if (res.getResponseCode() !== 200) throw new Error("transit-stations HTTP " + res.getResponseCode());
-  var d = JSON.parse(res.getContentText());
-  var rows = (d.features || []).map(function(f) {
-    var p = f.properties || {};
-    var c = f.geometry && f.geometry.coordinates;
-    return [ts, val(p.system), val(p.name), val(p.nameEn || p.name),
-            val(p.code), val(p.line), c ? c[1] : "—", c ? c[0] : "—"];
+function refreshPrecipNowcast(ts) {
+  var d = get("/api/precip-nowcast");
+  var p = (d.features && d.features[0]) || {};
+  var rows = [[ts, "summary", "now", val(p.nowMm), val(p.total2hMm), val(p.peakMm), val(p.peakAt), val(p.firstSignificantAt), val(p.intensity)]];
+  (p.points || []).forEach(function(pt) {
+    rows.push([ts, "point", val(pt.at), val(pt.mm), "—", "—", "—", "—", val(pt.prob)]);
   });
-  clearAndWrite(getSheet("TransitStations"),
-    ["Fetched At", "System", "Name", "Name (EN)", "Code", "Line", "Lat", "Lng"],
+  clearAndWrite(getSheet("PrecipNowcast"),
+    ["Fetched At", "Kind", "At", "mm", "Total 2h mm", "Peak mm", "Peak At", "First Significant At", "Intensity / Probability"],
     rows
   );
-  return rows.length + " stations";
+  return rows.length + " nowcast rows";
 }
 
-function refreshCampusGates(ts) {
-  var url = "https://chula-control-tower-b0r.pages.dev/geo/chula-gates.geojson";
-  var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-  if (res.getResponseCode() !== 200) throw new Error("gates HTTP " + res.getResponseCode());
-  var d = JSON.parse(res.getContentText());
-  var rows = (d.features || []).map(function(f) {
-    var p = f.properties || {};
-    var c = f.geometry && f.geometry.coordinates;
-    return [ts, val(p.kind), val(p.name), val(p.nameTh), p.named ? "yes" : "no",
-            c ? c[1] : "—", c ? c[0] : "—"];
+function refreshMarine(ts) {
+  var d = get("/api/marine");
+  var m = (d.features && d.features[0]) || {};
+  var rows = [[ts, "current", val(m.observedAt), val(m.waveHeightM), val(m.waveDirectionDeg), val(m.wavePeriodS),
+               val(m.windKmh), val(m.windGustsKmh), val(m.sstC), val(m.currentKmh),
+               val(m.smallBoatSafe), val(m.fishingTrawlerSafe), val(m.ferrySafe), val(m.thermalStress), val(m.surgePeakNext24hM)]];
+  (m.next24h || []).forEach(function(pt) {
+    rows.push([ts, "forecast", val(pt.at), val(pt.waveHeightM), "—", "—",
+               val(pt.windKmh), "—", val(pt.sstC), "—", "—", "—", "—", "—", "—"]);
   });
-  clearAndWrite(getSheet("CampusGates"),
-    ["Fetched At", "Kind", "Name (EN)", "Name (TH)", "Named", "Lat", "Lng"],
+  clearAndWrite(getSheet("Marine"),
+    ["Fetched At", "Kind", "Observed/Forecast At", "Wave m", "Wave Deg", "Wave Period s",
+     "Wind km/h", "Gust km/h", "SST °C", "Current km/h", "Small Boat Safe",
+     "Fishing Safe", "Ferry Safe", "Thermal Stress", "Surge Peak 24h m"],
     rows
   );
-  return rows.length + " gates";
+  return rows.length + " marine rows";
 }
 
-function refreshCULands(ts) {
-  var url = "https://chula-control-tower-b0r.pages.dev/geo/cu-lands.geojson";
-  var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-  if (res.getResponseCode() !== 200) throw new Error("cu-lands HTTP " + res.getResponseCode());
-  var d = JSON.parse(res.getContentText());
-  var rows = (d.features || []).map(function(f) {
-    var p = f.properties || {};
-    var name = p.name || {};
-    return [ts, val(p.id), val(name.en), val(name.th),
-            val(p.kind), val(p.operator), val(p.describe)];
+function refreshTides(ts) {
+  var d = get("/api/tides");
+  var t = (d.features && d.features[0]) || {};
+  var rows = [[ts, "current", val(t.observedAt), val(t.heightM), val(t.rising),
+               val(t.springNeap), val(t.springTide), val(t.moonPhaseName), val(t.chartDatumNote)]];
+  if (t.nextHigh) rows.push([ts, "next-high", val(t.nextHigh.at), val(t.nextHigh.heightM), "—", "—", "—", "—", "—"]);
+  if (t.nextLow) rows.push([ts, "next-low", val(t.nextLow.at), val(t.nextLow.heightM), "—", "—", "—", "—", "—"]);
+  (t.next24h || []).slice(0, 144).forEach(function(pt) {
+    rows.push([ts, "forecast", val(pt.at), val(pt.heightM), "—", "—", "—", "—", "—"]);
   });
-  clearAndWrite(getSheet("CULands"),
-    ["Fetched At", "ID", "Name (EN)", "Name (TH)", "Kind", "Operator", "Describe"],
+  clearAndWrite(getSheet("Tides"),
+    ["Fetched At", "Kind", "At", "Height m", "Rising", "Spring/Neap", "Spring Tide", "Moon Phase", "Datum Note"],
     rows
   );
-  return rows.length + " lands";
+  return rows.length + " tide rows";
 }
 
-function refreshShuttleRoutes(ts) {
-  var url = "https://chula-control-tower-b0r.pages.dev/geo/cu-shuttle-routes.geojson";
-  var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-  if (res.getResponseCode() !== 200) throw new Error("shuttle-routes HTTP " + res.getResponseCode());
-  var d = JSON.parse(res.getContentText());
-  var rows = (d.features || []).map(function(f) {
-    var p = f.properties || {};
-    return [ts, val(p.route), val(p.ref), val(p.label), val(p.color)];
+function refreshAis(ts) {
+  var d = get("/api/maritime/ais");
+  var rows = (d.features || []).map(function(v) {
+    return [ts, val(v.mmsi), val(v.name), val(v.type), val(v.lat), val(v.lng),
+            val(v.speed), val(v.course), val(v.flag), val(v.lastUpdate)];
   });
-  clearAndWrite(getSheet("ShuttleRoutes"),
-    ["Fetched At", "Route", "Ref", "Label", "Color"],
-    rows
+  clearAndWrite(getSheet("AIS"),
+    ["Fetched At", "MMSI", "Name", "Type", "Lat", "Lng", "Speed kn", "Course", "Flag", "Updated At"],
+    rows.length ? rows : [[ts, "—", "(no AIS vessels)", "—", "—", "—", "—", "—", "—", "—"]]
   );
-  return rows.length + " routes";
+  return rows.length + " vessels";
 }
 
-function refreshBmaPois(ts) {
-  var d = get("/api/bma/pois");
-  var rows = (d.features || []).map(function(f) {
-    var p = f.properties || {};
-    var c = f.geometry && f.geometry.coordinates;
-    return [ts, val(p.id), val(p.kind), val(p.name),
-            c ? c[1] : "—", c ? c[0] : "—", val(p.description)];
+function refreshDatagoPoints(ts) {
+  var d = get("/api/datago/points");
+  var rows = (d.features || []).map(function(p) {
+    return [ts, val(p.id), val(p.category), val(p.name), val(p.nameEn),
+            val(p.lat), val(p.lng), val(p.source), val(p.attribution)];
   });
-  clearAndWrite(getSheet("BMAPOIs"),
-    ["Fetched At", "ID", "Kind", "Name", "Lat", "Lng", "Description"],
-    rows
+  clearAndWrite(getSheet("DatagoPoints"),
+    ["Fetched At", "ID", "Category", "Name (TH)", "Name (EN)", "Lat", "Lng", "Source", "Attribution"],
+    rows.length ? rows : [[ts, "—", "(no points)", "—", "—", "—", "—", "—", "—"]]
+  );
+  return rows.length + " points";
+}
+
+function refreshGistdaPoi(ts) {
+  var d = get("/api/gistda/poi");
+  var rows = (d.features || []).map(function(p) {
+    return [ts, val(p.id), val(p.category), val(p.subcat), val(p.name), val(p.nameEn),
+            val(p.road), val(p.roadEn), val(p.lat), val(p.lng), val(p.disabled)];
+  });
+  clearAndWrite(getSheet("GISTDA_POI"),
+    ["Fetched At", "ID", "Category", "Subcategory", "Name (TH)", "Name (EN)", "Road (TH)", "Road (EN)", "Lat", "Lng", "Disabled Access"],
+    rows.length ? rows : [[ts, "—", "(no GISTDA POIs)", "—", "—", "—", "—", "—", "—", "—", "—"]]
   );
   return rows.length + " POIs";
+}
+
+function refreshGistdaSolar(ts) {
+  var d = get("/api/gistda/solar");
+  var rows = (d.features || []).map(function(b) {
+    return [ts, val(b.id), val(b.month), val(b.monthNum), val(b.solarIrr),
+            val(b.height), val(b.area), val(b.roofType), val(b.buildType), val(b.lat), val(b.lng)];
+  });
+  clearAndWrite(getSheet("GISTDA_Solar"),
+    ["Fetched At", "ID", "Month", "Month No", "Solar kWh/m²", "Height m", "Area m²", "Roof Type", "Building Type", "Lat", "Lng"],
+    rows.length ? rows : [[ts, "—", "(no GISTDA solar buildings)", "—", "—", "—", "—", "—", "—", "—", "—"]]
+  );
+  return rows.length + " solar roofs";
+}
+
+function refreshGistdaLandUse(ts) {
+  var d = get("/api/gistda/landuse");
+  var rows = (d.features || []).map(function(p) {
+    return [ts, val(p.id), val(p.code), val(p.name), val(p.nameEn), val(p.area), val(p.lat), val(p.lng)];
+  });
+  clearAndWrite(getSheet("GISTDA_LandUse"),
+    ["Fetched At", "ID", "Code", "Name (TH)", "Name (EN)", "Area m²", "Lat", "Lng"],
+    rows.length ? rows : [[ts, "—", "(no land use parcels)", "—", "—", "—", "—", "—"]]
+  );
+  return rows.length + " parcels";
+}
+
+// ── STATIC adapters — pulled once at setup, refreshable via menu ──────
+
+function flattenCoords(coords, out) {
+  if (!coords) return out;
+  if (typeof coords[0] === "number" && typeof coords[1] === "number") {
+    out.push(coords);
+    return out;
+  }
+  coords.forEach(function(c) { flattenCoords(c, out); });
+  return out;
+}
+
+function featureCenter(f) {
+  var pts = flattenCoords(f.geometry && f.geometry.coordinates, []);
+  if (!pts.length) return ["—", "—"];
+  var lng = 0, lat = 0;
+  pts.forEach(function(p) { lng += Number(p[0]); lat += Number(p[1]); });
+  return [lat / pts.length, lng / pts.length];
+}
+
+function refreshStaticBuildings(ts) {
+  var d = getStaticGeo("/geo/chonburi-buildings.geojson");
+  var rows = (d.features || []).map(function(f) {
+    var p = f.properties || {};
+    var c = featureCenter(f);
+    return [ts, val(p.osmId || p.id), val(p.nameEn || p.name || p.nameTh), val(p.kind || p.type),
+            val(p.height), val(p.levels), c[0], c[1]];
+  });
+  clearAndWrite(getSheet("Buildings"),
+    ["Fetched At", "ID", "Name", "Kind", "Height m", "Levels", "Centroid Lat", "Centroid Lng"],
+    rows
+  );
+  return rows.length + " buildings";
+}
+
+function refreshStaticRoads(ts) {
+  var d = getStaticGeo("/geo/chonburi-roads.geojson");
+  var rows = (d.features || []).map(function(f) {
+    var p = f.properties || {};
+    var c = featureCenter(f);
+    return [ts, val(p.id || p.osm_id), val(p.name || p["name:en"] || p["name:th"]),
+            val(p.highway || p.class), val(p.oneway), c[0], c[1]];
+  });
+  clearAndWrite(getSheet("Roads"),
+    ["Fetched At", "ID", "Name", "Class", "Oneway", "Center Lat", "Center Lng"],
+    rows
+  );
+  return rows.length + " road segments";
+}
+
+function refreshStaticCivic(ts) {
+  var d = getStaticGeo("/geo/chonburi-civic.geojson");
+  var rows = (d.features || []).map(function(f) {
+    var p = f.properties || {};
+    var c = featureCenter(f);
+    return [ts, val(p.id || p.osm_id), val(p.kind || p.amenity || p.office),
+            val(p.name || p["name:en"] || p["name:th"]), val(p.operator), c[0], c[1]];
+  });
+  clearAndWrite(getSheet("CivicPOIs"),
+    ["Fetched At", "ID", "Kind", "Name", "Operator", "Lat", "Lng"],
+    rows
+  );
+  return rows.length + " civic POIs";
+}
+
+function refreshStaticWaterways(ts) {
+  var d = getStaticGeo("/geo/chonburi-waterways.geojson");
+  var rows = (d.features || []).map(function(f) {
+    var p = f.properties || {};
+    var c = featureCenter(f);
+    return [ts, val(p.id || p.osm_id), val(p.waterway), val(p.name || p["name:en"] || p["name:th"]),
+            val(p.intermittent), c[0], c[1]];
+  });
+  clearAndWrite(getSheet("Waterways"),
+    ["Fetched At", "ID", "Waterway", "Name", "Intermittent", "Center Lat", "Center Lng"],
+    rows
+  );
+  return rows.length + " waterways";
+}
+
+function refreshStaticFisheries(ts) {
+  var d = getStaticGeo("/geo/chonburi-fisheries.geojson");
+  var rows = (d.features || []).map(function(f) {
+    var p = f.properties || {};
+    var c = featureCenter(f);
+    return [ts, val(p.id), val(p.name), val(p.kind), val(p.boats), val(p.yearly_yield_t), c[0], c[1]];
+  });
+  clearAndWrite(getSheet("Fisheries"),
+    ["Fetched At", "ID", "Name", "Kind", "Boats", "Yield t/yr", "Center Lat", "Center Lng"],
+    rows
+  );
+  return rows.length + " fishery zones";
+}
+
+function refreshStaticFloodRisk(ts) {
+  var d = getStaticGeo("/geo/chonburi-flood-risk.geojson");
+  var rows = (d.features || []).map(function(f) {
+    var p = f.properties || {};
+    var c = featureCenter(f);
+    return [ts, val(p.id), val(p.name), val(p.severity), val(p.type), val(p.households), c[0], c[1]];
+  });
+  clearAndWrite(getSheet("FloodRisk"),
+    ["Fetched At", "ID", "Name", "Severity", "Type", "Households", "Center Lat", "Center Lng"],
+    rows
+  );
+  return rows.length + " flood-risk zones";
+}
+
+function refreshStaticPorts(ts) {
+  var d = getStaticGeo("/geo/chonburi-ports.geojson");
+  var rows = (d.features || []).map(function(f) {
+    var p = f.properties || {};
+    var c = featureCenter(f);
+    return [ts, val(p.id || p.osm_id), val(p.name || p["name:en"] || p["name:th"]),
+            val(p.harbour || p.man_made || p.landuse), c[0], c[1]];
+  });
+  clearAndWrite(getSheet("Ports"),
+    ["Fetched At", "ID", "Name", "Kind", "Center Lat", "Center Lng"],
+    rows
+  );
+  return rows.length + " port features";
+}
+
+function refreshStaticFerries(ts) {
+  var d = getStaticGeo("/geo/chonburi-ferries.geojson");
+  var rows = (d.features || []).map(function(f) {
+    var p = f.properties || {};
+    var c = featureCenter(f);
+    return [ts, val(p.id || p.osm_id), val(p.name || p["name:en"] || p["name:th"]), val(p.amenity || p.ferry), c[0], c[1]];
+  });
+  clearAndWrite(getSheet("Ferries"),
+    ["Fetched At", "ID", "Name", "Kind", "Lat", "Lng"],
+    rows
+  );
+  return rows.length + " ferry points";
+}
+
+function refreshStaticNavigationAids(ts) {
+  var d = getStaticGeo("/geo/chonburi-nav-aids.geojson");
+  var rows = (d.features || []).map(function(f) {
+    var p = f.properties || {};
+    var c = featureCenter(f);
+    return [ts, val(p.id || p.osm_id), val(p.name || p["name:en"] || p["name:th"]), val(p["seamark:type"] || p.man_made), c[0], c[1]];
+  });
+  clearAndWrite(getSheet("NavigationAids"),
+    ["Fetched At", "ID", "Name", "Kind", "Lat", "Lng"],
+    rows
+  );
+  return rows.length + " navigation aids";
+}
+
+function refreshSatelliteCatalog(ts) {
+  var rows = [
+    [ts, "Esri HD", "satellite-esri", "high-res city context", "mosaic", "basemap"],
+    [ts, "VIIRS true-color", "satellite-viirs-truecolor", "daily regional true color", "24h", "imagery"],
+    [ts, "MODIS true-color", "satellite-true-color", "daily wide-area context", "24h", "imagery"],
+    [ts, "VIIRS night lights", "satellite-night", "urban extent and fishing fleet lights", "24h", "activity"],
+    [ts, "IMERG rainfall", "satellite-imerg", "monsoon cells and runoff timing", "6h", "flood"],
+    [ts, "Himawari IR", "satellite-himawari", "storm-front approach over Gulf", "10min", "weather"],
+    [ts, "NDVI", "satellite-ndvi", "green cover and crop/aquaculture context", "8d", "vegetation"],
+    [ts, "Land surface temp", "satellite-lst", "urban heat island", "24h", "heat"],
+    [ts, "Aerosol optical depth", "satellite-aerosol", "haze and industrial plume proxy", "24h", "air"],
+    [ts, "NO2", "satellite-no2", "traffic and power-plant pollution proxy", "24h", "air"],
+    [ts, "MODIS flood", "satellite-flood", "post-rain flooded-surface detection", "3d", "flood"],
+  ];
+  clearAndWrite(getSheet("SatelliteCatalog"),
+    ["Fetched At", "Layer", "Layer ID", "Use", "Typical Delay", "Decision Domain"],
+    rows
+  );
+  return rows.length + " satellite layers";
 }
 
 // ── Adapter registry ──────────────────────────────────────────────────
 
 var LIVE_ADAPTERS = [
   ["weather",         refreshWeather],
+  ["precip-nowcast",  refreshPrecipNowcast],
   ["airquality",      refreshAirQuality],
   ["aqi-trend",       refreshAqTrend],
   ["incidents",       refreshIncidents],
   ["news",            refreshNews],
   ["news-archive",    refreshNewsArchive],
   ["news-digest",     refreshNewsDigest],
-  ["shuttle-live",    refreshShuttle],
+  ["marine",          refreshMarine],
+  ["tides",           refreshTides],
+  ["ais",             refreshAis],
+  ["datago-points",   refreshDatagoPoints],
+  ["gistda-poi",      refreshGistdaPoi],
+  ["gistda-solar",    refreshGistdaSolar],
+  ["gistda-landuse",  refreshGistdaLandUse],
   ["trends",          refreshTrends],
   ["markets",         refreshMarkets],
   ["executive",       refreshExecutive],
@@ -434,14 +630,19 @@ var LIVE_ADAPTERS = [
 ];
 
 var STATIC_ADAPTERS = [
-  ["transit-stations", refreshTransitStations],
-  ["campus-gates",     refreshCampusGates],
-  ["cu-lands",         refreshCULands],
-  ["shuttle-routes",   refreshShuttleRoutes],
-  ["bma-pois",         refreshBmaPois],
+  ["buildings",        refreshStaticBuildings],
+  ["roads",            refreshStaticRoads],
+  ["civic-pois",       refreshStaticCivic],
+  ["waterways",        refreshStaticWaterways],
+  ["fisheries",        refreshStaticFisheries],
+  ["flood-risk",       refreshStaticFloodRisk],
+  ["ports",            refreshStaticPorts],
+  ["ferries",          refreshStaticFerries],
+  ["navigation-aids",  refreshStaticNavigationAids],
+  ["satellite-catalog",refreshSatelliteCatalog],
 ];
 
-// ── Placeholder tabs for future official Chula pipelines ──────────────
+// ── Placeholder tabs for future official municipal pipelines ─────────
 // Each entry creates a tab with a typed header row. The first data row is
 // stamped with PENDING_PIPELINE + the contact for the upstream data owner,
 // so when the pipeline is connected the operator knows exactly which
@@ -449,107 +650,79 @@ var STATIC_ADAPTERS = [
 
 var PLACEHOLDER_TABS = [
   {
-    name: "Enrollment",
-    owner: "Office of the Registrar (สำนักงานทะเบียน)",
-    contact: "reg@chula.ac.th · cadence: each term + nightly delta",
-    headers: ["Fetched At", "Faculty", "Program", "Level", "Year", "Headcount", "Female %", "Intl %"],
-  },
-  {
-    name: "Faculty",
-    owner: "Human Resources Office (ฝ่ายทรัพยากรบุคคล)",
-    contact: "hr@chula.ac.th · cadence: monthly snapshot",
-    headers: ["Fetched At", "Faculty", "Title", "Rank", "FTE", "PhD %", "Female %"],
+    name: "EarthAlphaObservations",
+    owner: "Municipal GIS / disaster-prevention desk",
+    contact: "cadence: per imagery review or field validation",
+    headers: ["Logged At", "Observation ID", "Layer", "Location", "Lat", "Lng", "Signal", "Confidence", "Action Owner", "Status", "Notes"],
   },
   {
     name: "Energy",
-    owner: "CU SMART CITY / MEA microgrid (CU Energy Research Institute)",
-    contact: "eri@chula.ac.th · cadence: 15-min meter pull, daily roll-up",
-    headers: ["Fetched At", "Building", "kWh (last 15 min)", "kWh (today)",
+    owner: "Municipal engineering / PEA / solar project office",
+    contact: "cadence: 15-min meter pull, daily roll-up",
+    headers: ["Fetched At", "Asset", "Zone", "kWh (last 15 min)", "kWh (today)",
               "Solar kWh (today)", "BESS SOC %", "Peak kW (today)"],
   },
   {
     name: "Water",
-    owner: "PMCU + MWA bulk-meter feed",
-    contact: "pmcu@chula.ac.th · cadence: hourly",
-    headers: ["Fetched At", "Building", "m³ (last hour)", "m³ (today)",
-              "Pressure bar", "Flow L/min", "Reclaimed %"],
+    owner: "Municipal waterworks",
+    contact: "cadence: hourly zone meter pull",
+    headers: ["Fetched At", "Zone", "m³ (last hour)", "m³ (today)",
+              "Pressure bar", "Flow L/min", "Leak Flag"],
   },
   {
     name: "Waste",
-    owner: "Chula Sustainability Office",
-    contact: "sustainability@chula.ac.th · cadence: daily pickup logs",
-    headers: ["Fetched At", "Stream", "kg (today)", "kg (week)",
+    owner: "Municipal sanitation division",
+    contact: "cadence: daily pickup logs",
+    headers: ["Fetched At", "Route", "Stream", "kg (today)", "kg (week)",
               "Recycled %", "Composted %", "Landfill kg"],
   },
   {
     name: "Access",
-    owner: "Office of Physical Resources (security card readers)",
-    contact: "opr@chula.ac.th · cadence: 5-min aggregate (privacy: counts only)",
-    headers: ["Fetched At", "Gate", "Hour", "Inbound swipes", "Outbound swipes",
-              "Unique IDs (hashed)"],
-  },
-  {
-    name: "Rooms",
-    owner: "Faculty room-booking systems (myCourseville / CU-NEX)",
-    contact: "cu-nex@chula.ac.th · cadence: 15-min booking snapshot",
-    headers: ["Fetched At", "Building", "Room", "Capacity",
-              "Booked Now", "Today Utilization %", "Next Session"],
+    owner: "Municipal facilities / security",
+    contact: "cadence: 5-min aggregate",
+    headers: ["Fetched At", "Facility", "Gate", "Hour", "Inbound Count", "Outbound Count", "Notes"],
   },
   {
     name: "Library",
-    owner: "CU Office of Academic Resources (CUIR + Walai)",
-    contact: "library@car.chula.ac.th · cadence: hourly",
+    owner: "Municipal library",
+    contact: "cadence: hourly or daily",
     headers: ["Fetched At", "Branch", "Entries (today)", "Active users",
               "Loans (today)", "eBook downloads", "Wait list"],
   },
   {
     name: "Parking",
-    owner: "PMCU parking operations (PA · PB · PC · PD lots)",
-    contact: "pmcu@chula.ac.th · cadence: 5-min gate counts",
+    owner: "Municipal parking operations",
+    contact: "cadence: 5-min gate counts",
     headers: ["Fetched At", "Lot", "Capacity", "Occupied", "Available",
               "% Full", "Inflow (last hour)", "Outflow (last hour)"],
   },
   {
     name: "Ridership",
-    owner: "CU POP Bus onboard counters",
-    contact: "popbus@chula.ac.th · cadence: per-trip aggregate",
-    headers: ["Fetched At", "Line", "Trip", "Boardings", "Alightings",
+    owner: "Public transport operators",
+    contact: "cadence: per-trip aggregate",
+    headers: ["Fetched At", "Route", "Trip", "Boardings", "Alightings",
               "Avg Load %", "Run Time (min)", "Headway (min)"],
   },
   {
     name: "Hospital",
-    owner: "King Chulalongkorn Memorial Hospital (KCMH)",
-    contact: "kcmh-it@chula.ac.th · cadence: 15-min queue snapshot",
+    owner: "Chonburi Hospital / public health office",
+    contact: "cadence: 15-min queue snapshot",
     headers: ["Fetched At", "Department", "Patients in queue", "Avg wait (min)",
               "ED census", "Beds available", "ICU available"],
   },
   {
     name: "Sustainability",
-    owner: "CU Sustainability Office (THE Impact + UI GreenMetric reporting)",
-    contact: "sustainability@chula.ac.th · cadence: monthly",
+    owner: "Municipal environment division",
+    contact: "cadence: monthly",
     headers: ["Fetched At", "Metric", "Value", "Unit", "Target", "Baseline year",
               "Trend"],
   },
   {
-    name: "Donors",
-    owner: "Office of Alumni Affairs (สมาคมนิสิตเก่าจุฬาฯ)",
-    contact: "alumni@chula.ac.th · cadence: weekly fundraising summary",
-    headers: ["Fetched At", "Period", "Gifts received", "Total ฿",
-              "Donors", "Average gift ฿", "Top campaign"],
-  },
-  {
-    name: "Publications",
-    owner: "Office of Research Affairs (Scopus / Web of Science / Dimensions feed)",
-    contact: "research@chula.ac.th · cadence: weekly Scopus pull",
-    headers: ["Fetched At", "Faculty", "Year", "Publications", "Citations",
-              "h-index", "Top field", "Q1 share %"],
-  },
-  {
-    name: "Patents",
-    owner: "Technology Licensing Office (TLO) — Chulalongkorn University",
-    contact: "tlo@chula.ac.th · cadence: monthly DIP feed",
-    headers: ["Fetched At", "Application No", "Title", "Faculty", "Inventors",
-              "Status", "Filing date", "Grant date"],
+    name: "Projects",
+    owner: "Mayor's office / public works",
+    contact: "cadence: weekly capital works update",
+    headers: ["Fetched At", "Project", "District", "Owner", "Budget THB",
+              "Progress %", "Risk", "Due Date"],
   },
 ];
 
@@ -583,7 +756,7 @@ function refreshStatic() {
     }
   });
   appendLog(log);
-  SpreadsheetApp.getActiveSpreadsheet().toast("Static reference tabs refreshed.", "CCT-01", 6);
+  SpreadsheetApp.getActiveSpreadsheet().toast("Static reference tabs refreshed.", "CTM-01", 6);
 }
 
 // ── Log ───────────────────────────────────────────────────────────────
@@ -634,7 +807,7 @@ function setup() {
   refreshStatic();
 
   ss.toast(
-    "CCT-01 live feed active. Live tabs refresh every 5 min. Static tabs refreshed once; re-pull via CCT-01 menu.",
+    "CTM-01 live feed active. Live tabs refresh every 5 min. Static tabs refreshed once; re-pull via CTM-01 menu.",
     "Setup complete ✓", 12
   );
 }
@@ -642,22 +815,34 @@ function setup() {
 function adapterTabName(id) {
   return {
     "weather":          "Weather",
+    "precip-nowcast":   "PrecipNowcast",
     "airquality":       "AirQuality",
     "aqi-trend":        "AqiTrend",
     "incidents":        "Incidents",
     "news":             "News",
     "news-archive":     "NewsArchive",
     "news-digest":      "NewsDigest",
-    "shuttle-live":     "ShuttleLive",
+    "marine":           "Marine",
+    "tides":            "Tides",
+    "ais":              "AIS",
+    "datago-points":    "DatagoPoints",
+    "gistda-poi":       "GISTDA_POI",
+    "gistda-solar":     "GISTDA_Solar",
+    "gistda-landuse":   "GISTDA_LandUse",
     "trends":           "Trends",
     "markets":          "Markets",
     "executive":        "Executive",
     "cctv":             "CCTV",
-    "transit-stations": "TransitStations",
-    "campus-gates":     "CampusGates",
-    "cu-lands":         "CULands",
-    "shuttle-routes":   "ShuttleRoutes",
-    "bma-pois":         "BMAPOIs",
+    "buildings":        "Buildings",
+    "roads":            "Roads",
+    "civic-pois":       "CivicPOIs",
+    "waterways":        "Waterways",
+    "fisheries":        "Fisheries",
+    "flood-risk":       "FloodRisk",
+    "ports":            "Ports",
+    "ferries":          "Ferries",
+    "navigation-aids":  "NavigationAids",
+    "satellite-catalog":"SatelliteCatalog",
   }[id] || id;
 }
 
@@ -665,12 +850,12 @@ function seedReadme(ss) {
   var sh = ss.getSheetByName("README");
   sh.clearContents();
   var meta = [
-    ["CCT-01 · Chula Control Tower · Live Data", ""],
+    ["CTM-01 · Chonburi Control Tower · EarthAlpha + Live Data", ""],
     ["", ""],
-    ["Dashboard", "https://chula-control-tower-b0r.pages.dev"],
-    ["Data API",  "https://chula-api.nonarkara.org"],
+    ["Dashboard", WEB],
+    ["Data API",  API],
     ["Live refresh",  "Every 5 min (Apps Script time trigger)"],
-    ["Static refresh","On setup + via CCT-01 menu → Refresh static data"],
+    ["Static refresh","On setup + via CTM-01 menu → Refresh static data"],
     ["Created",   new Date().toISOString()],
     ["", ""],
     ["Tab", "Source / Contents"],
@@ -682,7 +867,7 @@ function seedReadme(ss) {
     meta.push([adapterTabName(p[0]), "STATIC · pulled at setup, re-pullable from menu"]);
   });
   meta.push(["", ""]);
-  meta.push(["—— Future official Chula pipelines (placeholder tabs) ——", ""]);
+  meta.push(["—— Future official municipal pipelines + EarthAlpha observations ——", ""]);
   PLACEHOLDER_TABS.forEach(function(t) {
     meta.push([t.name, "PENDING · " + t.owner + " · " + t.contact]);
   });
@@ -719,9 +904,9 @@ function seedPlaceholders() {
 
 function onOpen() {
   SpreadsheetApp.getUi()
-    .createMenu("CCT-01")
+    .createMenu("CTM-01")
     .addItem("↻ Refresh live data now", "refreshAll")
-    .addItem("↻ Refresh static data (gates, lines, lands…)", "refreshStatic")
+    .addItem("↻ Refresh static data (buildings, waterways, ports…)", "refreshStatic")
     .addSeparator()
     .addItem("⚙ Re-run setup", "setup")
     .addToUi();

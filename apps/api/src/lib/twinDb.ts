@@ -1,6 +1,7 @@
 // PostgreSQL/PostGIS twin persistence layer.
-// Falls back to in-memory store when no DATABASE_URL is configured
-// (e.g. Cloudflare Workers runtime).
+// Supabase is supported through DATABASE_URL, SUPABASE_DB_URL, or
+// SUPABASE_DATABASE_URL. Falls back to in-memory store when no database URL is
+// configured (e.g. Cloudflare Workers runtime).
 
 import type { TwinObject, TwinRelation, TwinStatePoint } from "./twinStore.js";
 
@@ -19,21 +20,81 @@ async function getPg() {
 }
 
 let pool: import("pg").Pool | null = null;
+let lastConnectionError: string | null = null;
+
+function databaseUrl(): string | undefined {
+  if (typeof process === "undefined" || !process.env) return undefined;
+  return process.env.SUPABASE_DB_URL ?? process.env.SUPABASE_DATABASE_URL ?? process.env.DATABASE_URL;
+}
+
+function parsePositiveInt(raw: string | undefined, fallback: number): number {
+  if (!raw) return fallback;
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : fallback;
+}
+
+function parseBool(raw: string | undefined): boolean | undefined {
+  if (raw == null) return undefined;
+  if (/^(1|true|yes|on)$/i.test(raw)) return true;
+  if (/^(0|false|no|off)$/i.test(raw)) return false;
+  return undefined;
+}
+
+function dbUrlMeta(raw: string | undefined): {
+  configured: boolean;
+  host: string | null;
+  port: string | null;
+  database: string | null;
+  user: string | null;
+  isSupabase: boolean;
+  sslMode: string | null;
+} {
+  if (!raw) {
+    return { configured: false, host: null, port: null, database: null, user: null, isSupabase: false, sslMode: null };
+  }
+  try {
+    const u = new URL(raw);
+    const host = u.hostname || null;
+    return {
+      configured: true,
+      host,
+      port: u.port || null,
+      database: u.pathname.replace(/^\//, "") || null,
+      user: u.username ? decodeURIComponent(u.username) : null,
+      isSupabase: host ? /(^|\.)supabase\.(co|com)$|pooler\.supabase\.com$/i.test(host) : false,
+      sslMode: u.searchParams.get("sslmode"),
+    };
+  } catch {
+    return { configured: true, host: null, port: null, database: null, user: null, isSupabase: false, sslMode: null };
+  }
+}
+
+function shouldUseSsl(raw: string): boolean {
+  const explicit = parseBool(process.env.DATABASE_SSL ?? process.env.SUPABASE_DB_SSL);
+  if (explicit != null) return explicit;
+  const meta = dbUrlMeta(raw);
+  if (meta.sslMode && !/^(disable|allow)$/i.test(meta.sslMode)) return true;
+  return meta.isSupabase;
+}
 
 function getPool(): import("pg").Pool | null {
   if (pool) return pool;
-  const url = process.env.DATABASE_URL;
+  const url = databaseUrl();
   if (!url) return null;
   const pg = pgModule;
   if (!pg) return null;
+  const meta = dbUrlMeta(url);
+  const defaultMax = meta.isSupabase ? 3 : 10;
   pool = new pg.Pool({
     connectionString: url,
-    max: 10,
+    max: parsePositiveInt(process.env.DATABASE_POOL_MAX, defaultMax),
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 5_000,
+    ssl: shouldUseSsl(url) ? { rejectUnauthorized: false } : undefined,
   });
   pool.on("error", (err) => {
     console.error("[twinDb] unexpected pool error", err);
+    lastConnectionError = err.message;
     pool = null;
   });
   return pool;
@@ -45,17 +106,92 @@ export async function initTwinDb(): Promise<boolean> {
   if (!p) return false;
   try {
     await p.query("SELECT 1");
-    console.log("[twinDb] PostgreSQL connected");
+    lastConnectionError = null;
+    const meta = dbUrlMeta(databaseUrl());
+    console.log(`[twinDb] PostgreSQL connected${meta.isSupabase ? " (Supabase)" : ""}`);
     return true;
   } catch (err) {
-    console.error("[twinDb] connection failed:", (err as Error).message);
+    lastConnectionError = (err as Error).message;
+    console.error("[twinDb] connection failed:", lastConnectionError);
     pool = null;
     return false;
   }
 }
 
 export function isTwinDbEnabled(): boolean {
-  return !!process.env.DATABASE_URL && !!pgModule;
+  return !!databaseUrl() && !!pgModule;
+}
+
+export async function twinDbStatus(): Promise<{
+  configured: boolean;
+  driverLoaded: boolean;
+  connected: boolean;
+  host: string | null;
+  port: string | null;
+  database: string | null;
+  user: string | null;
+  provider: "supabase" | "postgres" | "none";
+  ssl: boolean;
+  poolMax: number | null;
+  postgis: string | null;
+  error: string | null;
+}> {
+  await getPg();
+  const raw = databaseUrl();
+  const meta = dbUrlMeta(raw);
+  const p = getPool();
+  if (!raw || !p) {
+    return {
+      configured: meta.configured,
+      driverLoaded: !!pgModule,
+      connected: false,
+      host: meta.host,
+      port: meta.port,
+      database: meta.database,
+      user: meta.user,
+      provider: meta.configured ? (meta.isSupabase ? "supabase" : "postgres") : "none",
+      ssl: raw ? shouldUseSsl(raw) : false,
+      poolMax: raw ? parsePositiveInt(process.env.DATABASE_POOL_MAX, meta.isSupabase ? 3 : 10) : null,
+      postgis: null,
+      error: lastConnectionError,
+    };
+  }
+  try {
+    const { rows } = await p.query<{ postgis: string | null }>(
+      `SELECT extversion AS postgis FROM pg_extension WHERE extname = 'postgis'`,
+    );
+    lastConnectionError = null;
+    return {
+      configured: true,
+      driverLoaded: !!pgModule,
+      connected: true,
+      host: meta.host,
+      port: meta.port,
+      database: meta.database,
+      user: meta.user,
+      provider: meta.isSupabase ? "supabase" : "postgres",
+      ssl: shouldUseSsl(raw),
+      poolMax: parsePositiveInt(process.env.DATABASE_POOL_MAX, meta.isSupabase ? 3 : 10),
+      postgis: rows[0]?.postgis ?? null,
+      error: null,
+    };
+  } catch (err) {
+    lastConnectionError = (err as Error).message;
+    return {
+      configured: true,
+      driverLoaded: !!pgModule,
+      connected: false,
+      host: meta.host,
+      port: meta.port,
+      database: meta.database,
+      user: meta.user,
+      provider: meta.isSupabase ? "supabase" : "postgres",
+      ssl: shouldUseSsl(raw),
+      poolMax: parsePositiveInt(process.env.DATABASE_POOL_MAX, meta.isSupabase ? 3 : 10),
+      postgis: null,
+      error: lastConnectionError,
+    };
+  }
 }
 
 // ── Object CRUD ─────────────────────────────────────────────────────────

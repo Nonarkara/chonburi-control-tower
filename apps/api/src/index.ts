@@ -29,6 +29,7 @@ import { SOURCE_CATALOG } from "@chonburi/shared";
 import type { NormalizedFeed, AirQualityPoint, IncidentFeature, IntelligenceItem, ExecutiveSnapshot, MarketSnapshot } from "@chonburi/shared";
 import { recordAdapterSuccess, recordAdapterError, getAllHealth, getSystemStatus } from "./lib/health.js";
 import { getMqttStatus } from "./adapters/mqttBridge.js";
+import { twinDbStatus } from "./lib/twinDb.js";
 import twinApp from "./routes/twin.js";
 
 type Bindings = {
@@ -44,6 +45,9 @@ type Bindings = {
   FACEBOOK_PAGE_ID?: string;
   FACEBOOK_PAGE_TOKEN?: string;
   DATA_GO_TH_TOKEN?: string;
+  DATABASE_URL?: string;
+  SUPABASE_DB_URL?: string;
+  SUPABASE_DATABASE_URL?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -76,6 +80,7 @@ app.get("/", (c) =>
     service: "chonburi-control-tower-api",
     routes: [
       "/api/health",
+      "/api/db/status",
       "/api/sources",
       "/api/incidents/city-reports",
       "/api/incidents/itic",
@@ -131,6 +136,11 @@ app.get("/api/health/detailed", (c) => {
     mqtt: getMqttStatus(),
     at: new Date().toISOString(),
   });
+});
+
+app.get("/api/db/status", async (c) => {
+  c.header("Cache-Control", "no-store");
+  return c.json(await twinDbStatus());
 });
 
 interface FeedMeta {

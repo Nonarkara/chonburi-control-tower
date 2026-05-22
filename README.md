@@ -169,6 +169,27 @@ apps/
 | `FMP_API_KEY` | Financial Modeling Prep | 250 calls/day | Markets hidden |
 | `FRED_API_KEY` | Federal Reserve | Unlimited free | Forex/macro hidden |
 
+### Supabase Persistence
+
+The dashboard runs without a database, but the semantic city twin can persist to
+Supabase Postgres/PostGIS. This stores building objects, relations, and sensor
+state behind `/api/twin/*`.
+
+1. Create a Supabase project and enable the `postgis` extension.
+2. Open Supabase SQL Editor and run `apps/api/src/lib/twinSchema.sql`.
+3. Copy the Supabase Transaction Pooler connection string.
+4. Put it in `apps/api/.env` as either `SUPABASE_DB_URL` or `DATABASE_URL`.
+
+```bash
+SUPABASE_DB_URL="postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres"
+DATABASE_SSL=true
+DATABASE_POOL_MAX=3
+```
+
+Restart the Node API and check `/api/db/status`. On success, the startup log
+will say `twin DB: connected`, and `/api/twin/snapshot` will show persisted
+object counts after the building hydrate flush.
+
 ### Contributing
 
 The goal is for every Thai municipality to have one of these. Issues, PRs, and forks are welcome. If you build a version for another city, please open a PR adding it to the [known deployments list](DEPLOYMENTS.md).

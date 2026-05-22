@@ -70,6 +70,8 @@ const env = {
   MQTT_USERNAME: process.env.MQTT_USERNAME,
   MQTT_PASSWORD: process.env.MQTT_PASSWORD,
   DATABASE_URL: process.env.DATABASE_URL,
+  SUPABASE_DB_URL: process.env.SUPABASE_DB_URL,
+  SUPABASE_DATABASE_URL: process.env.SUPABASE_DATABASE_URL,
 };
 
 // Start AIS WebSocket subscriber if token is provided. No-op without key.

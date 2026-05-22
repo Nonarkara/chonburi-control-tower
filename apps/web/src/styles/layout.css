@@ -712,6 +712,50 @@
 .modal-filter button { font-size: 0.64rem; padding: 5px 10px; letter-spacing: 0.08em; }
 .modal-body { overflow: auto; padding: 10px 20px 20px; }
 
+/* ── Standards alignment ─────────────────────────── */
+.pill-standard {
+  background: transparent;
+  color: var(--data);
+  border: 1px solid var(--data);
+  font-size: 0.56rem;
+}
+.bottom-standard {
+  font-size: 0.54rem;
+  color: var(--text-3);
+  letter-spacing: 0.08em;
+}
+.modal-standards {
+  padding: 10px 20px 0;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+}
+.standards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+@media (max-width: 640px) { .standards-grid { grid-template-columns: 1fr; } }
+.standard-card {
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.standard-title { font-size: 0.60rem; font-weight: 700; letter-spacing: 0.12em; color: var(--accent); }
+.standard-subtitle { font-size: 0.55rem; color: var(--text-3); letter-spacing: 0.06em; }
+.standard-badge {
+  font-size: 0.56rem;
+  color: var(--data);
+  border: 1px solid var(--data);
+  padding: 2px 6px;
+  display: inline-flex;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+.standard-desc { color: var(--text-2); font-size: 0.60rem; line-height: 1.5; margin-top: 4px; }
+
 .catalog-section { margin-top: var(--s-4); }
 .catalog-section:first-child { margin-top: 0; }
 .catalog-section-head {

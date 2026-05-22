@@ -1,4 +1,4 @@
-export type LensId = "operations" | "mobility" | "environment" | "safety" | "vibes" | "maritime" | "executive";
+export type LensId = "operations" | "mobility" | "environment" | "earth" | "safety" | "vibes" | "maritime" | "executive";
 
 export type LayerId =
   // Municipality core
@@ -161,6 +161,27 @@ export const LENSES: Lens[] = [
       "satellite-esri",
       "flood-prone-areas",
       "gistda-solar",
+    ],
+  },
+  {
+    id: "earth",
+    label: "EAR",
+    describe: "EarthAlpha — earth-observation lens for rain, flood, heat, haze, greenery, land use, waterways, fisheries, and GISTDA context.",
+    layers: [
+      "municipality-boundary",
+      "municipality-buildings",
+      "satellite-esri",
+      "satellite-imerg",
+      "satellite-flood",
+      "satellite-lst",
+      "satellite-aerosol",
+      "satellite-no2",
+      "satellite-ndvi",
+      "waterways",
+      "flood-risk-zones",
+      "fisheries",
+      "gistda-solar",
+      "gistda-landuse",
     ],
   },
   {

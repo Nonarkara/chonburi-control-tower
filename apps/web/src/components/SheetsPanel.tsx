@@ -86,7 +86,7 @@ export function SheetsPanel({ open, onClose }: Props) {
                   <span className="sheets-num mono">01</span>
                   <div>
                     <strong>Open a new Google Sheet</strong>
-                    <p>Go to <a href="https://sheets.new" target="_blank" rel="noopener noreferrer">sheets.new</a> and rename the file <span className="mono">"CTM-01 · Chonburi Town Center · Live Data"</span>. No need to add tabs by hand — the script creates everything.</p>
+                    <p>Go to <a href="https://sheets.new" target="_blank" rel="noopener noreferrer">sheets.new</a> and rename the file <span className="mono">"CTM-01 · Chonburi Town Center · EarthAlpha + Live Data"</span>. No need to add tabs by hand — the script creates everything.</p>
                   </div>
                 </div>
                 <div className="sheets-step">
@@ -108,7 +108,7 @@ export function SheetsPanel({ open, onClose }: Props) {
                   <span className="sheets-num mono">03</span>
                   <div>
                     <strong>Run setup once</strong>
-                    <p>Click ▷ Run → select <span className="mono">setup</span> → authorize. The script creates ~30 tabs: 10 live feeds (every 5 min), 5 static reference tabs (roads, buildings, civic, …), and 15 placeholder tabs for future official municipal pipelines — Enrollment, Energy, Water, Waste, Library, Parking, Hospital, Donors, Publications, Patents, …</p>
+                    <p>Click Run → select <span className="mono">setup</span> → authorize. The script creates live tabs, EarthAlpha/GISTDA tabs, static Chonburi reference tabs (buildings, roads, waterways, fisheries, flood risk, ports), and typed tabs for future official municipal pipelines.</p>
                   </div>
                 </div>
                 <div className="sheets-step">
@@ -164,11 +164,18 @@ export function SheetsPanel({ open, onClose }: Props) {
                 <ul className="sheets-endpoints mono">
                   {[
                     ["Weather",      "/api/weather"],
+                    ["PrecipNowcast","/api/precip-nowcast"],
                     ["AirQuality",   "/api/air-quality"],
                     ["AqiTrend",     "/api/air-quality/trend"],
                     ["Incidents",    "/api/incidents/city-reports + /api/incidents/itic"],
                     ["News",         "/api/news"],
-                    ["TransitLive",  "/api/transit/live"],
+                    ["Marine",       "/api/marine"],
+                    ["Tides",        "/api/tides"],
+                    ["AIS",          "/api/maritime/ais"],
+                    ["GISTDA_POI",   "/api/gistda/poi"],
+                    ["GISTDA_Solar", "/api/gistda/solar"],
+                    ["GISTDA_LandUse","/api/gistda/landuse"],
+                    ["DatagoPoints", "/api/datago/points"],
                     ["Trends",       "/api/trends"],
                     ["Markets",      "/api/markets"],
                     ["Executive",    "/api/executive"],
@@ -180,24 +187,25 @@ export function SheetsPanel({ open, onClose }: Props) {
                     </li>
                   ))}
                 </ul>
-                <p className="caption" style={{ marginTop: 14 }}>Placeholder tabs — ready for official municipal pipelines:</p>
+                <p className="caption" style={{ marginTop: 14 }}>Static + future tabs — ready for official municipal pipelines:</p>
                 <ul className="sheets-endpoints mono">
                   {[
-                    ["Enrollment",     "Registrar — students per faculty / level / year"],
-                    ["Faculty",        "HR — academic + admin headcount"],
-                    ["Energy",         "Municipal grid — kWh, solar, BESS"],
-                    ["Water",          "Municipal waterworks — m³ by zone"],
-                    ["Waste",          "Waste management — stream + recycling"],
-                    ["Access",         "Security — checkpoint counts"],
-                    ["Rooms",          "Municipal facilities — utilization"],
+                    ["Buildings",      "Static city footprint inventory"],
+                    ["Roads",          "Static road network and classes"],
+                    ["Waterways",      "Canals, rivers, drains"],
+                    ["Fisheries",      "Aquaculture and fishery zones"],
+                    ["FloodRisk",      "Known coastal and drainage risk areas"],
+                    ["EarthAlphaObservations", "Area observations, satellite review notes, validation queue"],
+                    ["Energy",         "Municipal grid, rooftop solar, BESS"],
+                    ["Water",          "Municipal waterworks by zone"],
+                    ["Waste",          "Waste collection streams"],
+                    ["Access",         "Facilities and checkpoint counts"],
                     ["Library",        "Municipal library"],
-                    ["Parking",        "Municipal parking zones P1/P2/P3/P4"],
-                    ["Ridership",      "Public transit — onboard counters"],
+                    ["Parking",        "Municipal parking zones"],
+                    ["Ridership",      "Public transit counts"],
                     ["Hospital",       "Chonburi Hospital — ED wait, OPD volume"],
                     ["Sustainability", "Carbon, water reuse, green metrics"],
-                    ["Donors",         "Municipal funding — grants + donations"],
-                    ["Publications",   "Municipal research — reports"],
-                    ["Patents",        "EEC innovation — filings"],
+                    ["Projects",       "Capital works and mitigation projects"],
                   ].map(([name, desc]) => (
                     <li key={name}>
                       <span>{name}</span>

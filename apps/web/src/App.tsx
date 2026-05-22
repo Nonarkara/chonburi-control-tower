@@ -117,6 +117,7 @@ import { WaterPanel, type ReservoirStatus } from "./components/WaterPanel";
 import { ProvincialKPIs, type ProvincialKPIs as ProvincialKPIsType } from "./components/ProvincialKPIs";
 import { TidePanel, type TideSnapshot } from "./components/TidePanel";
 import { FisheryPanel } from "./components/FisheryPanel";
+import { EarthAlphaBrief } from "./components/EarthAlphaBrief";
 import { SourceCatalog } from "./components/SourceCatalog";
 import { Manual } from "./components/Manual";
 import { SheetsPanel, loadSheetsUrl } from "./components/SheetsPanel";
@@ -975,6 +976,19 @@ export default function App() {
             precipMm={precip.data[0]?.nowMm ?? null}
           />
         </div>
+        <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+          <EarthAlphaBrief
+            enabledLayers={enabledLayers}
+            gistdaPoiCount={gistdaPois.data.length}
+            gistdaSolarCount={gistdaSolar.data.length}
+            gistdaLandUseCount={gistdaLandUse.data.length}
+            floodZoneCount={floodRisk?.features.length ?? 0}
+            waterwayCount={waterways?.features.length ?? 0}
+            fisheryZoneCount={fisheries?.features.length ?? 0}
+            openIncidentCount={cityReports.data.filter((r) => r.status !== "resolved").length + iticEvents.data.length}
+            sheetsConfigured={sheetsConfigured}
+          />
+        </div>
         {reservoirs.data.length > 0 && (
           <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
             <WaterPanel
@@ -1112,6 +1126,8 @@ export default function App() {
         <div className="bottom-ident">
           <span className="pill">v0.1</span>
           <span>Chonburi Town · Eastern Seaboard</span>
+          <span className="pill pill-standard" title="UNDP-JTC Digital Twins for Cities (Jul 2025) · ADB Digital Twin Framework (May 2025)">DT·L2</span>
+          <span className="bottom-standard mono">UNDP · ADB</span>
         </div>
         <HourRail
           hour={hour}
