@@ -36,12 +36,18 @@ jobs:
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
 
-      - name: Authenticate wrangler
+      - name: Authenticate wrangler (refresh OAuth token)
         run: |
+          REFRESH=$(grep refresh_token <(printf '%s' '${{ secrets.WRANGLER_CONFIG }}') | cut -d'"' -f2)
+          RESPONSE=$(curl -s -X POST "https://dash.cloudflare.com/oauth2/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=refresh_token&refresh_token=${REFRESH}&client_id=54d11594-84e4-41aa-b438-e81b8fa78ee7")
+          ACCESS=$(echo "$RESPONSE" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['access_token'])")
+          NEW_REFRESH=$(echo "$RESPONSE" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['refresh_token'])")
+          EXPIRES=$(date -u -d "+3600 seconds" +"%Y-%m-%dT%H:%M:%S.000Z" 2>/dev/null || date -u -v+3600S +"%Y-%m-%dT%H:%M:%S.000Z")
           mkdir -p ~/.wrangler/config
-          printf '%s' "${{ secrets.WRANGLER_CONFIG }}" > ~/.wrangler/config/default.toml
+          printf 'oauth_token = "%s"\nexpiration_time = "%s"\nrefresh_token = "%s"\nscopes = ["account:read","user:read","workers:write","pages:write"]\n' \
+            "$ACCESS" "$EXPIRES" "$NEW_REFRESH" > ~/.wrangler/config/default.toml
 
       - name: Deploy to Cloudflare Pages
-        run: |
-          cat ~/.wrangler/config/default.toml | head -2  # verify config written
-          CI= npx wrangler@4.81.1 pages deploy apps/web/dist --project-name chonburi-control-tower --commit-dirty=true
+        run: CI= npx wrangler@4.81.1 pages deploy apps/web/dist --project-name chonburi-control-tower --commit-dirty=true
