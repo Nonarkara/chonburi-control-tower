@@ -36,7 +36,10 @@ jobs:
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
 
+      - name: Authenticate wrangler
+        run: |
+          mkdir -p ~/.wrangler/config
+          printf '%s' "${{ secrets.WRANGLER_CONFIG }}" > ~/.wrangler/config/default.toml
+
       - name: Deploy to Cloudflare Pages
         run: npx wrangler pages deploy apps/web/dist --project-name chonburi-control-tower --commit-dirty=true
-        env:
-          CLOUDFLARE_OAUTH_TOKEN: ${{ secrets.CLOUDFLARE_OAUTH_TOKEN }}
