@@ -42,4 +42,6 @@ jobs:
           printf '%s' "${{ secrets.WRANGLER_CONFIG }}" > ~/.wrangler/config/default.toml
 
       - name: Deploy to Cloudflare Pages
-        run: npx wrangler@4.81.1 pages deploy apps/web/dist --project-name chonburi-control-tower --commit-dirty=true
+        run: |
+          cat ~/.wrangler/config/default.toml | head -2  # verify config written
+          CI= npx wrangler@4.81.1 pages deploy apps/web/dist --project-name chonburi-control-tower --commit-dirty=true
