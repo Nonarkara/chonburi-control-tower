@@ -37,6 +37,8 @@ export type LayerId =
   | "gistda-pois"
   | "gistda-solar"
   | "gistda-landuse"
+  // AlphaEarth
+  | "alphaearth-change"
   // News
   | "news-pins"
   // Imagery
@@ -162,6 +164,7 @@ export const LENSES: Lens[] = [
       "satellite-esri",
       "flood-prone-areas",
       "gistda-solar",
+      "alphaearth-change",
     ],
   },
   {
@@ -305,6 +308,10 @@ export const ALL_LAYERS: {
     describe: "GISTDA LOD2 building solar irradiance for Chonburi city centre — real measured height, footprint area, and monthly solar potential (kWh/m²). Blue=low, green=medium, yellow=high, red=excellent rooftop solar." },
   { id: "gistda-landuse",    label: "GISTDA Land Use",           swatch: "#34D399", group: "open-data",
     describe: "GISTDA land use / land cover classification for Chonburi Town — residential, commercial, industrial, agricultural, forest, water, transport, recreation. Colour-coded by category." },
+
+  // ─── AlphaEarth ────────────────────────────────────────────────────────
+  { id: "alphaearth-change", label: "AlphaEarth year-over-year change", swatch: "#F59E0B", group: "environment",
+    describe: "Google DeepMind AlphaEarth Satellite Embedding — per-10 m pixel L2 distance between two consecutive years. Amber = high change (new construction, paved area, shrimp-pond conversion, port growth). Bake the raster via scripts/alphaearth/." },
 
   // ─── News ──────────────────────────────────────────────────────────────
   { id: "news-pins",         label: "Geocoded news pins",        swatch: "#EF4444", group: "incidents",

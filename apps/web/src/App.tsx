@@ -103,6 +103,11 @@ import {
   newsPinsLayer,
 } from "./map/layers";
 import { useTile3DLayer } from "./map/Tile3DLayer";
+import {
+  useAlphaEarthState,
+  useChangeOverlayLayer,
+} from "./components/AlphaEarth/ChangeOverlay";
+import { AlphaEarthBadge } from "./components/AlphaEarth/AlphaEarthBadge";
 import { ALL_LAYERS, LENSES, type LayerId, type LensId } from "./map/presets";
 
 import { TopBar } from "./components/TopBar";
@@ -732,6 +737,14 @@ export default function App() {
     tilesetUrl: "/geo/3d-tiles/tileset.json",
   });
 
+  // AlphaEarth year-over-year change overlay — pre-baked PNG via the
+  // scripts/alphaearth pipeline, served from public/data/alphaearth/.
+  const alphaEarth = useAlphaEarthState();
+  const alphaEarthLayer = useChangeOverlayLayer({
+    visible: enabledLayers.has("alphaearth-change"),
+    state: alphaEarth,
+  });
+
   const layers = useMemo<Layer[]>(() => {
     const out: Layer[] = [];
     // Imagery first — renders beneath all vector data
@@ -756,6 +769,9 @@ export default function App() {
       out.push(surroundingBuildingsLayer(surroundingBuildings, { extruded: is3D, ghosted: isSubstructure }) as Layer);
     // 3D Tiles pilot — OGC-standard streaming buildings (replaces extruded GeoJSON when available)
     if (tile3dLayer) out.push(tile3dLayer as Layer);
+    // AlphaEarth change overlay — renders between buildings + utility lines so
+    // it tints the ground beneath the city fabric.
+    if (alphaEarthLayer) out.push(alphaEarthLayer as Layer);
     if (enabledLayers.has("road-network") && roads)
       out.push(roadNetworkLayer(roads as unknown as FeatureCollection<LineString, ClassifiedRoadProps>) as Layer);
     if (enabledLayers.has("transit-lines") && transitLines)
@@ -883,6 +899,7 @@ export default function App() {
     gistdaPois.data, gistdaSolar.data, gistdaLandUse.data, news.data,
     presence.lng, presence.lat, presence.accuracyM,
     tile3dLayer,
+    alphaEarthLayer,
   ]);
 
   const feedHealth = useMemo(() => [
@@ -1010,6 +1027,9 @@ export default function App() {
           trafficSampleCount={trafficSamples.length}
           cuLands={cuLands}
         />
+        <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+          <AlphaEarthBadge state={alphaEarth} />
+        </div>
         <div className="left-section">
           <DeviceCheckIn presence={presence} onRequest={requestDevice} onClear={clearDevice} />
         </div>
@@ -1128,7 +1148,7 @@ export default function App() {
       {/* ── Bottom bar: ident / traffic timeline / counts ── */}
       <div className="bottom-bar">
         <div className="bottom-ident">
-          <span className="pill">v0.1</span>
+          <span className="pill">v{__APP_VERSION__}</span>
           <span>Chonburi Town · Eastern Seaboard</span>
         </div>
         <HourRail

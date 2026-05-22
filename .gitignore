@@ -19,3 +19,12 @@ var/
 
 # OSM Overpass raw cache (regenerate via apps/web/scripts/fetch-osm-chula.mjs)
 apps/web/public/geo/osm/
+
+# AlphaEarth raw 64-band GeoTIFFs — large, regenerable via scripts/alphaearth/.
+# Colourised PNG outputs + JSON sidecars are committed.
+apps/web/public/data/alphaearth/raw/
+
+# Google Earth Engine credentials — never commit
+.config/earthengine/
+*.ee-credentials.json
+ee-service-account*.json
