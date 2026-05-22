@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "id": "change-chonburi-2023-2024",
+    "image": "change-chonburi-2023-2024.png",
+    "sidecar": "change-chonburi-2023-2024.json",
+    "years": {
+      "a": 2023,
+      "b": 2024
+    }
+  }
+]

@@ -119,7 +119,10 @@ def main() -> int:
         help="Output directory for GeoTIFFs",
     )
     parser.add_argument(
-        "--scale", type=int, default=10, help="Pixel scale in metres (default 10)"
+        "--scale", type=int, default=20,
+        help="Pixel scale in metres (default 20). EE's single-download limit is 50 MB; "
+             "64-band embeddings over a 4 km² AOI at 10 m exceed this. 20 m is "
+             "visually identical at city-map zoom (14–18) and well under 15 MB per year.",
     )
     args = parser.parse_args()
 

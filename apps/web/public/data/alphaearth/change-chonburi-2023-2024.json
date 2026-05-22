@@ -1,0 +1,23 @@
+{
+  "image": "change-chonburi-2023-2024.png",
+  "bounds": {
+    "west": 100.96488871721586,
+    "south": 13.341958262799958,
+    "east": 101.0051332419444,
+    "north": 13.380046830846625
+  },
+  "years": {
+    "a": 2023,
+    "b": 2024
+  },
+  "stats": {
+    "p_low": 0.16498184204101562,
+    "p_high": 0.4244276285171509,
+    "ramp_low_pctile": 50.0,
+    "ramp_high_pctile": 99.0,
+    "pixel_count": 47488,
+    "max_l2": 0.8441454768180847,
+    "median_l2": 0.16498184204101562
+  },
+  "dataset": "GOOGLE/SATELLITE_EMBEDDING/V1/ANNUAL"
+}
