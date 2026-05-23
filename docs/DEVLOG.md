@@ -17,27 +17,25 @@ Append-only. Newest entry at the top.
 - **Version stamp** — bottom-bar pill now reads from `package.json` via a `__APP_VERSION__` Vite define. Bumped both root and `@chonburi/web` from `0.1.0` → `0.2.0`.
 - **Gitignore** — `apps/web/public/data/alphaearth/raw/` excluded (large 64-band GeoTIFFs, regenerable). EE credential paths excluded.
 
-### Pending (blocked on operator action)
+### Auth setup notes (for repeat bakes)
 
-- **Pre-baked Chonburi change raster** is **not yet committed**. The Python pipeline requires Google Earth Engine authentication, which needs an interactive browser step. To unblock:
+- Earth Engine authenticated via gcloud application-default credentials at `~/.config/gcloud/application_default_credentials.json`. EE's default OAuth client gets blocked by Google because it requests the Drive scope; gcloud's client is allowed.
+- EE-registered Google Cloud project: **tkcx-494310**.
+- Default fetch scale dropped from 10 m → **20 m**. AlphaEarth's 64-band embedding at 10 m exceeds EE's 50 MB single-download ceiling for a 4 km² AOI (≈ 100 MB). 20 m is ≈ 12 MB and visually identical at city-map zoom (14–18). To regenerate at 10 m, use the EE batch Export API to Cloud Storage instead.
 
-  ```bash
-  python3 -m pip install --user -r scripts/alphaearth/requirements.txt
-  earthengine authenticate                       # one-time, opens browser
-  export EE_PROJECT=ee-yourname-chonburi
+To re-bake (annually, when a new year publishes):
 
-  python3 scripts/alphaearth/fetch_embeddings.py --aoi chonburi --years 2023 2024
-  python3 scripts/alphaearth/compute_change.py \
-      --year-a apps/web/public/data/alphaearth/raw/alphaearth-chonburi-2023.tif \
-      --year-b apps/web/public/data/alphaearth/raw/alphaearth-chonburi-2024.tif \
-      --out apps/web/public/data/alphaearth/change-chonburi-2023-2024.png
-
-  git add apps/web/public/data/alphaearth/change-chonburi-2023-2024.{png,json} \
-          apps/web/public/data/alphaearth/manifest.json
-  git commit -m "data: bake AlphaEarth change-chonburi-2023-2024"
-  ```
-
-  Until then, the layer toggle is wired but renders nothing; the `AlphaEarthBadge` shows "No baked rasters yet."
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS=""   # use ADC, not service account
+python3 scripts/alphaearth/fetch_embeddings.py --aoi chonburi --years 2024 2025
+python3 scripts/alphaearth/compute_change.py \
+    --year-a apps/web/public/data/alphaearth/raw/alphaearth-chonburi-2024.tif \
+    --year-b apps/web/public/data/alphaearth/raw/alphaearth-chonburi-2025.tif \
+    --out apps/web/public/data/alphaearth/change-chonburi-2024-2025.png
+git add apps/web/public/data/alphaearth/change-chonburi-2024-2025.{png,json} \
+        apps/web/public/data/alphaearth/manifest.json
+git commit -m "data: bake AlphaEarth change-chonburi-2024-2025"
+```
 
 ### Open questions for the next pass
 
