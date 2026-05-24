@@ -39,6 +39,27 @@
   overflow: hidden;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+[role="checkbox"]:focus-visible,
+[role="tab"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ── Top bar ── */
 .topbar {
   grid-area: topbar;
@@ -439,6 +460,7 @@
   text-transform: uppercase;
   letter-spacing: 0.10em;
   color: var(--text-3);
+  min-height: 36px;
 }
 .lens button:hover { color: var(--data); border: 0; }
 .lens button.active {
@@ -466,10 +488,18 @@
   font-size: 0.72rem;
   border-left: 2px solid transparent;
   letter-spacing: 0.02em;
+  min-height: 36px;
 }
 .layer-toggle:hover { background: var(--bg-2); color: var(--text); }
 .layer-toggle.on  { border-left-color: var(--accent); color: var(--text-1); }
 .layer-toggle.off { color: var(--text-3); }
+.layer-toggle.blocked {
+  cursor: help;
+  opacity: 0.78;
+}
+.layer-toggle.blocked:hover {
+  background: rgba(245, 158, 11, 0.08);
+}
 .layer-age {
   color: var(--accent);
   letter-spacing: 0.06em;
@@ -481,6 +511,43 @@
 .layer-toggle.off .layer-age { opacity: 0.45; }
 .layer-toggle .swatch { width: 10px; height: 10px; display: inline-block; opacity: 0.9; }
 .layer-toggle .mono { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.layer-quick-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+.layer-quick-actions button {
+  border: 0;
+  background: var(--bg-1);
+  color: var(--text-2);
+  padding: 6px 8px;
+  text-align: left;
+  font-size: 0.60rem;
+  letter-spacing: 0.08em;
+  min-height: 34px;
+}
+.layer-quick-actions button:hover {
+  background: var(--bg-2);
+  color: var(--accent);
+}
+.layer-notice {
+  margin-top: 6px;
+  padding: 7px 8px;
+  border-left: 2px solid var(--warn);
+  background: rgba(245, 158, 11, 0.10);
+  color: var(--text-1);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+.layer-count-zero {
+  color: var(--warn);
+  max-width: 78px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* ── News list — wire-report / evidence feed ── */
 .news-item {
@@ -819,7 +886,7 @@
 }
 .building-search-input {
   width: 100%;
-  height: 36px;
+  height: 44px;
   padding: 0 var(--s-3);
   background: rgba(10, 14, 20, 0.96);
   color: var(--text);
@@ -846,11 +913,80 @@
   max-height: 40vh;
   overflow: auto;
 }
+.building-search-empty {
+  padding: 8px 10px;
+  background: rgba(10, 14, 20, 0.98);
+  border: 1px solid var(--line-2);
+  border-top: 0;
+  color: var(--text-2);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.map-overlay-controls {
+  position: absolute;
+  top: var(--s-3);
+  left: var(--s-3);
+  z-index: 36;
+  width: min(360px, calc(100% - 96px));
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.map-overlay-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.map-overlay-actions button,
+.map-overlay-chip {
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  background: rgba(10, 14, 20, 0.88);
+  color: var(--text-1);
+  min-height: 34px;
+  padding: 7px 9px;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  backdrop-filter: blur(6px);
+}
+.map-view-status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(10, 14, 20, 0.78);
+  color: var(--text-2);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  backdrop-filter: blur(6px);
+}
+.map-overlay-actions button:hover,
+.map-overlay-chip:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+.map-overlay-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 100%;
+}
+.map-overlay-chip {
+  border-color: rgba(14, 165, 233, 0.45);
+  color: var(--data);
+  max-width: 165px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .building-search-row {
   display: flex;
   justify-content: space-between;
   gap: var(--s-3);
-  padding: 6px var(--s-3);
+  padding: 9px var(--s-3);
   cursor: pointer;
   border-top: 1px solid var(--line);
   font-size: 0.78rem;
@@ -1833,7 +1969,7 @@
   .shell.mobile .right-layers { max-height: 50%; }
 
   /* Bottom bar compresses: ident hidden, hour rail stretches full width, stats stack. */
-  .shell.mobile .bottom-bar { grid-template-columns: 1fr; }
+	  .shell.mobile .bottom-bar { grid-template-columns: 1fr; }
   .shell.mobile .bottom-ident { display: none; }
   .shell.mobile .bottom-stats { display: none; }
   .shell.mobile .hour-rail {
@@ -1845,8 +1981,20 @@
 
   /* Zoom + AQI badge — make sure they stay inside the visible map area. */
   .shell.mobile .aqi-badge { left: 50%; right: auto; transform: translateX(-50%); top: 8px; min-width: 260px; max-width: 84vw; }
-  .shell.mobile .zoom-controls { bottom: 14px; right: 10px; }
-}
+	  .shell.mobile .zoom-controls { bottom: 14px; right: 10px; }
+	  .shell.mobile.mobile-panel-brief .building-search,
+	  .shell.mobile.mobile-panel-brief .map-overlay-controls,
+	  .shell.mobile.mobile-panel-brief .zoom-controls,
+	  .shell.mobile.mobile-panel-layers .building-search,
+	  .shell.mobile.mobile-panel-layers .map-overlay-controls,
+	  .shell.mobile.mobile-panel-layers .zoom-controls {
+	    display: none;
+	  }
+	  .shell.mobile.mobile-panel-brief .chatbox-closed,
+	  .shell.mobile.mobile-panel-layers .chatbox-closed {
+	    display: none;
+	  }
+	}
 
 /* MobileNav — fixed bottom segmented control. Renders only when isMobile. */
 .mobile-nav {
@@ -1942,8 +2090,8 @@
   text-overflow: ellipsis;
 }
 .trends-refresh, .news-refresh {
-  width: 24px;
-  height: 22px;
+  min-width: 34px;
+  min-height: 34px;
   padding: 0;
   font-size: 0.92rem;
   background: var(--bg-2);
@@ -1966,8 +2114,18 @@
   padding: 4px 10px;
   border: 0;
   cursor: pointer;
+  min-height: 34px;
 }
 .trends-lang-btn.active { background: var(--accent); color: var(--bg); }
+.trends-status {
+  padding: 5px 7px;
+  border-left: 2px solid var(--warn);
+  background: rgba(245, 158, 11, 0.08);
+  color: var(--text-2);
+  font-size: 0.58rem;
+  line-height: 1.35;
+  letter-spacing: 0.06em;
+}
 .trends-spark {
   position: relative;
   display: flex;
@@ -2060,6 +2218,16 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.world-city-insight {
+  font-size: 0.52rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0.84;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2672,7 +2840,7 @@
 @media (max-width: 900px) {
   /* Sit above the MobileNav (z 95, ~58 px tall) */
   .chatbox { bottom: 64px; right: 8px; }
-  .chatbox-closed { left: 8px; right: 8px; bottom: 62px; }
+  .chatbox-closed { left: 8px; right: 8px; bottom: 118px; }
   .chat-handle { padding: 8px 12px; gap: 10px; }
   .chat-handle-label .mono { display: none; }
   .chat-panel {
@@ -3172,6 +3340,21 @@
 }
 .marine-detail-grid > div { display: flex; flex-direction: column; gap: 0; }
 .marine-detail-grid .mono { font-size: var(--size-body); }
+.earthalpha-provider-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  color: var(--text-3);
+  font-size: 0.66rem;
+}
+.earthalpha-provider-strip .mono {
+  padding: 2px 5px;
+  border: 1px solid var(--line);
+  color: var(--text-2);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+}
 
 /* ── News action-tag chips ── micro size, hairline border, mono */
 .action-chip {
@@ -3359,3 +3542,65 @@
 .building-card-link:hover {
   text-decoration: underline;
 }
+
+/* ── Predictive Intelligence Panel (TimesFM forecasts) ── */
+
+.predictive-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.forecast-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.forecast-strip:last-of-type {
+  border-bottom: none;
+}
+
+.forecast-header {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.forecast-label {
+  font-size: var(--size-caption);
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
+.forecast-alert-chip {
+  font-size: 0.6rem;
+  color: var(--bad, #dc2626);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
+.forecast-peak {
+  font-size: 0.62rem;
+  color: var(--data, #58a6ff);
+  margin-left: auto;
+  letter-spacing: 0.02em;
+}
+
+.forecast-sparkline-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.forecast-horizon-label {
+  font-size: 0.6rem;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+

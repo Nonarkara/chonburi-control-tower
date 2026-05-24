@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: chonburi-forecast
+    env: python
+    plan: starter          # 512 MB RAM — sufficient for 200M-param CPU inference
+    buildCommand: |
+      pip install torch --index-url https://download.pytorch.org/whl/cpu &&
+      pip install -r requirements.txt
+    startCommand: python main.py
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false        # set manually in Render dashboard from Supabase connection string
+      - key: HF_HOME
+        value: /data/hf_cache
+      - key: PORT
+        value: "8000"
+    disk:
+      name: hf-model-cache
+      mountPath: /data/hf_cache
+      sizeGB: 5            # TimesFM checkpoint ~800 MB; 5 GB gives room to grow

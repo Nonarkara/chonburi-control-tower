@@ -1,0 +1,14 @@
+# TimesFM — Google Research time-series foundation model
+# Requires PyTorch (CPU build is fine for hourly batch jobs)
+timesfm[torch]>=1.2.0
+
+# Web server + scheduler
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+apscheduler>=3.10.4
+
+# PostgreSQL async driver
+asyncpg>=0.29.0
+
+# HTTP (used by timesfm for checkpoint download)
+httpx>=0.27.0

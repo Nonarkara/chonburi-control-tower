@@ -153,6 +153,47 @@ twinApp.post("/state", async (c) => {
   return c.json(point, 201);
 });
 
+// ---- Predictions (TimesFM zero-shot forecasts persisted by the Python service) ----
+
+const FORECAST_METRICS = [
+  { key: "precipitation.forecast", label: "Rain",      unit: "mm",  alertThreshold: 50  },
+  { key: "tideHeight.forecast",    label: "Tide",      unit: "m",   alertThreshold: 2.5 },
+  { key: "incidentRate.forecast",  label: "Incidents", unit: "/h",  alertThreshold: 5   },
+  { key: "aqi.forecast",           label: "AQI",       unit: "",    alertThreshold: 100 },
+  { key: "vesselCount.forecast",   label: "Vessels",   unit: "",    alertThreshold: 50  },
+] as const;
+
+twinApp.get("/predictions", async (c) => {
+  // Only return forecasts generated in the last 2 hours (stale = Python service down)
+  const since = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+  const horizon = Math.min(parseInt(c.req.query("horizon") ?? "24", 10) || 24, 48);
+
+  const forecasts = await Promise.all(
+    FORECAST_METRICS.map(async (fm) => {
+      const items = await getTwinState({
+        objectId: "city",
+        metric: fm.key,
+        since,
+        limit: horizon,
+      });
+      const props0 = items[0]?.properties as Record<string, unknown> | null;
+      return {
+        metric: fm.key,
+        label:  fm.label,
+        unit:   fm.unit,
+        alertThreshold: fm.alertThreshold,
+        generatedAt: props0?.generated_at ?? null,
+        horizon: items.map((pt) => {
+          const p = pt.properties as Record<string, number> | null;
+          return { time: pt.time, p50: pt.value, p10: p?.p10 ?? null, p90: p?.p90 ?? null };
+        }),
+      };
+    })
+  );
+
+  return c.json({ forecasts, count: forecasts.length });
+});
+
 // ---- Diagnostics ----
 
 twinApp.get("/snapshot", async (c) => c.json(await twinSnapshot()));

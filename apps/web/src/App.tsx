@@ -27,6 +27,7 @@ import {
   bmaAqStationsLayer,
   bmaParksLayer,
   bmaPoiLayer,
+  buildingRoofsLayer,
   buildingsLayer,
   campusBoundaryLayer,
   cctvLayer,
@@ -103,7 +104,7 @@ import {
   newsPinsLayer,
 } from "./map/layers";
 import { useTile3DLayer } from "./map/Tile3DLayer";
-import { ALL_LAYERS, LENSES, type LayerId, type LensId } from "./map/presets";
+import { ALL_LAYERS, LENSES, layerCanEnable, type LayerId, type LensId, type MapViewState } from "./map/presets";
 
 import { TopBar } from "./components/TopBar";
 import { HourRail } from "./components/HourRail";
@@ -124,6 +125,7 @@ import { SheetsPanel, loadSheetsUrl } from "./components/SheetsPanel";
 import { AqiBadge, type AqiTrend } from "./components/AqiBadge";
 import { BuildingCard } from "./components/BuildingCard";
 import { BuildingSearch } from "./components/BuildingSearch";
+import { MapOverlayControls } from "./components/MapOverlayControls";
 import { WorldStrip } from "./components/WorldStrip";
 import { TrendsPanel, type TrendsSnapshot } from "./components/TrendsPanel";
 import { useWorldWeather } from "./hooks/useWorldWeather";
@@ -134,6 +136,7 @@ import { useSystemHealth } from "./hooks/useSystemHealth";
 import { MarketsTicker } from "./components/MarketsTicker";
 import { MobileNav, type MobilePanel } from "./components/MobileNav";
 import { ChatBox } from "./components/ChatBox";
+import { PredictivePanel } from "./components/PredictivePanel";
 import { API_BASE } from "./lib/apiBase";
 // ExecutiveBrief / PeerComparison / StrategicAlerts removed from the mayor's
 // view — they were university-flavoured (QS rankings, enrollment, "presidential
@@ -257,7 +260,7 @@ function escapeHtml(s: string): string {
 export default function App() {
   const { theme } = useTheme();
   const mapStyle = useMemo(() => basemapStyle(theme), [theme]);
-  const { health: systemHealth } = useSystemHealth(60_000);
+  const { health: systemHealth, error: systemHealthError } = useSystemHealth(60_000);
   const campus = useGeoJson<FeatureCollection<Polygon | MultiPolygon, CampusZoneProperties>>(
     "/geo/chula-campus.geojson",
   );
@@ -292,8 +295,9 @@ export default function App() {
 
   // Lens + per-layer toggles
   const [lens, setLens] = useState<LensId>("operations");
+  const [mapViewState, setMapViewState] = useState<MapViewState>({ kind: "lens", lensId: "operations" });
   const [enabledLayers, setEnabledLayers] = useState<Set<LayerId>>(
-    () => new Set(LENSES.find((l) => l.id === "operations")!.layers),
+    () => new Set(LENSES.find((l) => l.id === "operations")!.layers.filter((id) => layerCanEnable(id))),
   );
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
@@ -608,8 +612,9 @@ export default function App() {
 
   const onLensChange = useCallback((id: LensId) => {
     setLens(id);
+    setMapViewState({ kind: "lens", lensId: id });
     const next = LENSES.find((l) => l.id === id);
-    if (next) setEnabledLayers(new Set(next.layers));
+    if (next) setEnabledLayers(new Set(next.layers.filter((layerId) => layerCanEnable(layerId))));
   }, []);
   const onToggleLayer = useCallback((id: LayerId) => {
     setEnabledLayers((prev) => {
@@ -618,6 +623,21 @@ export default function App() {
       else next.add(id);
       return next;
     });
+  }, []);
+  const restoreLens = useCallback(() => {
+    const next = LENSES.find((l) => l.id === lens);
+    setMapViewState({ kind: "lens", lensId: lens });
+    if (next) setEnabledLayers(new Set(next.layers.filter((layerId) => layerCanEnable(layerId))));
+  }, [lens]);
+  const setAerialOnly = useCallback(() => {
+    setViewMode("2D");
+    setMapViewState({ kind: "custom", label: "Clean aerial view" });
+    setEnabledLayers(new Set<LayerId>(["satellite-esri", "municipality-boundary-line"]));
+  }, []);
+  const clearOverlays = useCallback(() => {
+    setViewMode("2D");
+    setMapViewState({ kind: "custom", label: "Overlays hidden" });
+    setEnabledLayers(new Set<LayerId>(["satellite-esri", "municipality-boundary-line"]));
   }, []);
 
   // Feeds
@@ -739,10 +759,19 @@ export default function App() {
     if (enabledLayers.has("cu-map-2015")) out.push(cuMapOverlay() as Layer);
     if (enabledLayers.has("bma-parks") && bma?.parks) out.push(bmaParksLayer(bma.parks) as Layer);
     if (enabledLayers.has("cu-lands") && cuLands) out.push(cuLandsLayer(cuLands) as Layer);
-    if ((enabledLayers.has("municipality-boundary") || enabledLayers.has("campus-boundary")) && campus)
-      out.push(campusBoundaryLayer(campus) as Layer);
+    const showBoundaryFill =
+      enabledLayers.has("municipality-boundary-fill") ||
+      enabledLayers.has("municipality-boundary") ||
+      enabledLayers.has("campus-boundary");
+    const showBoundaryLine = enabledLayers.has("municipality-boundary-line") || showBoundaryFill;
+    if ((showBoundaryLine || showBoundaryFill) && campus)
+      out.push(campusBoundaryLayer(campus, { filled: showBoundaryFill, stroked: showBoundaryLine }) as Layer);
     if ((enabledLayers.has("municipality-buildings") || enabledLayers.has("campus-buildings")) && buildings)
       out.push(buildingsLayer(buildings, { extruded: is3D, ghosted: isSubstructure }) as Layer);
+    if (enabledLayers.has("building-roofs") && buildings && is3D && !isSubstructure) {
+      const maxRoofs = viewState.zoom >= 16.5 ? 3200 : viewState.zoom >= 15.2 ? 1400 : 500;
+      out.push(buildingRoofsLayer(buildings, { maxRoofs, elevationScale: 1.65 }) as Layer);
+    }
     // 3D Tiles pilot — OGC-standard streaming buildings (replaces extruded GeoJSON when available)
     if (tile3dLayer) out.push(tile3dLayer as Layer);
     if (enabledLayers.has("road-network") && roads)
@@ -792,7 +821,7 @@ export default function App() {
     if (enabledLayers.has("waterways") && waterways) out.push(waterwaysLayer(waterways) as Layer);
     // Fishing zones
     if (enabledLayers.has("fisheries") && fisheries) out.push(fisheriesLayer(fisheries) as Layer);
-    // Heritage: old town district + temple spires (always show in 3D OPS/EXEC lenses)
+    // Heritage: explicit toggles so operators can remove these overlays for a clean aerial view.
     if (heritage) {
       const districtFc = {
         type: "FeatureCollection" as const,
@@ -802,9 +831,13 @@ export default function App() {
         type: "FeatureCollection" as const,
         features: heritage.features.filter(f => f.properties.kind !== "old-town-district"),
       } as FeatureCollection<Point, HeritageFeatureProps>;
-      const dist = oldTownDistrictLayer(districtFc);
-      if (dist) out.push(dist as Layer);
-      out.push(...(templeSpiresLayer(spiresFc) as Layer[]));
+      if (enabledLayers.has("heritage-old-town")) {
+        const dist = oldTownDistrictLayer(districtFc);
+        if (dist) out.push(dist as Layer);
+      }
+      if (enabledLayers.has("heritage-temple-spires")) {
+        out.push(...(templeSpiresLayer(spiresFc) as Layer[]));
+      }
     }
     // Flood-risk polygons
     if (enabledLayers.has("flood-risk-zones") && floodRisk) out.push(floodRiskLayer(floodRisk) as Layer);
@@ -871,7 +904,13 @@ export default function App() {
   // Feature counts — passed to LayerPalette so every toggle shows a number,
   // making it immediately obvious whether the layer has data or not.
   const layerCounts = useMemo(() => ({
+    "municipality-boundary-line": campus?.features.length ?? 0,
+    "municipality-boundary-fill": campus?.features.length ?? 0,
+    "municipality-boundary":      campus?.features.length ?? 0,
     "municipality-buildings": buildings?.features.length ?? 0,
+    "building-roofs":         buildings?.features.length ?? 0,
+    "heritage-old-town":      heritage?.features.filter((f) => f.properties.kind === "old-town-district").length ?? 0,
+    "heritage-temple-spires": heritage?.features.filter((f) => f.properties.kind !== "old-town-district").length ?? 0,
     "road-network":           roads?.features.length ?? 0,
     "transit-stations":       transitStations?.features.length ?? 0,
     "transit-lines":          transitLines?.features.length ?? 0,
@@ -892,8 +931,8 @@ export default function App() {
     "gistda-landuse":         gistdaLandUse.data.length,
     "news-pins":              news.data.filter((n) => n.lat != null).length,
   } as Record<string, number>), [
-    buildings, roads, transitStations, transitLines, civicPoints, waterways,
-    fisheries, floodRisk, maritimePorts, maritimeFerries, maritimeNavAids,
+    campus, buildings, roads, transitStations, transitLines, civicPoints, waterways,
+    fisheries, floodRisk, heritage, maritimePorts, maritimeFerries, maritimeNavAids,
     ais.data, cctv.data, iticEvents.data, cityReports.data, datago.data,
     gistdaPois.data, gistdaSolar.data, gistdaLandUse.data, news.data,
   ]);
@@ -950,6 +989,13 @@ export default function App() {
           </span>
         </div>
       )}
+      {!systemHealth && systemHealthError && (
+        <div className="system-banner banner-down">
+          <span className="mono">
+            API HOST UNREACHABLE — {API_BASE.replace(/^https?:\/\//, "")} · {systemHealthError}
+          </span>
+        </div>
+      )}
 
       {/* ── World strip: Chonburi host + 3 user-editable clocks ── */}
       <WorldStrip
@@ -974,7 +1020,7 @@ export default function App() {
           layer set (EXEC = strategic, OPS = day-to-day). The legacy Chula
           ExecutiveBrief / StrategicAlerts / PeerComparison panels were built
           for a university and don't belong on a city mayor's desk. ── */}
-      <aside className="left-bar">
+      <aside className="left-bar" aria-hidden={isMobile && mobilePanel !== "brief"}>
         {provincialKPIs.data.length > 0 && (
           <div className="left-section">
             <ProvincialKPIs
@@ -1028,6 +1074,9 @@ export default function App() {
             />
           </div>
         )}
+        <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+          <PredictivePanel apiBase={API_BASE} />
+        </div>
         <PmcuBrief
           hour={hour}
           isWeekend={isWeekend}
@@ -1054,8 +1103,12 @@ export default function App() {
       </aside>
 
       {/* ── Map center — nothing overlaps this ── */}
-      <main className="map-area">
+      <main className="map-area" aria-hidden={isMobile && mobilePanel !== "map"}>
         <div className="map-host">
+          <div className="sr-only" role="status" aria-live="polite">
+            Chonburi map. {mapViewState.kind === "custom" ? mapViewState.label : `Current lens: ${LENSES.find((l) => l.id === lens)?.plainLabel ?? lens}`}.
+            {enabledLayers.size} layers are currently enabled. Use Clean aerial view to inspect satellite imagery without data overlays.
+          </div>
           <DeckGL
             viewState={viewState}
             onViewStateChange={({ viewState: vs }) => {
@@ -1094,6 +1147,22 @@ export default function App() {
                   />
                 </Source>
               ))}
+              {enabledLayers.has("satellite-esri") && (
+                <Source
+                  id="esri-world-imagery-src"
+                  type="raster"
+                  tiles={["https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"]}
+                  tileSize={256}
+                  maxzoom={19}
+                >
+                  <MapLayer
+                    id="esri-world-imagery"
+                    type="raster"
+                    paint={{ "raster-opacity": 1 }}
+                    beforeId="labels-top"
+                  />
+                </Source>
+              )}
             </MapLibreMap>
           </DeckGL>
           <BuildingSearch
@@ -1102,6 +1171,14 @@ export default function App() {
               setSelectedBuilding(props);
               flyTo(centroid[0], centroid[1], 17.5);
             }}
+          />
+          <MapOverlayControls
+            enabled={enabledLayers}
+            mapViewState={mapViewState}
+            onToggleLayer={onToggleLayer}
+            onAerialOnly={setAerialOnly}
+            onClearOverlays={clearOverlays}
+            onRestoreLens={restoreLens}
           />
           {/* Map zoom controls — back-up for gesture / trackpad */}
           <div className="zoom-controls" aria-label="Map zoom controls">
@@ -1118,13 +1195,14 @@ export default function App() {
       {/* ── Right sidebar: news (scrollable) + layer controls.
           StrategicAlerts and PeerComparison were Chula-university panels —
           removed until rebuilt with provincial peer data (Rayong, Chachoengsao). ── */}
-      <aside className="right-bar">
+      <aside className="right-bar" aria-hidden={isMobile && mobilePanel !== "layers"}>
         <div className="right-trends">
           <TrendsPanel
             snapshots={trends.data}
             loading={trends.fallbackTier === "loading"}
             ageMinutes={trends.ageMinutes}
             onRefresh={trends.refetch}
+            error={trends.error}
           />
         </div>
         <div className="right-news">
@@ -1144,10 +1222,14 @@ export default function App() {
         <div className="right-layers">
           <LayerPalette
             lens={lens}
+            mapViewState={mapViewState}
             onLensChange={onLensChange}
             enabled={enabledLayers}
             onToggleLayer={onToggleLayer}
             counts={layerCounts}
+            onAerialOnly={setAerialOnly}
+            onClearOverlays={clearOverlays}
+            onRestoreLens={restoreLens}
           />
         </div>
       </aside>
