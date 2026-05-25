@@ -34,6 +34,11 @@ const OLLAMA_MODEL = "qwen2.5:1.5b";
 const MAX_USER_CHARS = 1200;
 const MAX_TURNS = 16;
 const REQUEST_TIMEOUT_MS = 15_000;
+// Safety cap on total system prompt size (base + live snippet).
+// Gemini 2.5 Flash has a 1 M-token context but the free-tier Ollama fallback
+// (qwen2.5:1.5b) has only 32k tokens (~128k chars). Cap at 40k chars to keep
+// both providers happy and avoid silent truncation in the model.
+const MAX_SYSTEM_PROMPT_CHARS = 40_000;
 
 export interface ChatMessage {
   role: "user" | "model";
@@ -265,7 +270,11 @@ export async function chat(req: ChatRequest, env: ChatEnv): Promise<ChatResponse
   }
 
   const snippet = await liveContextSnippet().catch(() => "");
-  const systemPrompt = snippet ? `${SYSTEM_PROMPT_BASE}\n\n${snippet}` : SYSTEM_PROMPT_BASE;
+  const rawPrompt = snippet ? `${SYSTEM_PROMPT_BASE}\n\n${snippet}` : SYSTEM_PROMPT_BASE;
+  const systemPrompt =
+    rawPrompt.length > MAX_SYSTEM_PROMPT_CHARS
+      ? rawPrompt.slice(0, MAX_SYSTEM_PROMPT_CHARS)
+      : rawPrompt;
 
   // Try Gemini first (quality). Fall through to Ollama only if Gemini is
   // unconfigured OR returns 429 / 5xx AND Ollama is locally available.

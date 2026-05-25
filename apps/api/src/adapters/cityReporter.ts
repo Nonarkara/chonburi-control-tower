@@ -6,12 +6,12 @@ import { fetchJsonOrNull } from "./common.js";
 // Traffy Fondue is the de facto public citizen-report feed for Bangkok.
 // City Reporter v2 (bots/city-reporter-v2) writes to the same shape.
 
-// Nationwide search endpoint — bangkok_traffy.json is BMA-only and excludes
-// every Chonburi report. The search API returns latest-first across all of
-// Thailand; we filter to FEED_BBOX OR org field containing ชลบุรี.
-// Bangkok dominates volume, so we fetch a wide page (2000) to catch a few
-// Chonburi entries within the recency window.
-const ENDPOINT = "https://publicapi.traffy.in.th/share/teamchadchart/search?limit=2000";
+// Traffy search filtered to Chonburi. The `keyword=ชลบุรี` parameter narrows
+// the API result set server-side so we download ~200 items instead of 2000.
+// Client-side bbox + org filters still run as a secondary pass in case the
+// keyword match misses location-only tickets (no org tag).
+const ENDPOINT =
+  "https://publicapi.traffy.in.th/share/teamchadchart/search?limit=500&keyword=ชลบุรี";
 
 const TTL_SECONDS = 300; // 5 min
 

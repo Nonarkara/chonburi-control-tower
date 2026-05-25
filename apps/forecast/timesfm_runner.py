@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -173,10 +174,14 @@ async def run_all_forecasts(pool: Any) -> dict[str, str]:
                                    cfg.out_metric, len(history), MIN_CONTEXT)
                     continue
 
-                point_forecast, quantile_forecast = model.forecast(
-                    inputs=[history],
-                    freq=["H"],
-                )
+                with ThreadPoolExecutor(max_workers=1) as _ex:
+                    _fut = _ex.submit(model.forecast, inputs=[history], freq=["H"])
+                    try:
+                        point_forecast, quantile_forecast = _fut.result(timeout=120)
+                    except FuturesTimeout as exc:
+                        raise RuntimeError(
+                            f"TimesFM inference timed out after 120s for {cfg.out_metric}"
+                        ) from exc
                 # Slice to the configured horizon for this metric
                 p50s = [float(v) for v in point_forecast[0][: cfg.horizon]]
                 p10s = [float(quantile_forecast[0][h][Q_LOW])  for h in range(cfg.horizon)]

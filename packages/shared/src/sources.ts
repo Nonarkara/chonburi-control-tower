@@ -7,7 +7,9 @@
 //
 // Categories drive the "Source Catalog" panel groupings.
 
-export type SourceStatus = "live" | "ready" | "planned" | "research";
+// "stub" — adapter file exists + returns mock data; waiting for a real data
+//           source / partnership before going live
+export type SourceStatus = "live" | "ready" | "planned" | "research" | "stub";
 
 export type SourceCategory =
   | "mobility"      // traffic, transit, shuttle
@@ -931,6 +933,35 @@ export const SOURCE_CATALOG: SourceEntry[] = [
     keyEnv: "GISTDA_API_KEY",
     describe: "GISTDA's Thai address geocoding service — convert Thai addresses to lat/lng coordinates. Endpoint under investigation; API key format may differ from ArcGIS services.",
     docs: "https://www.gistda.or.th",
+  },
+
+  // ── Stub adapters — mock data; real API pending ──────────────────────────
+
+  {
+    id: "coastal-water-quality",
+    label: "Coastal water quality — Chonburi stations",
+    vendor: "PCD / DMCR (pending)",
+    category: "environment",
+    status: "stub",
+    apiPath: "/api/environment/water-quality",
+    describe:
+      "DO₂, salinity, turbidity, pH at Bang Saen, Ang Sila, Bang Phra stations. " +
+      "PCD marine water quality data is CSV-only on data.go.th (annual); real-time " +
+      "sensor feed requires partnership with PCD or DMCR. Currently returns mock data.",
+    docs: "https://data.go.th/dataset/402c771a-4b35-4dd7-aca8-d222fab61a49",
+  },
+  {
+    id: "port-ops-laemchabang",
+    label: "Laem Chabang port operations",
+    vendor: "PAT (pending)",
+    category: "maritime",
+    status: "stub",
+    apiPath: "/api/maritime/port-ops",
+    describe:
+      "Vessel count, berth utilisation, TEU throughput for Laem Chabang (THLCH) " +
+      "and Chonburi town pier (THCBI). PAT has no public JSON API; real data " +
+      "requires data-sharing agreement. AIS bbox proxy feasible as interim solution.",
+    docs: "https://www.port.co.th",
   },
 
 ];

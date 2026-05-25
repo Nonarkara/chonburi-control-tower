@@ -33,6 +33,8 @@ const BBOX: [number, number, number, number] = [12.5, 100.5, 13.6, 101.3];
 const positions = new Map<string, AisVessel>();
 let wsConnected = false;
 let wsStartedAt: number | null = null;
+let retryDelay = 2_000;
+const MAX_RETRY_DELAY = 60_000;
 
 interface ShipStaticMessage {
   ShipName?: string;
@@ -83,6 +85,7 @@ export function startAisStream(token: string): void {
 
     ws.on("open", () => {
       wsConnected = true;
+      retryDelay = 2_000; // reset on successful connection
       const subscribe = {
         APIKey: token,
         BoundingBoxes: [[[BBOX[0], BBOX[1]], [BBOX[2], BBOX[3]]]],
@@ -125,8 +128,9 @@ export function startAisStream(token: string): void {
 
     ws.on("close", () => {
       wsConnected = false;
-      console.log("[ais] WS closed — reconnecting in 10s");
-      setTimeout(() => startAisStream(token), 10_000);
+      console.log(`[ais] WS closed — reconnecting in ${retryDelay / 1000}s`);
+      setTimeout(() => startAisStream(token), retryDelay);
+      retryDelay = Math.min(retryDelay * 2, MAX_RETRY_DELAY);
     });
 
     ws.on("error", (err: Error) => {
