@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Identity -->
+  <key>Label</key>
+  <string>com.nonarkara.chonburi-forecast</string>
+
+  <!-- Command: run the standalone script with the venv Python -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/nonarkara/Projects/dashboards/chonburi/apps/forecast/.venv/bin/python3</string>
+    <string>/Users/nonarkara/Projects/dashboards/chonburi/apps/forecast/run_local.py</string>
+  </array>
+
+  <!-- Set working directory so relative imports in db.py / timesfm_runner.py resolve -->
+  <key>WorkingDirectory</key>
+  <string>/Users/nonarkara/Projects/dashboards/chonburi/apps/forecast</string>
+
+  <!-- Environment: replace PASTE_YOUR_SUPABASE_URL_HERE with the real connection string -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>DATABASE_URL</key>
+    <string>PASTE_YOUR_SUPABASE_URL_HERE</string>
+    <!-- Let PyTorch use MPS on Apple Silicon; ops without MPS support fall back to CPU -->
+    <key>PYTORCH_ENABLE_MPS_FALLBACK</key>
+    <string>1</string>
+    <!-- HuggingFace model cache — keeps the 800 MB checkpoint out of your home dir -->
+    <key>HF_HOME</key>
+    <string>/Users/nonarkara/Projects/dashboards/chonburi/apps/forecast/.hf_cache</string>
+  </dict>
+
+  <!-- Fire every 3600 seconds (1 hour); also run at login -->
+  <key>StartInterval</key>
+  <integer>3600</integer>
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Logs — tail with: tail -f /tmp/chonburi-forecast.log -->
+  <key>StandardOutPath</key>
+  <string>/tmp/chonburi-forecast.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/chonburi-forecast-err.log</string>
+</dict>
+</plist>

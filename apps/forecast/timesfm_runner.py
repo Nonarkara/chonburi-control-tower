@@ -50,16 +50,39 @@ FORECAST_CONFIGS: list[ForecastConfig] = [
 ]
 
 
+def _detect_backend() -> str:
+    """Pick the best available PyTorch backend.
+
+    On Apple Silicon (M1/M2/M3) with PyTorch ≥ 2.0, MPS is available and
+    significantly faster than CPU for matrix ops. TimesFM uses 'torch' as the
+    backend name regardless of the underlying device — PyTorch itself selects
+    MPS when PYTORCH_ENABLE_MPS_FALLBACK=1 is set and mps.is_available().
+    """
+    try:
+        import torch
+        if torch.backends.mps.is_available():
+            logger.info("Apple Silicon MPS detected — inference will use Metal GPU cores.")
+            return "torch"
+        if torch.cuda.is_available():
+            logger.info("CUDA GPU detected.")
+            return "gpu"
+    except Exception:
+        pass
+    logger.info("No GPU detected — using CPU backend.")
+    return "cpu"
+
+
 def _load_model() -> timesfm.TimesFm:
     global _tfm
     if _tfm is not None:
         return _tfm
-    logger.info("Loading TimesFM 2.0 (200M, PyTorch) — first run downloads checkpoint …")
+    backend = _detect_backend()
+    logger.info("Loading TimesFM 2.0 (200M, backend=%s) — first run downloads checkpoint …", backend)
     _tfm = timesfm.TimesFm(
         hparams=timesfm.TimesFmHparams(
             context_length=CONTEXT_LENGTH,
             horizon_length=max(c.horizon for c in FORECAST_CONFIGS),
-            backend="torch",
+            backend=backend,
         ),
         checkpoint=timesfm.TimesFmCheckpoint(
             huggingface_repo_id="google/timesfm-2.0-200m-pytorch"
