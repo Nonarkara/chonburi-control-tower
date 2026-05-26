@@ -11,7 +11,8 @@
  *   • "No data" fallback when the Python service hasn't run yet
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { LayerId } from "../map/presets";
 
 interface ForecastPoint {
   time: string;
@@ -20,7 +21,7 @@ interface ForecastPoint {
   p90: number | null;
 }
 
-interface ForecastMetric {
+export interface ForecastMetric {
   metric: string;
   label: string;
   unit: string;
@@ -34,8 +35,29 @@ interface PredictionsResponse {
   count: number;
 }
 
+/** Maps each forecast metric to the map layers it should enable when clicked. */
+export const METRIC_LAYER_MAP: Record<string, { layers: LayerId[]; flyToCoast?: boolean }> = {
+  "precipitation.forecast": { layers: ["satellite-imerg"] },
+  "tideHeight.forecast":    { layers: ["ferry-terminals"], flyToCoast: true },
+  "incidentRate.forecast":  { layers: ["incidents-city-reports"] },
+  "aqi.forecast":           { layers: ["satellite-aerosol", "satellite-no2"] },
+  "vesselCount.forecast":   { layers: ["ais-vessels"] },
+};
+
+/** Human-readable metric names for the ForecastAlertBadge. */
+export const METRIC_LABEL: Record<string, string> = {
+  "precipitation.forecast": "RAIN",
+  "tideHeight.forecast":    "TIDE",
+  "incidentRate.forecast":  "INCIDENTS",
+  "aqi.forecast":           "AQI",
+  "vesselCount.forecast":   "VESSELS",
+};
+
 interface Props {
   apiBase: string;
+  onMetricClick?: (metric: string) => void;
+  onAlert?: (metric: string) => void;
+  onForecastsLoaded?: (forecasts: ForecastMetric[]) => void;
 }
 
 // Width × height of each sparkline SVG in px
@@ -96,7 +118,7 @@ function Sparkline({ points, alertThreshold }: { points: ForecastPoint[]; alertT
       <polyline
         points={linePts}
         fill="none"
-        stroke={isAlert ? "var(--warn, #f59e0b)" : "rgba(255,255,255,0.55)"}
+        stroke={isAlert ? "var(--warn, #d97706)" : "rgba(255,255,255,0.55)"}
         strokeWidth={1.2}
         strokeLinejoin="round"
       />
@@ -117,10 +139,12 @@ function peakLabel(points: ForecastPoint[], unit: string): string {
   return `${peak.toFixed(1)}${unit ? " " + unit : ""} peak`;
 }
 
-export function PredictivePanel({ apiBase }: Props) {
+export function PredictivePanel({ apiBase, onMetricClick, onAlert, onForecastsLoaded }: Props) {
   const [data, setData] = useState<PredictionsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Track which alert metrics have already been reported to avoid re-firing on polls
+  const reportedAlerts = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     let active = true;
@@ -132,7 +156,22 @@ export function PredictivePanel({ apiBase }: Props) {
           return r.json() as Promise<PredictionsResponse>;
         })
         .then((d) => {
-          if (active) { setData(d); setLoading(false); setError(null); }
+          if (!active) return;
+          setData(d);
+          setLoading(false);
+          setError(null);
+          onForecastsLoaded?.(d.forecasts);
+          // Fire alert callbacks for newly-breached thresholds
+          if (onAlert) {
+            for (const fm of d.forecasts) {
+              const isAlert = fm.horizon.length > 0 &&
+                Math.max(...fm.horizon.map((p) => p.p50)) > fm.alertThreshold;
+              if (isAlert && !reportedAlerts.current.has(fm.metric)) {
+                reportedAlerts.current.add(fm.metric);
+                onAlert(fm.metric);
+              }
+            }
+          }
         })
         .catch((e: Error) => {
           if (active) { setError(e.message); setLoading(false); }
@@ -141,7 +180,7 @@ export function PredictivePanel({ apiBase }: Props) {
     fetch_();
     const id = window.setInterval(fetch_, 5 * 60_000); // refresh every 5 min
     return () => { active = false; window.clearInterval(id); };
-  }, [apiBase]);
+  }, [apiBase, onAlert, onForecastsLoaded]);
 
   const hasAnyData = useMemo(
     () => data?.forecasts.some((f) => f.horizon.length > 0),
@@ -177,8 +216,19 @@ export function PredictivePanel({ apiBase }: Props) {
       {data?.forecasts.map((fm) => {
         if (!fm.horizon.length) return null;
         const isAlert = Math.max(...fm.horizon.map((p) => p.p50)) > fm.alertThreshold;
+        const clickable = !!onMetricClick;
         return (
-          <div key={fm.metric} className="forecast-strip">
+          <div
+            key={fm.metric}
+            className={`forecast-strip${clickable ? " forecast-strip-clickable" : ""}`}
+            role={clickable ? "button" : undefined}
+            tabIndex={clickable ? 0 : undefined}
+            aria-label={clickable ? `Enable ${fm.label} on map` : undefined}
+            onClick={clickable ? () => onMetricClick(fm.metric) : undefined}
+            onKeyDown={clickable ? (e) => {
+              if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onMetricClick(fm.metric); }
+            } : undefined}
+          >
             <div className="forecast-header">
               <span className="forecast-label mono">{fm.label}</span>
               {isAlert && (
@@ -187,6 +237,11 @@ export function PredictivePanel({ apiBase }: Props) {
                 </span>
               )}
               <span className="forecast-peak mono">{peakLabel(fm.horizon, fm.unit)}</span>
+              {clickable && (
+                <span className="eyebrow mono" style={{ color: "var(--text-3)", marginLeft: "auto" }}>
+                  →MAP
+                </span>
+              )}
             </div>
             <div className="forecast-sparkline-row">
               <Sparkline points={fm.horizon} alertThreshold={fm.alertThreshold} />

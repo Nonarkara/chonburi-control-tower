@@ -71,7 +71,7 @@ export function WaterPanel({ data, loading, ageMinutes }: Props) {
   const totalPct     = totalMax > 0 ? Math.round((totalCurrent / totalMax) * 100) : null;
 
   return (
-    <div className="col" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    <div className="col" style={{ gap: 6 }}>
       <div className="spread" style={{ alignItems: "center" }}>
         <span className="eyebrow">RESERVOIRS // CHONBURI PROVINCE</span>
         {ageMinutes != null && (

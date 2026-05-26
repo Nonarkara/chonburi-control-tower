@@ -22,6 +22,7 @@
     "@fontsource/ibm-plex-sans": "^5.2.8",
     "@fontsource/ibm-plex-sans-condensed": "^5.2.8",
     "@fontsource/ibm-plex-sans-thai": "^5.2.8",
+    "@fontsource/lora": "^5.2.8",
     "@loaders.gl/3d-tiles": "^4.4.2",
     "maplibre-gl": "^5.7.0",
     "react": "^19.0.0",

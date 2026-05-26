@@ -58,6 +58,7 @@ export function AqiBadge({ trend, loading }: Props) {
   const peak = maxAqiNext8h(trend);
   const trending = peak - trend.current.aqi;
   const trendArrow = trending >= 4 ? "▲" : trending <= -4 ? "▼" : "→";
+  const trendDir = trending >= 4 ? "rising" : trending <= -4 ? "falling" : "stable";
   const trendColor = trending >= 4 ? "var(--bad)" : trending <= -4 ? "var(--good)" : "var(--text-2)";
 
   // Sparkline for next8h (current + 8 points)
@@ -96,12 +97,12 @@ export function AqiBadge({ trend, loading }: Props) {
             <div>
               <span className="caption">PM2.5</span>
               <strong>{(trend.current.pm25 ?? 0).toFixed(1)}</strong>
-              <span className="caption">µg/m³</span>
+              <span className="caption" style={{ textTransform: "none" }}>µg/m³</span>
             </div>
             <div>
               <span className="caption">PEAK 8H</span>
               <strong style={{ color: trendColor }}>{Math.round(peak)}</strong>
-              <span style={{ color: trendColor }}>{trendArrow}</span>
+              <span style={{ color: trendColor }} aria-label={trendDir}>{trendArrow}</span>
             </div>
           </div>
         </div>

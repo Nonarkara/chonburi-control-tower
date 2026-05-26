@@ -1,12 +1,10 @@
-export type LensId = "operations" | "mobility" | "environment" | "earth" | "safety" | "vibes" | "maritime" | "executive";
+export type LensId = "operations" | "mobility" | "environment" | "earth" | "safety" | "vibes" | "maritime" | "executive" | "intelligence";
 
 export type LayerId =
   // Municipality core
   | "municipality-boundary"
   | "municipality-buildings"
   | "neighborhood-buildings"
-  | "districts"
-  | "flood-prone-areas"
   | "road-network"
   // Maritime (new)
   | "maritime-overlay"
@@ -56,13 +54,11 @@ export type LayerId =
   | "campus-boundary"
   | "campus-buildings"
   | "campus-gates"
-  | "surrounding-buildings"
   | "cu-lands"
   | "cu-map-2015"
   | "bma-pois"
   | "bma-parks"
   | "bma-aq-stations"
-  | "bangkok-districts"
   | "cu-shuttle-routes"
   | "cu-shuttle-1"
   | "cu-shuttle-2"
@@ -75,7 +71,20 @@ export type LayerId =
   | "utility-water"
   | "utility-drainage"
   | "utility-wifi-heat"
-  | "utility-wifi-points";
+  | "utility-wifi-points"
+  | "building-roofs"
+  | "municipality-boundary-line"
+  | "municipality-boundary-fill"
+  | "heritage-old-town"
+  | "heritage-temple-spires";
+
+export type MapViewState =
+  | { kind: "lens"; lensId: LensId }
+  | { kind: "custom"; label: string };
+
+export function layerCanEnable(_id: LayerId): boolean {
+  return true;
+}
 
 export interface Lens {
   id: LensId;
@@ -91,7 +100,7 @@ export const LENSES: Lens[] = [
     describe:
       "Strategic — municipal boundary, satellite, port + transit + open-data POIs. Focused on Chonburi Town Municipality (~4 km²).",
     layers: [
-      "municipality-boundary",
+      "municipality-boundary-line",
       "municipality-buildings",
       "satellite-esri",
       "maritime-overlay",
@@ -107,7 +116,7 @@ export const LENSES: Lens[] = [
     label: "OPS",
     describe: "Operations — every building in 3D, road network, civic POIs (hospitals/police/fire/schools/markets), live traffic, incidents, CCTV. The default day-to-day view for the municipality.",
     layers: [
-      "municipality-boundary",
+      "municipality-boundary-line",
       "municipality-buildings",
       "road-network",
       "civic-points",
@@ -124,7 +133,7 @@ export const LENSES: Lens[] = [
     label: "MOB",
     describe: "Mobility — road network, transit stations, traffic heatmap, iTIC events, ferry terminals, AIS vessels, CCTV. For dispatch + routing decisions.",
     layers: [
-      "municipality-boundary",
+      "municipality-boundary-line",
       "road-network",
       "transit-lines",
       "transit-stations",
@@ -140,7 +149,7 @@ export const LENSES: Lens[] = [
     label: "MAR",
     describe: "Maritime — Gulf of Thailand maritime infrastructure. OpenSeaMap overlay, Laem Chabang port, ferry terminals, navigation aids, live AIS vessels, 1·5·10 km reach grid.",
     layers: [
-      "municipality-boundary",
+      "municipality-boundary-line",
       "satellite-esri",
       "maritime-overlay",
       "port-infrastructure",
@@ -154,12 +163,13 @@ export const LENSES: Lens[] = [
   {
     id: "environment",
     label: "ENV",
-    describe: "Environment — Esri high-res satellite, AQ-relevant satellite layers, flood zones. Opt into MODIS NDVI/LST/AOD when zoomed out.",
+    describe: "Environment — Esri high-res satellite, Chonburi flood-risk polygons, waterways, solar rooftop potential. Opt into MODIS NDVI/LST/AOD when zoomed out.",
     layers: [
-      "municipality-boundary",
+      "municipality-boundary-line",
       "municipality-buildings",
       "satellite-esri",
-      "flood-prone-areas",
+      "flood-risk-zones",
+      "waterways",
       "gistda-solar",
     ],
   },
@@ -168,7 +178,7 @@ export const LENSES: Lens[] = [
     label: "EAR",
     describe: "EarthAlpha — earth-observation lens for rain, flood, heat, haze, greenery, land use, waterways, fisheries, and GISTDA context.",
     layers: [
-      "municipality-boundary",
+      "municipality-boundary-line",
       "municipality-buildings",
       "satellite-esri",
       "satellite-imerg",
@@ -189,7 +199,7 @@ export const LENSES: Lens[] = [
     label: "SAF",
     describe: "Safety — coastal flood-risk zones, citizen reports (Traffy), iTIC, CCTV, waterways for drainage, hospitals + fire + police, MODIS flood detection, maritime warnings.",
     layers: [
-      "municipality-boundary",
+      "municipality-boundary-line",
       "municipality-buildings",
       "civic-points",
       "waterways",
@@ -205,7 +215,22 @@ export const LENSES: Lens[] = [
     id: "vibes",
     label: "VIB",
     describe: "Vibes — pretty view. Municipal boundary + MODIS true-color satellite + maritime overlay. Use this when presenting Chonburi at a glance.",
-    layers: ["municipality-boundary", "satellite-true-color", "maritime-overlay"],
+    layers: ["municipality-boundary-line", "satellite-true-color", "maritime-overlay"],
+  },
+  {
+    id: "intelligence",
+    label: "INT",
+    describe: "Integrated Intelligence — TimesFM forecast alerts wired to Earth Observation. Click any forecast metric in the left rail to activate its map layer. Active alerts surface as badges above the map. Pairs with the Predictive Intelligence and Earth Obs panels.",
+    layers: [
+      "municipality-boundary-line",
+      "satellite-flood",
+      "satellite-imerg",
+      "satellite-ndvi",
+      "flood-risk-zones",
+      "incidents-city-reports",
+      "waterways",
+      "transit-stations",
+    ],
   },
 ];
 

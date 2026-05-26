@@ -23,6 +23,7 @@ export function HourRail({ hour, isWeekend, onHourChange, onWeekendToggle }: Pro
           <button
             onClick={() => onWeekendToggle(false)}
             aria-pressed={!isWeekend}
+            aria-label="Show weekday traffic pattern"
             className={!isWeekend ? "active" : ""}
           >
             Weekday
@@ -30,6 +31,7 @@ export function HourRail({ hour, isWeekend, onHourChange, onWeekendToggle }: Pro
           <button
             onClick={() => onWeekendToggle(true)}
             aria-pressed={isWeekend}
+            aria-label="Show weekend traffic pattern"
             className={isWeekend ? "active" : ""}
           >
             Weekend

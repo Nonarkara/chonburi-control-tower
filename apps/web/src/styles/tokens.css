@@ -1,39 +1,50 @@
-/* Design tokens.
-   Typography  → IBM Plex family. Sans is the body workhorse, Condensed is for
-                 tight display labels, Mono is for every readout, Sans Thai
-                 handles Thai with matching rhythm. No Helvetica, no Inter —
-                 those read templated. Plex has personality and is highly
-                 readable across EN / TH / ZH.
-   Theming     → data-theme="dark" (default) and data-theme="light".
-                 Every surface, line, and ink token has both values. The
-                 component layer reads only the semantic var, never raw hex.
-*/
+/* ═══════════════════════════════════════════════════════════════════════
+   Design DNA — Chonburi Town Center
+   ═══════════════════════════════════════════════════════════════════════
+   Typography  → IBM Plex Sans (body), IBM Plex Sans Condensed (display
+                 labels), IBM Plex Mono (readouts), IBM Plex Sans Thai
+                 (Thai script), Lora (editorial serif — headlines, prose).
+   Color       → Stark blacks and off-whites. Vibrant red accent (Leica,
+                 hinomaru). Deep blues for data. Structural amber/gold
+                 for secondary emphasis. No pastels, no grey-pink.
+   Surface     → No rounding, no blur, no shadow. Honest surfaces.
+   Grid        → Vignelli-standard 4 px grid. Tight, information-dense.
+   Heritage    → Bauhaus functionalism × Swiss typography × East-Asian
+                 atmospheric intimacy. Every element earns its place.
+   ═══════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ── ONE accent — amber. The equals key on the Braun calculator. ── */
-  --accent:     #f59e0b;
-  --accent-dim: #b45309;
-  /* ── Functional data accents — load-bearing only, identical across themes ── */
-  --data: #4babe5;   /* Chonburi seal sky-blue — links, data marks */
-  --good: #3fb950;   /* emerald — live / healthy */
-  --warn: #f59e0b;   /* amber — same as accent */
-  --bad:  #f85149;   /* coral — alert */
-  --crit: #da3633;   /* danger */
-  --info: #8b949e;   /* neutral grey — informational, never decorative */
+  /* ── Primary accent — vibrant red. The Leica dot, the hinomaru. ── */
+  --accent:     #dc2626;
+  --accent-dim: #991b1b;
 
-  /* ── Type system — IBM Plex ────────────────────────────────────────── */
+  /* ── Secondary accent — structural gold (Braun calculator, Mondaine) ── */
+  --gold:       #d97706;
+  --gold-dim:   #92400e;
+
+  /* ── Functional data colours — load-bearing, identical across themes ── */
+  --data: #2563eb;   /* deep blue — links, data marks, information */
+  --good: #16a34a;   /* emerald — live, healthy, positive */
+  --warn: #d97706;   /* amber — caution, degraded (distinct from accent) */
+  --bad:  #dc2626;   /* red — alert, error (same hue as accent) */
+  --crit: #991b1b;   /* deep red — critical, danger */
+  --info: #6b7280;   /* neutral grey — informational, never decorative */
+
+  /* ── Type system ─────────────────────────────────────────────────── */
   --font-sans:
     "IBM Plex Sans", "IBM Plex Sans Thai",
     "Noto Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display:
     "IBM Plex Sans Condensed", "IBM Plex Sans", "IBM Plex Sans Thai",
     system-ui, sans-serif;
+  --font-serif:
+    "Lora", "Georgia", "Noto Serif", serif;
   --font-mono:
     "IBM Plex Mono", ui-monospace, "SF Mono", "Cascadia Code", monospace;
-  /* legacy alias for components that hard-coded var(--font-thai) */
   --font-thai:
     "IBM Plex Sans Thai", "IBM Plex Sans", "Noto Sans Thai", sans-serif;
 
+  /* ── Type scale ──────────────────────────────────────────────────── */
   --size-eyebrow: 0.66rem;
   --size-caption: 0.78rem;
   --size-body:    0.92rem;
@@ -44,7 +55,7 @@
 
   --tracking-eyebrow: 0.10em;
 
-  /* Spacing — 4 px grid */
+  /* ── Spacing — 4 px Vignelli grid ────────────────────────────────── */
   --s-1: 4px;
   --s-2: 8px;
   --s-3: 12px;
@@ -53,7 +64,6 @@
   --s-8: 32px;
   --s-12: 48px;
 
-  /* defaults to dark; light theme overrides below */
   color-scheme: dark;
 }
 
@@ -75,9 +85,8 @@
 }
 
 /* ── Light theme ────────────────────────────────────────────────────────
-   Warm off-white background, deep ink. Contrast >= 4.5:1 against text on
-   --bg (#fafaf7 vs #111315 ≈ 17.4:1). Hairlines visible without being
-   industrial. Brand pink + amber stay readable on both surfaces.
+   Warm off-white (fafaf7), deep ink. Contrast >= 4.5:1.
+   Data accents darkened for legibility against white surfaces.
 */
 [data-theme="light"] {
   --bg:    #fafaf7;
@@ -92,18 +101,20 @@
   --text-2: #56595e;
   --text-3: #888c92;
 
-  /* Tone data accents down for white surface */
-  --accent:     #c87600;
-  --data: #1a7abf;   /* Chonburi seal blue — darkened for white surface */
-  --good: #1a7f37;
-  --warn: #b35200;
-  --bad:  #cf222e;
-  --crit: #a40e26;
+  --accent:     #b91c1c;
+  --accent-dim: #7f1d1d;
+  --gold:       #92400e;
+  --gold-dim:   #78350f;
+  --data: #1d4ed8;
+  --good: #15803d;
+  --warn: #92400e;
+  --bad:  #b91c1c;
+  --crit: #7f1d1d;
   --info: #6e7781;
   color-scheme: light;
 }
 
-/* No rounding, no blur, no shadow — keeps the surface honest. */
+/* ── Surface rules — no rounding, no blur, no shadow ───────────────── */
 *,
 *::before,
 *::after {
@@ -119,7 +130,7 @@ html, body {
   font-family: var(--font-sans);
   font-size: var(--size-body);
   line-height: 1.5;
-  font-feature-settings: "ss03", "ss05", "cv11"; /* IBM Plex stylistic alts: rounded a, single-storey g */
+  font-feature-settings: "ss03", "ss05", "cv11";
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -130,6 +141,7 @@ body, #root {
   min-height: 100vh;
 }
 
+/* ── Headings — condensed sans for display, serif available ──────── */
 h1, h2, h3, h4 {
   font-family: var(--font-display);
   font-weight: 600;
@@ -140,6 +152,9 @@ h1, h2, h3, h4 {
 h1 { font-size: var(--size-h1); }
 h2 { font-size: var(--size-h2); }
 h3 { font-size: var(--size-h3); }
+
+/* Editorial serif — use on news headlines, prose blocks */
+.serif { font-family: var(--font-serif); }
 
 .eyebrow {
   font-size: var(--size-eyebrow);
@@ -157,9 +172,10 @@ h3 { font-size: var(--size-h3); }
 .mono {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-feature-settings: "ss01"; /* zero with slash */
+  font-feature-settings: "ss01";
 }
 
+/* ── Buttons — no radius, crisp borders ─────────────────────────── */
 button {
   font-family: inherit;
   font-size: inherit;
@@ -173,15 +189,15 @@ button {
 }
 button:hover { color: var(--text); border-color: var(--text-2); }
 button[aria-pressed="true"], button.active {
-  color: var(--bg);
-  background: var(--text);
-  border-color: var(--text);
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 a { color: var(--data); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
-/* Skeleton shimmer — neutral both themes */
+/* ── Skeleton shimmer ──────────────────────────────────────────────── */
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
@@ -192,13 +208,13 @@ a:hover { text-decoration: underline; }
   animation: shimmer 1.6s linear infinite;
 }
 
-/* Scrollbar */
+/* ── Scrollbar — minimal, dark ─────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-thumb { background: var(--line); }
 ::-webkit-scrollbar-thumb:hover { background: var(--line-2); }
 ::-webkit-scrollbar-track { background: transparent; }
 
-/* Accessibility focus ring */
+/* ── Focus ring — red accent ───────────────────────────────────────── */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;

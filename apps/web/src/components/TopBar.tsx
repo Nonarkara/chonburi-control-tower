@@ -15,6 +15,7 @@ interface Props {
   viewMode: "2D" | "3D" | "3DS";
   onCycleViewMode: () => void;
   onOpenManual: () => void;
+  onOpenWhitepaper: () => void;
   onOpenSheets: () => void;
   sheetsConfigured: boolean;
   academic: AcademicSnapshot | null;
@@ -32,7 +33,7 @@ const TEMPO_COLOR: Record<AcademicSnapshot["tempo"], string> = {
   peak: "var(--bad)",
 };
 
-export function TopBar({ feeds, onOpenCatalog, catalogCount, viewMode, onCycleViewMode, onOpenManual, onOpenSheets, sheetsConfigured, academic, systemStatus }: Props) {
+export function TopBar({ feeds, onOpenCatalog, catalogCount, viewMode, onCycleViewMode, onOpenManual, onOpenWhitepaper, onOpenSheets, sheetsConfigured, academic, systemStatus }: Props) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -94,7 +95,11 @@ export function TopBar({ feeds, onOpenCatalog, catalogCount, viewMode, onCycleVi
       </div>
 
       <div className="topbar-right">
-        <span className="live-count mono">
+        <span
+          className="live-count mono"
+          role="status"
+          aria-label={`${liveCount} of ${feeds.length} data feeds live`}
+        >
           <span className="dot live" style={{ marginRight: 5 }} />
           {liveCount}/{feeds.length} LIVE
         </span>
@@ -117,6 +122,14 @@ export function TopBar({ feeds, onOpenCatalog, catalogCount, viewMode, onCycleVi
         </button>
         <button onClick={onOpenCatalog} className="mono" aria-label="Open source catalog">
           SOURCES · {catalogCount}
+        </button>
+        <button
+          onClick={onOpenWhitepaper}
+          className="mono"
+          aria-label="Open whitepaper — platform overview and usage manual (TH/EN)"
+          title="Whitepaper — platform overview · Thai + English"
+        >
+          WP
         </button>
         <button
           onClick={onOpenManual}

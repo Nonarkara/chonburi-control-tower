@@ -46,13 +46,13 @@ type ZoneFeature = Feature<Polygon | MultiPolygon, CampusZoneProperties>;
 
 export function campusBoundaryLayer(
   collection: FeatureCollection<Polygon | MultiPolygon, CampusZoneProperties>,
-  options: { extruded?: boolean } = {},
+  options: { extruded?: boolean; filled?: boolean; stroked?: boolean } = {},
 ) {
   return new GeoJsonLayer({
     id: "campus-boundary",
     data: collection as unknown as FeatureCollection,
-    stroked: true,
-    filled: true,
+    stroked: options.stroked ?? true,
+    filled: options.filled ?? true,
     pickable: true,
     extruded: options.extruded ?? false,
     getFillColor: ((f: ZoneFeature) => {
@@ -511,6 +511,77 @@ export function buildingsLayer(
       getFillColor: [extruded, ghosted],
       getLineColor: [ghosted],
     },
+  });
+}
+
+/**
+ * Roof cap layer — renders a thin shimmering slab on top of each extruded
+ * building so the tops read as "rooftops" rather than flat cut-offs.
+ *
+ * Heritage types (temple / church / mosque / government) receive:
+ *  • A significantly taller cap (+12 m for sacred buildings, +4 m for civic)
+ *    — this makes their silhouettes read as "pointed / crowned" in the 3D
+ *    skyline, suggesting the chedi/prang/bell-tower that would sit above the
+ *    main structure.  True pitched-roof geometry would need ScenegraphLayer
+ *    + custom GLTF, which is a larger effort.
+ *  • A much brighter, more saturated colour so the gold temple cluster and
+ *    the sky-blue civic strip are immediately readable from above.
+ *
+ * Ordinary buildings get a +0.5 m cap in their height-ramp colour.
+ */
+export function buildingRoofsLayer(
+  collection: FeatureCollection<Polygon | MultiPolygon, BuildingProperties>,
+  options: { maxRoofs?: number; elevationScale?: number } = {},
+) {
+  const maxRoofs = options.maxRoofs ?? 1400;
+  const scale = options.elevationScale ?? 1.65;
+
+  const sorted = [...collection.features]
+    .sort((a, b) => buildingHeightMeters(b.properties) - buildingHeightMeters(a.properties))
+    .slice(0, maxRoofs);
+
+  const roofCollection: FeatureCollection = { type: "FeatureCollection", features: sorted };
+
+  // Per-building roof elevation bonus (meters, before elevationScale is applied)
+  function roofBonus(props: BuildingProperties): number {
+    const kind = classifyBuilding(props);
+    if (kind === "temple" || kind === "church" || kind === "mosque") return 12; // spire crown
+    if (kind === "government" || kind === "police" || kind === "fire")  return  5; // civic parapet
+    if (kind === "hotel" || kind === "hospital")                        return  3; // landmark cap
+    return 0.5;
+  }
+
+  // Heritage roof colours — bright, pure, recognisable at distance
+  const HERITAGE_ROOF: Partial<Record<NonNullable<LandmarkKind>, [number, number, number, number]>> = {
+    temple:     [255, 235,  50, 240],  // blazing gold — chedi, prang
+    church:     [255, 200, 100, 220],  // warm amber — bell tower
+    mosque:     [160, 255, 200, 220],  // mint — minaret
+    government: [ 80, 200, 255, 220],  // bright sky — city hall, court
+    police:     [ 50, 230, 250, 210],  // cyan — police stations
+    fire:       [255, 160,  60, 220],  // orange — fire stations
+    hospital:   [255, 100, 100, 220],  // coral red — hospital crowns
+    hotel:      [255, 220,  80, 210],  // gold — hotel landmark
+  };
+
+  return new GeoJsonLayer({
+    id: "building-roofs",
+    data: roofCollection,
+    stroked: false,
+    filled: true,
+    pickable: false,
+    extruded: true,
+    elevationScale: scale,
+    material: { ambient: 0.90, diffuse: 0.75, shininess: 28, specularColor: [255, 252, 230] },
+    getFillColor: ((f: Feature<Polygon | MultiPolygon, BuildingProperties>) => {
+      const kind = classifyBuilding(f.properties);
+      const heritage = kind ? HERITAGE_ROOF[kind] : undefined;
+      if (heritage) return heritage;
+      const base = kind ? LANDMARK_COLOR[kind] : heightColor(buildingHeightMeters(f.properties));
+      return [Math.min(base[0] + 30, 255), Math.min(base[1] + 30, 255), Math.min(base[2] + 30, 255), 200] as [number, number, number, number];
+    }) as unknown as [number, number, number, number],
+    getElevation: ((f: Feature<Polygon | MultiPolygon, BuildingProperties>) =>
+      buildingHeightMeters(f.properties) + roofBonus(f.properties)) as unknown as number,
+    opacity: 0.92,
   });
 }
 

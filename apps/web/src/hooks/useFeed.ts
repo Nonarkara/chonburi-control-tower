@@ -66,7 +66,7 @@ async function fetchOnce(url: string, signal: AbortSignal): Promise<Response> {
 }
 
 async function fetchWithRetry(url: string, signal: AbortSignal, retries = 2): Promise<Response> {
-  let lastErr: Error | undefined;
+  let lastErr: unknown;
   for (let i = 0; i <= retries; i++) {
     if (signal.aborted) throw new DOMException("Aborted", "AbortError");
     try {
@@ -75,7 +75,7 @@ async function fetchWithRetry(url: string, signal: AbortSignal, retries = 2): Pr
       if (res.status < 500 && res.status !== 429) throw new Error(`${res.status} ${res.statusText}`);
       lastErr = new Error(`${res.status} ${res.statusText}`);
     } catch (err) {
-      lastErr = err as Error;
+      lastErr = err;
       if (err instanceof DOMException && err.name === "AbortError") throw err;
     }
     if (i < retries && !signal.aborted) {
@@ -126,9 +126,11 @@ export function useFeed<T>(path: string, pollMs: number): FeedState<T> & { refet
           return next;
         });
       } catch (err) {
-        if (cancelled || (err as Error).name === "AbortError") return;
+        const isAbort = err instanceof DOMException && err.name === "AbortError"
+          || err instanceof Error && err.name === "AbortError";
+        if (cancelled || isAbort) return;
         failCount.current += 1;
-        const errMsg = (err as Error).message;
+        const errMsg = err instanceof Error ? err.message : String(err);
         const fails = failCount.current;
         setState((prev) => {
           const tier: FallbackTier | "loading" =

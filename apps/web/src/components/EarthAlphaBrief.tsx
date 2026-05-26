@@ -1,3 +1,4 @@
+import type { NasaEarthReadings } from "@chonburi/shared";
 import {
   satelliteFreshness,
   type LayerId,
@@ -5,6 +6,7 @@ import {
 
 interface Props {
   enabledLayers: Set<LayerId>;
+  onToggleLayer: (id: LayerId) => void;
   gistdaPoiCount: number;
   gistdaSolarCount: number;
   gistdaLandUseCount: number;
@@ -13,6 +15,8 @@ interface Props {
   fisheryZoneCount: number;
   openIncidentCount: number;
   sheetsConfigured: boolean;
+  nasaReadings: NasaEarthReadings | null;
+  avgSolarIrrKWh: number | null;
 }
 
 const EARTH_LAYERS: Array<{ id: LayerId; label: string }> = [
@@ -49,6 +53,7 @@ const WORKFLOWS = [
 
 export function EarthAlphaBrief({
   enabledLayers,
+  onToggleLayer,
   gistdaPoiCount,
   gistdaSolarCount,
   gistdaLandUseCount,
@@ -57,6 +62,8 @@ export function EarthAlphaBrief({
   fisheryZoneCount,
   openIncidentCount,
   sheetsConfigured,
+  nasaReadings,
+  avgSolarIrrKWh,
 }: Props) {
   const activeEarthLayers = EARTH_LAYERS.filter((l) => enabledLayers.has(l.id));
   const floodFreshness = satelliteFreshness("satellite-flood");
@@ -70,10 +77,47 @@ export function EarthAlphaBrief({
   return (
     <div className="col" style={{ gap: 8 }}>
       <div className="spread" style={{ alignItems: "center" }}>
-        <span className="eyebrow">GOOGLE EARTHALPHA // EARTH OBS</span>
+        <span className="eyebrow">EARTH OBS · NASA GIBS + GISTDA</span>
         <span className="eyebrow mono" style={{ color: sheetsConfigured ? "var(--good)" : "var(--warn)" }}>
           SHEETS {sheetsConfigured ? "ON" : "READY"}
         </span>
+      </div>
+
+      {/* ── LIVE READINGS — NASA MERRA-2 + GISTDA ── */}
+      <div style={{ borderTop: "2px solid var(--data)", paddingTop: 8 }}>
+        <div className="eyebrow mono" style={{ color: "var(--data)", marginBottom: 6 }}>
+          LIVE READINGS · NASA MERRA-2{nasaReadings?.dataDate ? ` · ${nasaReadings.dataDate}` : ""}
+        </div>
+        <div className="marine-detail-grid">
+          <div>
+            <div className="eyebrow">TEMP · 2M</div>
+            <div className="mono">
+              {nasaReadings?.tempC != null ? `${nasaReadings.tempC.toFixed(1)}°C` : "—"}
+            </div>
+          </div>
+          <div>
+            <div className="eyebrow">PRECIP · DAY</div>
+            <div className="mono" style={{
+              color: (nasaReadings?.precipMmDay ?? 0) > 20 ? "var(--warn)" : undefined,
+            }}>
+              {nasaReadings?.precipMmDay != null ? `${nasaReadings.precipMmDay.toFixed(1)} mm` : "—"}
+            </div>
+          </div>
+          <div>
+            <div className="eyebrow">SOLAR · GISTDA</div>
+            <div className="mono" style={{ color: "var(--gold)" }}>
+              {avgSolarIrrKWh != null ? `${avgSolarIrrKWh.toFixed(1)} kWh/m²` : "—"}
+            </div>
+          </div>
+          <div>
+            <div className="eyebrow">SKY CLEAR</div>
+            <div className="mono">
+              {nasaReadings?.clearnessIndex != null
+                ? `${(nasaReadings.clearnessIndex * 100).toFixed(0)}%`
+                : "—"}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="marine-detail-grid">
@@ -110,14 +154,24 @@ export function EarthAlphaBrief({
       </div>
 
       <div className="layer-toggles" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
-        {EARTH_LAYERS.map((l) => (
-          <div key={l.id} className={`layer-toggle ${enabledLayers.has(l.id) ? "on" : "off"}`}>
-            <span className="row">
-              <span>{l.label}</span>
-            </span>
-            <span className="mono caption">{enabledLayers.has(l.id) ? "on" : "off"}</span>
-          </div>
-        ))}
+        {EARTH_LAYERS.map((l) => {
+          const on = enabledLayers.has(l.id);
+          return (
+            <button
+              key={l.id}
+              className={`layer-toggle ${on ? "on" : "off"}`}
+              onClick={() => onToggleLayer(l.id)}
+              aria-pressed={on}
+              title={on ? `Disable ${l.label}` : `Enable ${l.label}`}
+              style={{ cursor: "pointer", textAlign: "left", width: "100%" }}
+            >
+              <span className="row">
+                <span>{l.label}</span>
+              </span>
+              <span className="mono caption">{on ? "on" : "off"}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div style={{ display: "grid", gap: 6 }}>

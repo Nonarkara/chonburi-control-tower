@@ -14,7 +14,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: "http://localhost:8787",
+        target: "http://localhost:8788",
         changeOrigin: true,
       },
     },
@@ -22,5 +22,24 @@ export default defineConfig({
   build: {
     target: "es2022",
     sourcemap: true,
+    // deck.gl + maplibre are inherently large (~1 MB each gzipped to ~300 KB);
+    // they're now split into stable vendor chunks so the warning is expected.
+    chunkSizeWarningLimit: 1500,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // Stable vendor splits — these rarely change so they cache aggressively.
+          if (id.includes("node_modules/react") || id.includes("node_modules/react-dom") || id.includes("node_modules/scheduler")) {
+            return "vendor-react";
+          }
+          if (id.includes("node_modules/@deck.gl") || id.includes("node_modules/@luma.gl") || id.includes("node_modules/@loaders.gl") || id.includes("node_modules/@probe.gl")) {
+            return "vendor-deck";
+          }
+          if (id.includes("node_modules/maplibre-gl") || id.includes("node_modules/react-map-gl")) {
+            return "vendor-map";
+          }
+        },
+      },
+    },
   },
 });

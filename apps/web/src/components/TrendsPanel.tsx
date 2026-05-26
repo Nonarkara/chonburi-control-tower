@@ -71,7 +71,8 @@ export function TrendsPanel({ snapshots, loading, ageMinutes, onRefresh }: Props
           className="trends-refresh mono"
           onClick={onRefresh}
           disabled={loading}
-          aria-label="Refresh trends"
+          aria-label={loading ? "Refreshing trends, please wait" : `Refresh Google Trends data — last refreshed ${ageMinutes}m ago`}
+          aria-busy={loading}
           title={`Refreshed ${ageMinutes}m ago — click to refresh`}
         >
           {loading ? "…" : "↻"}

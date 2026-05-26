@@ -45,7 +45,7 @@ export function useSystemHealth(pollMs = 30_000) {
         }
       } catch (err) {
         if (!cancelled) {
-          setError((err as Error).message);
+          setError(err instanceof Error ? err.message : String(err));
         }
       }
     }

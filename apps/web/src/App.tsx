@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DeckGL from "@deck.gl/react";
 import type { Layer } from "@deck.gl/core";
 import { Map as MapLibreMap, Source, Layer as MapLayer } from "react-map-gl/maplibre";
@@ -119,9 +119,16 @@ import { ProvincialKPIs, type ProvincialKPIs as ProvincialKPIsType } from "./com
 import { TidePanel, type TideSnapshot } from "./components/TidePanel";
 import { FisheryPanel } from "./components/FisheryPanel";
 import { EarthAlphaBrief } from "./components/EarthAlphaBrief";
-import { SourceCatalog } from "./components/SourceCatalog";
-import { Manual } from "./components/Manual";
-import { SheetsPanel, loadSheetsUrl } from "./components/SheetsPanel";
+// Heavy modals — lazy-loaded so they're excluded from the initial bundle.
+// Each loads only on first open; subsequent opens are instant (module cached).
+const SourceCatalog = lazy(() => import("./components/SourceCatalog").then((m) => ({ default: m.SourceCatalog })));
+const Manual = lazy(() => import("./components/Manual").then((m) => ({ default: m.Manual })));
+const Whitepaper = lazy(() => import("./components/Whitepaper").then((m) => ({ default: m.Whitepaper })));
+const SheetsPanel = lazy(() => import("./components/SheetsPanel").then((m) => ({ default: m.SheetsPanel })));
+const SituationDigest = lazy(() => import("./components/SituationDigest").then((m) => ({ default: m.SituationDigest })));
+
+// Inline the SheetsPanel URL check so we don't eagerly load the whole module.
+const SHEETS_STORAGE_KEY = "chonburi:sheets-url-v1";
 import { AqiBadge, type AqiTrend } from "./components/AqiBadge";
 import { BuildingCard } from "./components/BuildingCard";
 import { BuildingSearch } from "./components/BuildingSearch";
@@ -136,11 +143,10 @@ import { useSystemHealth } from "./hooks/useSystemHealth";
 import { MarketsTicker } from "./components/MarketsTicker";
 import { MobileNav, type MobilePanel } from "./components/MobileNav";
 import { ChatBox } from "./components/ChatBox";
-import { PredictivePanel } from "./components/PredictivePanel";
+import { PredictivePanel, METRIC_LAYER_MAP, METRIC_LABEL, type ForecastMetric } from "./components/PredictivePanel";
+import { ExecutiveBriefing } from "./components/ExecutiveBriefing";
 import { API_BASE } from "./lib/apiBase";
-// ExecutiveBrief / PeerComparison / StrategicAlerts removed from the mayor's
-// view — they were university-flavoured (QS rankings, enrollment, "presidential
-// attention"). To bring them back, rebuild against provincial / municipal data.
+import type { NasaEarthReadings, FacebookPost } from "@chonburi/shared";
 import { useDevicePresence } from "./hooks/useDevicePresence";
 import { useIsMobile } from "./hooks/useMediaQuery";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
@@ -301,8 +307,14 @@ export default function App() {
   );
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
+  const [whitepaperOpen, setWhitepaperOpen] = useState(false);
   const [sheetsOpen, setSheetsOpen] = useState(false);
-  const [sheetsConfigured, setSheetsConfigured] = useState(() => Boolean(loadSheetsUrl()));
+  const [sheetsConfigured, setSheetsConfigured] = useState(() => {
+    try { return Boolean(localStorage.getItem(SHEETS_STORAGE_KEY)); } catch { return false; }
+  });
+  // Forecast alerts — metrics whose p50 has breached alertThreshold
+  const [forecastAlerts, setForecastAlerts] = useState<Set<string>>(new Set());
+  const [forecastMetrics, setForecastMetrics] = useState<ForecastMetric[]>([]);
 
   // Mobile: 1-column stack with bottom segmented nav to swap panels.
   const isMobile = useIsMobile();
@@ -388,6 +400,7 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       if (manualOpen) setManualOpen(false);
+      else if (whitepaperOpen) setWhitepaperOpen(false);
       else if (catalogOpen) setCatalogOpen(false);
       else if (selectedBuilding) setSelectedBuilding(null);
     };
@@ -572,24 +585,6 @@ export default function App() {
         title = pick("name") ?? "Storm drain";
         sub = `Ø ${pick("diameter") ?? "—"} mm · buried ~4 m`;
         break;
-      case "surrounding-buildings":
-        title = pick("nameEn", "name", "nameTh") ?? "Building";
-        sub = (() => {
-          const h = (p as { height?: number }).height;
-          const lvls = (p as { levels?: number }).levels;
-          if (h) return `${h} m tall`;
-          if (lvls) return `${lvls} floors`;
-          return null;
-        })();
-        break;
-      case "bangkok-districts":
-        title = pick("nameEn") ?? "District";
-        sub = `${pick("nameTh") ?? ""} · ${pick("code") ?? ""}`;
-        break;
-      case "flood-prone-areas":
-        title = pick("nameEn") ?? "Flood zone";
-        sub = `${(p as { risk?: string }).risk?.toUpperCase() ?? ""} risk · ${pick("frequency") ?? ""}`;
-        break;
       case "cu-wifi-points":
         title = pick("name") ?? "WiFi point";
         sub = `${pick("mbps") ?? "—"} Mbps · ${pick("rttMs") ?? "—"} ms`;
@@ -615,6 +610,22 @@ export default function App() {
     setMapViewState({ kind: "lens", lensId: id });
     const next = LENSES.find((l) => l.id === id);
     if (next) setEnabledLayers(new Set(next.layers.filter((layerId) => layerCanEnable(layerId))));
+    setForecastAlerts(new Set()); // clear stale alert badges on lens switch
+  }, []);
+
+  const handleForecastMetricClick = useCallback((metric: string) => {
+    const entry = METRIC_LAYER_MAP[metric];
+    if (!entry) return;
+    setEnabledLayers((prev) => {
+      const next = new Set(prev);
+      entry.layers.forEach((id) => next.add(id));
+      return next;
+    });
+    if (entry.flyToCoast) flyTo(100.995, 13.352, 13.5);
+  }, [flyTo]);
+
+  const handleForecastAlert = useCallback((metric: string) => {
+    setForecastAlerts((prev) => prev.has(metric) ? prev : new Set([...prev, metric]));
   }, []);
   const onToggleLayer = useCallback((id: LayerId) => {
     setEnabledLayers((prev) => {
@@ -654,7 +665,7 @@ export default function App() {
   const precip = useFeed<PrecipNowcast>(`${API_BASE}/api/precip-nowcast`, 5 * 60_000);
   const ais = useFeed<AisVessel>(`${API_BASE}/api/maritime/ais`, 60_000);
   const datago = useFeed<DatagoPoint>(`${API_BASE}/api/datago/points`, 30 * 60_000);
-  const facebook = useFeed<{ id: string; message: string; permalink: string; createdAt: string; reactions?: number; comments?: number; shares?: number }>(`${API_BASE}/api/social/facebook`, 10 * 60_000);
+  const facebook = useFeed<FacebookPost>(`${API_BASE}/api/social/facebook`, 10 * 60_000);
   const marine = useFeed<MarineSnapshot>(`${API_BASE}/api/marine`, 30 * 60_000);
   const tides = useFeed<TideSnapshot>(`${API_BASE}/api/tides`, 10 * 60_000);
   const reservoirs = useFeed<ReservoirStatus>(`${API_BASE}/api/datago/reservoirs`, 60 * 60_000);
@@ -662,6 +673,7 @@ export default function App() {
   const gistdaPois = useFeed<GistdaPoi>(`${API_BASE}/api/gistda/poi`, 60 * 60_000);
   const gistdaSolar = useFeed<GistdaSolarBuilding>(`${API_BASE}/api/gistda/solar`, 6 * 60 * 60_000);
   const gistdaLandUse = useFeed<GistdaLandUse>(`${API_BASE}/api/gistda/landuse`, 60 * 60_000);
+  const nasaEarth = useFeed<NasaEarthReadings>(`${API_BASE}/api/nasa/earth-readings`, 6 * 60 * 60_000);
   // Shuttle and academic calendar not available in this deployment
   const shuttle = { data: [] as ShuttleVehicle[], fallbackTier: "unavailable" as const, ageMinutes: 0 };
   const academic = { data: [] as AcademicSnapshot[] };
@@ -696,11 +708,33 @@ export default function App() {
   );
   const worldWeather = useWorldWeather();
   const hostWeather = useMemo(() => {
+    // Prefer browser-side Open-Meteo data (richer fields).
     const city = worldWeather.find((c) => c.city.id === "cbo");
-    if (!city) return null;
-    const { city: _city, fetchedAt: _fetchedAt, ...rest } = city;
-    return rest;
-  }, [worldWeather]);
+    if (city) {
+      const { city: _city, fetchedAt: _fetchedAt, ...rest } = city;
+      return rest;
+    }
+    // Fall back to backend /api/weather when browser fetch fails (Safari, CSP, offline).
+    const snap = weather.data?.[0];
+    if (!snap) return null;
+    return {
+      tempC: snap.tempC,
+      apparentTempC: snap.feelsLikeC,
+      humidity: snap.humidity,
+      rainNow: snap.precipMm,
+      windKmh: snap.windKmh,
+      windDeg: null,
+      uv: null,
+      cloudPct: null,
+      pressurehPa: null,
+      visKm: null,
+      isDay: null,
+      condition: snap.condition,
+      sunrise: null,
+      sunset: null,
+      daily: [],
+    };
+  }, [worldWeather, weather.data]);
 
   const hostPulse = useMemo(() => {
     const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
@@ -937,6 +971,14 @@ export default function App() {
     gistdaPois.data, gistdaSolar.data, gistdaLandUse.data, news.data,
   ]);
 
+  // Average GISTDA Solar irradiance across all buildings (kWh/m²/month)
+  const avgSolarIrrKWh = useMemo(() => {
+    const vals = gistdaSolar.data
+      .map((b) => b.solarIrr)
+      .filter((v): v is number => typeof v === "number" && v > 0);
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  }, [gistdaSolar.data]);
+
   const feedHealth = useMemo(() => [
     { label: "NEWS", tier: news.fallbackTier, ageMinutes: news.ageMinutes },
     { label: "CR", tier: cityReports.fallbackTier, ageMinutes: cityReports.ageMinutes },
@@ -968,6 +1010,7 @@ export default function App() {
         viewMode={viewMode}
         onCycleViewMode={cycleViewMode}
         onOpenManual={() => setManualOpen(true)}
+        onOpenWhitepaper={() => setWhitepaperOpen(true)}
         onOpenSheets={() => setSheetsOpen(true)}
         sheetsConfigured={sheetsConfigured}
         academic={academic.data[0] ?? null}
@@ -1021,6 +1064,30 @@ export default function App() {
           ExecutiveBrief / StrategicAlerts / PeerComparison panels were built
           for a university and don't belong on a city mayor's desk. ── */}
       <aside className="left-bar" aria-hidden={isMobile && mobilePanel !== "brief"}>
+        {lens === "intelligence" && (
+          <div className="left-section" style={{ paddingBottom: 12 }}>
+            <Suspense fallback={null}>
+              <SituationDigest
+                nasaReadings={nasaEarth.data[0] ?? null}
+                avgSolarIrrKWh={avgSolarIrrKWh}
+                forecastAlerts={forecastAlerts}
+                forecasts={forecastMetrics}
+              />
+            </Suspense>
+          </div>
+        )}
+        {lens === "executive" && (
+          <div className="left-section" style={{ paddingBottom: 12 }}>
+            <ExecutiveBriefing
+              executive={executive.data[0] ?? null}
+              weather={weather.data[0] ?? null}
+              airQuality={airQuality.data[0] ?? null}
+              openIncidents={cityReports.data.filter((r) => r.status !== "resolved").length + iticEvents.data.length}
+              reservoirs={reservoirs.data}
+              markets={markets.data[0] ?? null}
+            />
+          </div>
+        )}
         {provincialKPIs.data.length > 0 && (
           <div className="left-section">
             <ProvincialKPIs
@@ -1029,32 +1096,33 @@ export default function App() {
             />
           </div>
         )}
-        <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+        <div className="left-section left-section-divided">
           <AqiBadge trend={aqiTrend.data[0] ?? null} loading={aqiTrend.fallbackTier === "loading"} />
         </div>
-        <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+        <div className="left-section left-section-divided">
           <CoastalBrief
             data={marine.data[0] ?? null}
             loading={marine.fallbackTier === "loading"}
             ageMinutes={marine.ageMinutes}
           />
         </div>
-        <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+        <div className="left-section left-section-divided">
           <TidePanel
             data={tides.data[0] ?? null}
             loading={tides.fallbackTier === "loading"}
           />
         </div>
-        <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+        <div className="left-section left-section-divided">
           <FisheryPanel
             marine={marine.data[0] ?? null}
             tide={tides.data[0] ?? null}
             precipMm={precip.data[0]?.nowMm ?? null}
           />
         </div>
-        <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+        <div className="left-section left-section-divided">
           <EarthAlphaBrief
             enabledLayers={enabledLayers}
+            onToggleLayer={onToggleLayer}
             gistdaPoiCount={gistdaPois.data.length}
             gistdaSolarCount={gistdaSolar.data.length}
             gistdaLandUseCount={gistdaLandUse.data.length}
@@ -1063,10 +1131,12 @@ export default function App() {
             fisheryZoneCount={fisheries?.features.length ?? 0}
             openIncidentCount={cityReports.data.filter((r) => r.status !== "resolved").length + iticEvents.data.length}
             sheetsConfigured={sheetsConfigured}
+            nasaReadings={nasaEarth.data[0] ?? null}
+            avgSolarIrrKWh={avgSolarIrrKWh}
           />
         </div>
         {reservoirs.data.length > 0 && (
-          <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+          <div className="left-section left-section-divided">
             <WaterPanel
               data={reservoirs.data}
               loading={reservoirs.fallbackTier === "loading"}
@@ -1074,8 +1144,13 @@ export default function App() {
             />
           </div>
         )}
-        <div className="left-section" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
-          <PredictivePanel apiBase={API_BASE} />
+        <div className="left-section left-section-divided">
+          <PredictivePanel
+            apiBase={API_BASE}
+            onMetricClick={handleForecastMetricClick}
+            onAlert={handleForecastAlert}
+            onForecastsLoaded={(f) => setForecastMetrics(f)}
+          />
         </div>
         <PmcuBrief
           hour={hour}
@@ -1106,7 +1181,7 @@ export default function App() {
       <main className="map-area" aria-hidden={isMobile && mobilePanel !== "map"}>
         <div className="map-host">
           <div className="sr-only" role="status" aria-live="polite">
-            Chonburi map. {mapViewState.kind === "custom" ? mapViewState.label : `Current lens: ${LENSES.find((l) => l.id === lens)?.plainLabel ?? lens}`}.
+            Chonburi map. {mapViewState.kind === "custom" ? mapViewState.label : `Current lens: ${LENSES.find((l) => l.id === lens)?.label ?? lens}`}.
             {enabledLayers.size} layers are currently enabled. Use Clean aerial view to inspect satellite imagery without data overlays.
           </div>
           <DeckGL
@@ -1173,9 +1248,7 @@ export default function App() {
             }}
           />
           <MapOverlayControls
-            enabled={enabledLayers}
             mapViewState={mapViewState}
-            onToggleLayer={onToggleLayer}
             onAerialOnly={setAerialOnly}
             onClearOverlays={clearOverlays}
             onRestoreLens={restoreLens}
@@ -1189,6 +1262,19 @@ export default function App() {
             building={selectedBuilding}
             onClose={() => setSelectedBuilding(null)}
           />
+          {forecastAlerts.size > 0 && (
+            <div style={{
+              position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)",
+              zIndex: 20, display: "flex", gap: 6, pointerEvents: "none",
+            }}>
+              {[...forecastAlerts].map((m) => (
+                <span key={m} className="mono eyebrow" style={{
+                  background: "var(--bad)", color: "var(--bg)",
+                  padding: "3px 8px", fontSize: "0.60rem", letterSpacing: "0.1em",
+                }}>▲ {METRIC_LABEL[m] ?? m} FORECAST</span>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 
@@ -1202,7 +1288,6 @@ export default function App() {
             loading={trends.fallbackTier === "loading"}
             ageMinutes={trends.ageMinutes}
             onRefresh={trends.refetch}
-            error={trends.error}
           />
         </div>
         <div className="right-news">
@@ -1212,7 +1297,7 @@ export default function App() {
             ageMinutes={news.ageMinutes}
             onRefresh={news.refetch}
           />
-          <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
+          <div className="left-section-divided" style={{ marginTop: 4 }}>
             <FacebookPanel
               posts={facebook.data}
               loading={facebook.fallbackTier === "loading"}
@@ -1222,14 +1307,10 @@ export default function App() {
         <div className="right-layers">
           <LayerPalette
             lens={lens}
-            mapViewState={mapViewState}
             onLensChange={onLensChange}
             enabled={enabledLayers}
             onToggleLayer={onToggleLayer}
             counts={layerCounts}
-            onAerialOnly={setAerialOnly}
-            onClearOverlays={clearOverlays}
-            onRestoreLens={restoreLens}
           />
         </div>
       </aside>
@@ -1254,12 +1335,27 @@ export default function App() {
         </div>
       </div>
 
-      <SourceCatalog open={catalogOpen} onClose={() => setCatalogOpen(false)} />
-      <Manual open={manualOpen} onClose={() => setManualOpen(false)} />
-      <SheetsPanel
-        open={sheetsOpen}
-        onClose={() => { setSheetsOpen(false); setSheetsConfigured(Boolean(loadSheetsUrl())); }}
-      />
+      {/* Modals — lazy-loaded chunks, fetched only on first open */}
+      <Suspense fallback={null}>
+        {catalogOpen && <SourceCatalog open={catalogOpen} onClose={() => setCatalogOpen(false)} />}
+      </Suspense>
+      <Suspense fallback={null}>
+        {manualOpen && <Manual open={manualOpen} onClose={() => setManualOpen(false)} />}
+      </Suspense>
+      <Suspense fallback={null}>
+        {whitepaperOpen && <Whitepaper open={whitepaperOpen} onClose={() => setWhitepaperOpen(false)} />}
+      </Suspense>
+      <Suspense fallback={null}>
+        {sheetsOpen && (
+          <SheetsPanel
+            open={sheetsOpen}
+            onClose={() => {
+              setSheetsOpen(false);
+              try { setSheetsConfigured(Boolean(localStorage.getItem(SHEETS_STORAGE_KEY))); } catch {}
+            }}
+          />
+        )}
+      </Suspense>
       <ChatBox apiBase={API_BASE} />
       {isMobile && <MobileNav panel={mobilePanel} onChange={setMobilePanel} />}
     </div>

@@ -415,3 +415,30 @@ export interface GistdaLandUse {
   lat: number;
   lng: number;
 }
+
+/**
+ * Satellite-derived climate readings at Chonburi centroid.
+ * Source: NASA POWER API (MERRA-2 reanalysis + satellite obs), ~3-day latency.
+ * No API key required.
+ */
+export interface NasaEarthReadings {
+  tempC: number | null;
+  precipMmDay: number | null;
+  solarMJm2: number | null;
+  solarKWhm2: number | null;    // solarMJm2 / 3.6
+  clearnessIndex: number | null; // ALLSKY_KT 0–1
+  dataDate: string;              // YYYYMMDD
+  source: "nasa-power-merra2";
+}
+
+/** Facebook page post — mirrors the API adapter's FacebookPost interface. */
+export interface FacebookPost {
+  id: string;
+  message: string;
+  permalink: string;
+  createdAt: string;
+  image?: string;
+  reactions?: number;
+  comments?: number;
+  shares?: number;
+}

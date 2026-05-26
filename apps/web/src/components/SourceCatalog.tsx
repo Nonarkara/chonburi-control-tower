@@ -6,6 +6,7 @@ const STATUS_COLOR: Record<SourceStatus, string> = {
   ready: "var(--data)",
   planned: "var(--warn)",
   research: "var(--text-3)",
+  stub: "var(--text-3)",
 };
 
 const CATEGORY_LABEL: Record<SourceCategory, string> = {
@@ -39,7 +40,7 @@ export function SourceCatalog({ open, onClose }: Props) {
   }, [filter]);
 
   const counts = useMemo(() => {
-    const c = { live: 0, ready: 0, planned: 0, research: 0 } as Record<SourceStatus, number>;
+    const c = { live: 0, ready: 0, planned: 0, research: 0, stub: 0 } as Record<SourceStatus, number>;
     for (const s of SOURCE_CATALOG) c[s.status]++;
     return c;
   }, []);
@@ -54,7 +55,7 @@ export function SourceCatalog({ open, onClose }: Props) {
             <span className="eyebrow">Data pipelines</span>
             <h2 className="mono">SOURCE CATALOG · {SOURCE_CATALOG.length}</h2>
           </div>
-          <button onClick={onClose} aria-label="Close" className="mono">[ESC] CLOSE</button>
+          <button onClick={onClose} aria-label="Close source catalog" className="mono">[ESC] CLOSE</button>
         </header>
 
         <div className="modal-summary mono">
@@ -62,10 +63,11 @@ export function SourceCatalog({ open, onClose }: Props) {
           <span><span className="dot cache" /> READY {counts.ready}</span>
           <span><span className="dot scenario" /> PLANNED {counts.planned}</span>
           <span><span className="dot unavailable" /> RESEARCH {counts.research}</span>
+          {counts.stub > 0 && <span><span className="dot unavailable" /> STUB {counts.stub}</span>}
         </div>
 
         <div className="modal-filter">
-          {(["all", "live", "ready", "planned", "research"] as const).map((f) => (
+          {(["all", "live", "ready", "planned", "research", "stub"] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}

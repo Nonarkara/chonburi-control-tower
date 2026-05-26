@@ -97,7 +97,7 @@ export function FisheryPanel({ marine, tide, precipMm }: Props) {
   const month = now.getMonth() + 1; // 1-12
 
   return (
-    <div className="col" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    <div className="col" style={{ gap: 6 }}>
       <div className="spread" style={{ alignItems: "center" }}>
         <span className="eyebrow">FISHERY CONDITIONS // CHONBURI</span>
         <span className="eyebrow mono" style={{ color: "var(--text-3)" }}>

@@ -182,7 +182,7 @@ export function ChatBox({ apiBase }: Props) {
         }
         setMessages((prev) => [...prev, { role: "model", content: json.reply ?? "" }]);
       } catch (err) {
-        if ((err as Error).name !== "AbortError") {
+        if (!(err instanceof DOMException && err.name === "AbortError") && !(err instanceof Error && err.name === "AbortError")) {
           setError("Network error — try again.");
         }
       } finally {

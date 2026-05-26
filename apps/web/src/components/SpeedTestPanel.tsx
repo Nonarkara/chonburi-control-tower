@@ -94,7 +94,7 @@ export function SpeedTestPanel() {
       };
       if (mounted.current) setLast(m);
     } catch (e) {
-      if (mounted.current) setErr((e as Error).message);
+      if (mounted.current) setErr(e instanceof Error ? e.message : String(e));
     } finally {
       if (mounted.current) setRunning(false);
     }

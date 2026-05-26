@@ -32,36 +32,39 @@ export function useTwinBuilding(buildingId: string | null) {
       return;
     }
 
-    const id = buildingId; // narrowed to string — null guard is above
-    let cancelled = false;
+    const ctrl = new AbortController();
+    const { signal } = ctrl;
+    const id = buildingId;
     setLoading(true);
 
     async function fetchTwin() {
       try {
-        // Fetch object, related items, and latest state in parallel
+        // Fetch object, related items, and latest state in parallel.
+        // AbortController ensures stale requests are cancelled if buildingId changes.
         const [objRes, relRes, stateRes] = await Promise.all([
-          fetch(`${API_BASE}/api/twin/objects/${encodeURIComponent(id)}`).then((r) => (r.ok ? r.json() : null)),
-          fetch(`${API_BASE}/api/twin/objects/${encodeURIComponent(id)}/related`).then((r) => (r.ok ? r.json() : { items: [] })),
-          fetch(`${API_BASE}/api/twin/state?objectId=${encodeURIComponent(id)}&limit=10`).then((r) => (r.ok ? r.json() : { items: [] })),
+          fetch(`${API_BASE}/api/twin/objects/${encodeURIComponent(id)}`, { signal }).then((r) => (r.ok ? r.json() : null)),
+          fetch(`${API_BASE}/api/twin/objects/${encodeURIComponent(id)}/related`, { signal }).then((r) => (r.ok ? r.json() : { items: [] })),
+          fetch(`${API_BASE}/api/twin/state?objectId=${encodeURIComponent(id)}&limit=10`, { signal }).then((r) => (r.ok ? r.json() : { items: [] })),
         ]);
 
-        if (!cancelled) {
+        if (!signal.aborted) {
           setData({
             object: objRes,
             related: relRes.items ?? [],
             state: stateRes.items ?? [],
           });
         }
-      } catch {
-        if (!cancelled) setData({ object: null, related: [], state: [] });
+      } catch (err) {
+        if (signal.aborted) return;
+        setData({ object: null, related: [], state: [] });
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!signal.aborted) setLoading(false);
       }
     }
 
     fetchTwin();
     return () => {
-      cancelled = true;
+      ctrl.abort();
     };
   }, [buildingId]);
 

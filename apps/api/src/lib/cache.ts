@@ -83,6 +83,9 @@ export function cacheAgeMinutes(fetchedAt: string): number {
  * Stale-tolerant variant: if compute throws, fall back to the previously
  * cached value (even if expired). Use for upstream APIs with tight rate
  * limits so the dashboard keeps showing the last known value.
+ *
+ * Like `cached`, it deduplicates concurrent in-flight requests via `pending`
+ * so a burst of requests at cache-expiry time triggers only one upstream call.
  */
 export async function cachedWithStale<T>(
   key: string,
@@ -93,18 +96,35 @@ export async function cachedWithStale<T>(
   const entry = store.get(key);
   if (entry && Date.now() <= entry.expiresAt) return entry.data as T;
 
-  try {
-    const fresh = await compute();
-    setCache(key, fresh, ttlSeconds);
-    return fresh;
-  } catch (err) {
-    if (entry) {
-      // Reinstate stale entry briefly so subsequent reads don't re-fail
-      setCache(key, entry.data, staleTtlSeconds);
-      return entry.data as T;
-    }
-    throw err;
+  // Deduplicate: if a refresh is already in-flight, share it
+  const inflight = pending.get(key);
+  if (inflight) {
+    return inflight.catch(() => {
+      // If the shared promise failed, return stale if available
+      if (entry) return entry.data as T;
+      throw new Error(`No data available for ${key}`);
+    }) as Promise<T>;
   }
+
+  const staleEntry = entry; // capture before async gap
+  const promise = compute()
+    .then((fresh) => {
+      setCache(key, fresh, ttlSeconds);
+      pending.delete(key);
+      return fresh;
+    })
+    .catch((err) => {
+      pending.delete(key);
+      if (staleEntry) {
+        // Reinstate stale entry briefly so subsequent reads don't re-fail
+        setCache(key, staleEntry.data, staleTtlSeconds);
+        return staleEntry.data as T;
+      }
+      throw err;
+    });
+
+  pending.set(key, promise as Promise<unknown>);
+  return promise;
 }
 
 /**

@@ -202,20 +202,18 @@ export function PmcuBrief({ hour, isWeekend, iticEvents, cityReports, trafficSam
           <span className="eyebrow mono">Active developments</span>
           <span className="mono caption">municipal pipeline</span>
         </header>
-        <ul className="pmcu-rows">
+        <ul className="pmcu-dev-list">
           {DEVELOPMENTS.map((d) => (
-            <li key={d.id} className="pmcu-row pmcu-dev-row">
-              <span className="pmcu-dev-dot" style={{ background: DEV_COLOR[d.status] }} />
-              <span className="pmcu-row-name">{d.name}</span>
-              <span className="pmcu-row-val mono caption" style={{ color: DEV_COLOR[d.status] }}>
-                {d.status}
-              </span>
+            <li key={d.id} className="pmcu-dev-item">
+              <div className="pmcu-dev-header">
+                <span className="pmcu-dev-dot" style={{ background: DEV_COLOR[d.status] }} />
+                <span className="pmcu-row-name">{d.name}</span>
+                <span className="mono caption" style={{ color: DEV_COLOR[d.status], marginLeft: "auto" }}>
+                  {d.status}
+                </span>
+              </div>
+              <div className="pmcu-dev-desc caption">{d.describe}</div>
             </li>
-          ))}
-        </ul>
-        <ul className="pmcu-rows" style={{ marginTop: 4 }}>
-          {DEVELOPMENTS.map((d) => (
-            <li key={`${d.id}-desc`} className="pmcu-dev-desc caption">{d.describe}</li>
           ))}
         </ul>
         <div className="pmcu-foot mono">municipal pipeline · data: official comms</div>

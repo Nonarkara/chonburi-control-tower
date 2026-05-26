@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 interface Props {
   open: boolean;
@@ -10,6 +11,8 @@ interface Props {
  * on the dashboard. Triggered from the top-bar "?" button.
  */
 export function Manual({ open, onClose }: Props) {
+  const containerRef = useFocusTrap(open);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -22,8 +25,10 @@ export function Manual({ open, onClose }: Props) {
   return (
     <div className="manual-backdrop" onClick={onClose}>
       <div
+        ref={containerRef}
         className="manual"
         role="dialog"
+        aria-modal="true"
         aria-label="Chonburi Control Tower — manual"
         onClick={(e) => e.stopPropagation()}
       >
@@ -66,12 +71,14 @@ export function Manual({ open, onClose }: Props) {
             <table className="manual-table">
               <thead><tr><th>Code</th><th>Name</th><th>What it shows</th></tr></thead>
               <tbody>
-                <tr><td className="mono">OPS</td><td>Operations</td><td>Default day-to-day view — municipal boundary, buildings, road network, civic POIs, waterways, live traffic, incidents, CCTV, AIS vessels.</td></tr>
-                <tr><td className="mono">MOB</td><td>Mobility</td><td>Traffic heatmap, iTIC events, all 5 shuttle lines, BTS/MRT, CCTV.</td></tr>
-                <tr><td className="mono">ENV</td><td>Environment</td><td>Esri high-res satellite + green spaces + AQ. Regional satellites opt-in.</td></tr>
-                <tr><td className="mono">SAF</td><td>Safety</td><td>Citizen reports + iTIC + hospital/fire/police POIs + CCTV + flood.</td></tr>
-                <tr><td className="mono">VIB</td><td>Vibes</td><td>Pretty view — municipal boundary + MODIS true-color satellite for presentations.</td></tr>
-                <tr><td className="mono">UTL</td><td>Utilities</td><td>Underground stack — electricity, water, drainage + WiFi heatmap.</td></tr>
+                <tr><td className="mono">EXEC</td><td>Executive</td><td>Strategic overview — satellite + Laem Chabang port + transit + GISTDA POIs. Focused on Chonburi Town Municipality (~46 km²).</td></tr>
+                <tr><td className="mono">OPS</td><td>Operations</td><td>Default day-to-day view — buildings, road network, civic POIs, live traffic, incidents, CCTV, news pins.</td></tr>
+                <tr><td className="mono">MOB</td><td>Mobility</td><td>Traffic heatmap, iTIC events, transit stations + lines, ferry terminals, AIS vessels, CCTV.</td></tr>
+                <tr><td className="mono">MAR</td><td>Maritime</td><td>Gulf of Thailand — Laem Chabang port, OpenSeaMap overlay, AIS live vessels, navigation aids, fisheries, 1/5/10 km distance grid.</td></tr>
+                <tr><td className="mono">ENV</td><td>Environment</td><td>Esri satellite + flood-prone areas + GISTDA solar rooftop irradiance.</td></tr>
+                <tr><td className="mono">EAR</td><td>Earth</td><td>NASA satellite stack — IMERG rainfall, MODIS flood + LST + NDVI + AOD, OMI NO₂, waterways, fisheries, land use.</td></tr>
+                <tr><td className="mono">SAF</td><td>Safety</td><td>Flood-risk zones + citizen reports (Traffy) + iTIC + hospitals/fire/police + waterways + CCTV + MODIS flood detection.</td></tr>
+                <tr><td className="mono">VIB</td><td>Vibes</td><td>Presentation view — MODIS true-color satellite + maritime overlay. No data overlays.</td></tr>
               </tbody>
             </table>
           </section>
@@ -159,29 +166,27 @@ export function Manual({ open, onClose }: Props) {
             <div className="manual-grid-2 manual-acro">
               <dl>
                 <dt>CTM-01</dt><dd>Chonburi Town Center v1 — this dashboard.</dd>
-                <dt>BRIEF</dt><dd>Municipal brief panel — Chonburi arterial load, parking zones, transport fleet, active development pipeline.</dd>
-                <dt>BMA</dt><dd>Bangkok Metropolitan Administration — city government. Source of POIs, parks, AQ stations, drainage.</dd>
-                <dt>MEA</dt><dd>Metropolitan Electricity Authority — MEA serves Bangkok; Chonburi served by PEA (Provincial Electricity Authority).</dd>
-                <dt>MWA</dt><dd>Metropolitan Waterworks Authority — owns the water mains.</dd>
+                <dt>EEC</dt><dd>Eastern Economic Corridor — Thailand's special economic zone anchored by Laem Chabang port + U-Tapao airport. Chonburi is the hub city.</dd>
                 <dt>depa</dt><dd>Digital Economy Promotion Agency — co-sponsor of this project (logo top-left).</dd>
-                <dt>SLIC</dt><dd>Smart Liveable Cities index — sibling project (logo top-left).</dd>
-                <dt>OSM</dt><dd>OpenStreetMap — source of every building footprint, road, transit station, shuttle route shown here.</dd>
-                <dt>GIBS</dt><dd>NASA Global Imagery Browse Services — every satellite layer (MODIS, VIIRS, IMERG, OMI, etc.).</dd>
+                <dt>GISTDA</dt><dd>Geo-Informatics and Space Technology Development Agency — Thai government agency; source of POI Digital Twin, Solar LOD2, and Land Use layers.</dd>
+                <dt>PEA</dt><dd>Provincial Electricity Authority — electricity provider for Chonburi (not MEA, which serves Bangkok).</dd>
+                <dt>OSM</dt><dd>OpenStreetMap — source of building footprints, roads, transit stations.</dd>
+                <dt>GIBS</dt><dd>NASA Global Imagery Browse Services — every satellite layer (MODIS, VIIRS, IMERG, OMI, Himawari, etc.).</dd>
+                <dt>AIS</dt><dd>Automatic Identification System — maritime vessel tracking. Live vessel dots on the MAR lens.</dd>
+                <dt>TimesFM</dt><dd>Google Time-Series Foundation Model (2.0, 200M params) — zero-shot hourly forecasts for 5 metrics shown in Predictive Intelligence panel.</dd>
               </dl>
               <dl>
                 <dt>AQI</dt><dd>Air Quality Index (US EPA scale) — derived from PM2.5 + PM10.</dd>
                 <dt>PM2.5</dt><dd>Particulate matter ≤ 2.5 µm — the haze you breathe. WHO 24-hr guideline is 15 µg/m³.</dd>
                 <dt>iTIC</dt><dd>Intelligent Traffic Information Center / Longdo — live traffic events (Eastern Seaboard + national).</dd>
-                <dt>Traffy CR</dt><dd>Traffy Fondue + City Reporter — citizen complaint feed (BMA's 311).</dd>
+                <dt>Traffy</dt><dd>Traffy Fondue — citizen complaint platform; Thailand's nationwide 311 channel.</dd>
                 <dt>NDVI</dt><dd>Normalized Difference Vegetation Index — satellite-derived greenness.</dd>
                 <dt>LST</dt><dd>Land Surface Temperature — satellite-derived ground temp; shows urban heat islands.</dd>
-                <dt>AOD</dt><dd>Aerosol Optical Depth — satellite proxy for haze + PM.</dd>
+                <dt>AOD</dt><dd>Aerosol Optical Depth — satellite proxy for haze + PM2.5.</dd>
                 <dt>OMI / VIIRS / MODIS / IMERG</dt><dd>NASA satellite instruments. OMI → NO₂; VIIRS → night lights, true-color; MODIS → daily Earth observation; IMERG → half-hourly rainfall.</dd>
-                <dt>BESS</dt><dd>Battery Energy Storage System — 4 MWh unit colocated with EEC substation.</dd>
-                <dt>HV / MV / LV</dt><dd>High / Medium / Low Voltage — 115 kV transmission, 22 kV distribution, 230/400 V service.</dd>
                 <dt>RTT</dt><dd>Round-Trip Time — how long a network packet takes to bounce. Lower = snappier.</dd>
                 <dt>Mbps</dt><dd>Megabits per second — network download speed.</dd>
-                <dt>BTS / MRT</dt><dd>Bangkok Skytrain / Metro — Chonburi has no metro yet; EEC high-speed rail link planned for 2028.</dd>
+                <dt>p10/p50/p90</dt><dd>Percentile confidence bands in the forecast sparklines. p50 = median forecast; p10–p90 = 80% confidence interval.</dd>
               </dl>
             </div>
           </section>
@@ -222,7 +227,7 @@ export function Manual({ open, onClose }: Props) {
           </section>
 
           <footer className="manual-foot caption">
-            v0.1 · Built over a weekend, ninja style. Code at github.com/Nonarkara/chonburi-control-tower.
+            CTM-01 v0.1 · Chonburi Town Center · github.com/Nonarkara/chonburi-control-tower · For the full platform overview see the <strong>WP</strong> button.
           </footer>
         </div>
       </div>
