@@ -19,3 +19,6 @@ var/
 
 # OSM Overpass raw cache (regenerate via apps/web/scripts/fetch-osm-chula.mjs)
 apps/web/public/geo/osm/
+*.session
+*.pkl
+service-account*.json
