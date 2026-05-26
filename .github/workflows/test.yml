@@ -29,6 +29,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Typecheck (shared)
+        run: pnpm --filter @chonburi/shared typecheck
+
       - name: Typecheck (web)
         run: pnpm --filter @chonburi/web typecheck
 
