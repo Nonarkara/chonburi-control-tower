@@ -1162,6 +1162,7 @@ export default function App() {
               openIncidents={cityReports.data.filter((r) => r.status !== "resolved").length + iticEvents.data.length}
               reservoirs={reservoirs.data}
               markets={markets.data[0] ?? null}
+              adapterHealth={systemHealth?.adapters}
               ageMinutes={executive.ageMinutes}
               fallbackTier={executive.fallbackTier === "loading" ? undefined : executive.fallbackTier}
             />

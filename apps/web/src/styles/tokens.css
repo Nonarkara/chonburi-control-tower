@@ -64,6 +64,20 @@
   --s-8: 32px;
   --s-12: 48px;
 
+  /* ── US EPA AQI colour scale — do not modify; these are standardised ── */
+  --aqi-good:           #22c55e;
+  --aqi-moderate:       #facc15;
+  --aqi-unhealthy-sg:   #f97316;
+  --aqi-unhealthy:      #ef4444;
+  --aqi-very-unhealthy: #a855f7;
+  --aqi-hazardous:      #7f1d1d;
+
+  /* ── Mayor's Desk action-tag category colours ─────────────────────── */
+  --tag-funeral:   #a78bfa;   /* purple — ceremonial */
+  --tag-police:    #f87171;   /* soft red — friction/authority */
+  --tag-festival:  #fbbf24;   /* amber — celebration */
+  --tag-health:    #f472b6;   /* pink — public health */
+
   color-scheme: dark;
 }
 

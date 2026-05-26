@@ -11,7 +11,9 @@ import { test, expect } from "@playwright/test";
  * dashboard is map-heavy so we give it generous timeouts.
  */
 
-test.setTimeout(60_000);
+// 90s per test — map + lazy chunks + Vite dev server compile time add up.
+// Individual tests pass in ~12–40s; the 60s default flakes once Vite cache warms.
+test.setTimeout(90_000);
 
 test.describe("Dashboard boot", () => {
   test("loads with map host and top bar", async ({ page }) => {

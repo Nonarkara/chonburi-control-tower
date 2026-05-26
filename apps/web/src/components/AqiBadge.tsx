@@ -21,12 +21,13 @@ const BAND: Record<
   NonNullable<AqiTrend["category"]>,
   { color: string; label: string; advice: string }
 > = {
-  good:            { color: "#22c55e", label: "GOOD",            advice: "Outdoor activity normal." },
-  moderate:        { color: "#facc15", label: "MODERATE",        advice: "Sensitive groups: limit prolonged outdoor exertion." },
-  "unhealthy-sg":  { color: "#f97316", label: "UNHEALTHY · SG",  advice: "Sensitive groups should reduce outdoor activity." },
-  unhealthy:       { color: "#ef4444", label: "UNHEALTHY",       advice: "Everyone: reduce outdoor exertion. Masks recommended." },
-  "very-unhealthy":{ color: "#a855f7", label: "VERY UNHEALTHY",  advice: "Avoid outdoor exertion. N95 masks outdoors." },
-  hazardous:       { color: "#7f1d1d", label: "HAZARDOUS",       advice: "Stay indoors. Run filtration. Cancel outdoor events." },
+  // Colours reference CSS tokens defined in tokens.css (US EPA standard scale).
+  good:            { color: "var(--aqi-good)",           label: "GOOD",            advice: "Outdoor activity normal." },
+  moderate:        { color: "var(--aqi-moderate)",       label: "MODERATE",        advice: "Sensitive groups: limit prolonged outdoor exertion." },
+  "unhealthy-sg":  { color: "var(--aqi-unhealthy-sg)",   label: "UNHEALTHY · SG",  advice: "Sensitive groups should reduce outdoor activity." },
+  unhealthy:       { color: "var(--aqi-unhealthy)",      label: "UNHEALTHY",       advice: "Everyone: reduce outdoor exertion. Masks recommended." },
+  "very-unhealthy":{ color: "var(--aqi-very-unhealthy)", label: "VERY UNHEALTHY",  advice: "Avoid outdoor exertion. N95 masks outdoors." },
+  hazardous:       { color: "var(--aqi-hazardous)",      label: "HAZARDOUS",       advice: "Stay indoors. Run filtration. Cancel outdoor events." },
 };
 
 function fmtHour(iso: string): string {

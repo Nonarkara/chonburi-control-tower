@@ -14,6 +14,7 @@ import type {
   FallbackTier,
 } from "@chonburi/shared";
 import type { ReservoirStatus } from "./WaterPanel";
+import type { AdapterHealth } from "../hooks/useSystemHealth";
 import { PanelHeader } from "./PanelHeader";
 
 interface Props {
@@ -23,6 +24,7 @@ interface Props {
   openIncidents: number;
   reservoirs: ReservoirStatus[];
   markets: MarketSnapshot | null;
+  adapterHealth?: AdapterHealth[];
   ageMinutes?: number | null;
   fallbackTier?: FallbackTier;
 }
@@ -88,6 +90,7 @@ export function ExecutiveBriefing({
   openIncidents,
   reservoirs,
   markets,
+  adapterHealth,
   ageMinutes,
   fallbackTier,
 }: Props) {
@@ -241,6 +244,59 @@ export function ExecutiveBriefing({
           </div>
         </div>
       )}
+
+      {/* Data health — only shown when some adapters are not fully healthy */}
+      {adapterHealth && adapterHealth.some(
+        (a) => a.status === "degraded" || a.status === "down"
+      ) && (
+        <DataHealthSection adapters={adapterHealth} />
+      )}
+    </div>
+  );
+}
+
+/** Compact adapter health list for the exec briefing. */
+function DataHealthSection({ adapters }: { adapters: AdapterHealth[] }) {
+  const unhealthy = adapters.filter((a) => a.status === "degraded" || a.status === "down");
+  const healthy = adapters.filter((a) => a.status === "healthy").length;
+  const total = adapters.length;
+
+  return (
+    <div className="exec-briefing-section" role="status" aria-label="Data feed health">
+      <div className="spread" style={{ alignItems: "center", marginBottom: 4 }}>
+        <span className="mono eyebrow" style={{ color: "var(--text-3)" }}>DATA HEALTH</span>
+        <span className="mono caption" style={{ color: healthy === total ? "var(--good)" : "var(--warn)" }}>
+          {healthy}/{total} HEALTHY
+        </span>
+      </div>
+      <div style={{ display: "grid", gap: 3 }}>
+        {unhealthy.slice(0, 5).map((a) => {
+          const isDown = a.status === "down";
+          const statusColor = isDown ? "var(--bad)" : "var(--warn)";
+          const note = a.lastErrorMessage;
+          const isMissingKey = note?.startsWith("Missing") ?? false;
+          return (
+            <div
+              key={a.name}
+              className="spread"
+              style={{ gap: 8, alignItems: "flex-start", borderLeft: `2px solid ${statusColor}`, paddingLeft: 6 }}
+              title={note ?? `${a.name}: ${a.status}`}
+            >
+              <span className="mono" style={{ fontSize: "0.60rem", color: statusColor, fontWeight: 700, letterSpacing: "0.07em", whiteSpace: "nowrap" }}>
+                {isDown ? "▲" : "◆"} {a.name}
+              </span>
+              <span className="mono caption" style={{ color: "var(--text-3)", flex: 1, textAlign: "right" }}>
+                {isMissingKey ? "KEY MISSING" : a.status.toUpperCase()}
+              </span>
+            </div>
+          );
+        })}
+        {unhealthy.length > 5 && (
+          <span className="mono caption" style={{ color: "var(--text-3)", paddingLeft: 6 }}>
+            +{unhealthy.length - 5} more — see SOURCES
+          </span>
+        )}
+      </div>
     </div>
   );
 }

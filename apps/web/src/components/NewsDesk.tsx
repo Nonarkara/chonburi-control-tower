@@ -21,15 +21,16 @@ function scoreColor(score: number): string {
 }
 
 // Mayor's Action tag legend — 2-char code → short label, colour, glyph
+// Colours use CSS token variables defined in tokens.css.
 const ACTION_TAG: Record<string, { label: string; color: string; glyph: string; do: string }> = {
-  EM: { label: "Emergency",        color: "var(--bad)",  glyph: "▲", do: "go to scene / coordinate response" },
-  FU: { label: "Funeral",          color: "#A78BFA",     glyph: "✚", do: "attend or send wreath" },
-  PO: { label: "Police friction",  color: "#F87171",     glyph: "◆", do: "consider mediation" },
-  HO: { label: "Honour",           color: "var(--good)", glyph: "★", do: "congratulate" },
-  FE: { label: "Festival",         color: "#FBBF24",     glyph: "✦", do: "attend opening" },
-  IN: { label: "Infrastructure",   color: "var(--data)", glyph: "▣", do: "chase department" },
-  BZ: { label: "EEC / Business",   color: "var(--accent)", glyph: "◢", do: "attend signing" },
-  PU: { label: "Public health",    color: "#F472B6",     glyph: "✚", do: "visit / congratulate staff" },
+  EM: { label: "Emergency",        color: "var(--bad)",         glyph: "▲", do: "go to scene / coordinate response" },
+  FU: { label: "Funeral",          color: "var(--tag-funeral)", glyph: "✚", do: "attend or send wreath" },
+  PO: { label: "Police friction",  color: "var(--tag-police)",  glyph: "◆", do: "consider mediation" },
+  HO: { label: "Honour",           color: "var(--good)",        glyph: "★", do: "congratulate" },
+  FE: { label: "Festival",         color: "var(--tag-festival)",glyph: "✦", do: "attend opening" },
+  IN: { label: "Infrastructure",   color: "var(--data)",        glyph: "▣", do: "chase department" },
+  BZ: { label: "EEC / Business",   color: "var(--accent)",      glyph: "◢", do: "attend signing" },
+  PU: { label: "Public health",    color: "var(--tag-health)",  glyph: "✚", do: "visit / congratulate staff" },
 };
 
 interface Props {
