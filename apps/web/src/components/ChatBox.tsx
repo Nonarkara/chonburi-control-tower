@@ -120,6 +120,16 @@ function renderMarkdownLite(src: string): React.ReactNode {
   return blocks;
 }
 
+/** Translate HTTP status + raw server error message into a user-friendly string. */
+function friendlyError(status: number, raw?: string): string {
+  if (status === 503) return "Chat is not available — the AI service isn't configured yet. Ask your administrator to set a Gemini API key.";
+  if (status === 429) return "The AI assistant has hit its usage limit for today — try again tomorrow.";
+  if (status === 400 && raw?.toLowerCase().includes("long")) return "Your message is too long — please shorten it and try again.";
+  if (status === 400 && raw?.toLowerCase().includes("turns")) return "This conversation is too long. Clear it and start fresh.";
+  if (status >= 500) return "The AI service returned an error — try again in a moment.";
+  return raw ?? `Request failed (${status})`;
+}
+
 export function ChatBox({ apiBase }: Props) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(() => loadHistory());
@@ -177,7 +187,7 @@ export function ChatBox({ apiBase }: Props) {
         });
         const json = (await res.json()) as { reply?: string; error?: string };
         if (!res.ok || !json.reply) {
-          setError(json.error ?? `Request failed (${res.status})`);
+          setError(friendlyError(res.status, json.error));
           return;
         }
         setMessages((prev) => [...prev, { role: "model", content: json.reply ?? "" }]);
