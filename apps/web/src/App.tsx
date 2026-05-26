@@ -187,6 +187,22 @@ const GIBS_LAYERS: Array<{
   { id: "satellite-flood",               product: "MODIS_Combined_Flood_3-Day",                    level: 7, format: "png", opacity: 0.75 },
 ];
 
+// Pre-computed, stable references for the React-rendered <Source>/<Layer> props.
+// Without these, `tiles={[gibsUrl(...)]}` and `paint={{ "raster-opacity": ... }}`
+// allocate a new array + object on every render, forcing react-map-gl to deep-diff
+// raster sources on every map gesture.
+const GIBS_RENDER: Array<{
+  id: string;
+  tiles: readonly [string];
+  paint: { readonly "raster-opacity": number };
+  maxzoom: number;
+}> = GIBS_LAYERS.map((g) => ({
+  id: g.id,
+  tiles: [gibsUrl(g.product, g.level, g.format)] as const,
+  paint: { "raster-opacity": g.opacity } as const,
+  maxzoom: g.level,
+}));
+
 function basemapStyle(theme: "dark" | "light"): maplibregl.StyleSpecification {
   const baseSlug = theme === "dark" ? "dark_nolabels" : "light_nolabels";
   const labelsSlug = theme === "dark" ? "dark_only_labels" : "light_only_labels";
@@ -331,6 +347,42 @@ export default function App() {
     maxBounds: CHONBURI.outerBounds,
   });
 
+  // Mirror viewState to a ref so high-frequency reads (click handler, deck.gl
+  // event callback) don't depend on stale React closures and don't force callback
+  // recreation on every pan/zoom frame.
+  const viewStateRef = useRef(viewState);
+  viewStateRef.current = viewState;
+
+  // rAF-throttled viewState mirror — DeckGL fires onViewStateChange potentially
+  // many times per frame (high-refresh trackpads fire pointer events at 240 Hz+).
+  // We coalesce those into ONE React state update per animation frame so the
+  // ~1300-line App component re-renders at most 60 Hz, regardless of gesture rate.
+  // The ref stays current immediately so any synchronous reader sees the latest.
+  const pendingViewStateRef = useRef<typeof viewState | null>(null);
+  const rafScheduledRef = useRef(false);
+  const handleViewStateChange = useCallback(({ viewState: vs }: { viewState: Record<string, unknown> }) => {
+    const longitude = vs.longitude as number;
+    const latitude = vs.latitude as number;
+    const zoom = vs.zoom as number;
+    const pitch = vs.pitch as number;
+    const bearing = vs.bearing as number;
+    const next = {
+      ...viewStateRef.current,
+      longitude, latitude, zoom, pitch, bearing,
+      transitionDuration: 0,
+    };
+    pendingViewStateRef.current = next;
+    viewStateRef.current = next;
+    if (rafScheduledRef.current) return;
+    rafScheduledRef.current = true;
+    requestAnimationFrame(() => {
+      rafScheduledRef.current = false;
+      const pending = pendingViewStateRef.current;
+      pendingViewStateRef.current = null;
+      if (pending) setViewState(pending);
+    });
+  }, []);
+
   // Selected building for the popup card.
   const [selectedBuilding, setSelectedBuilding] = useState<BuildingProperties | null>(null);
 
@@ -344,16 +396,20 @@ export default function App() {
       transitionDuration: 700,
     }));
   }, []);
+  // handleMapClick reads viewState from ref to keep the callback identity stable —
+  // before this change it was recreated on every pan/zoom frame because viewState
+  // coords were in the deps array, forcing deck.gl to rebind its onClick prop.
   const handleMapClick = useCallback((info: { layer?: { id?: string } | null; object?: unknown; coordinate?: number[] }) => {
     if ((info.layer?.id === "municipality-buildings" || info.layer?.id === "campus-buildings") && info.object) {
       const f = info.object as { properties: BuildingProperties; geometry: { coordinates: number[][][] | number[][][][] } };
       setSelectedBuilding(f.properties);
-      const [lng, lat] = info.coordinate ?? [viewState.longitude, viewState.latitude];
-      flyTo(lng, lat, Math.max(viewState.zoom, 17));
+      const vs = viewStateRef.current;
+      const [lng, lat] = info.coordinate ?? [vs.longitude, vs.latitude];
+      flyTo(lng, lat, Math.max(vs.zoom, 17));
     } else if (!info.layer) {
       setSelectedBuilding(null);
     }
-  }, [flyTo, viewState.longitude, viewState.latitude, viewState.zoom]);
+  }, [flyTo]);
 
   const zoomBy = (delta: number) => {
     setViewState((prev) => ({
@@ -783,6 +839,24 @@ export default function App() {
   // used for maxRoofs. Prevents the layers useMemo from firing on every zoom tick.
   const zoomBucket = viewState.zoom >= 16.5 ? 2 : viewState.zoom >= 15.2 ? 1 : 0;
 
+  // Pre-memoize the two largest layers (20,877 buildings each). The umbrella
+  // `layers` memo below has ~40 deps including SWR feed polls — if any of those
+  // change, the buildings/roofs GeoJsonLayer would otherwise be re-instantiated
+  // and deck.gl would re-tessellate. With a stable reference, deck.gl sees the
+  // same layer object and skips the diff entirely.
+  const memoizedBuildingsLayer = useMemo<Layer | null>(
+    () => buildings ? (buildingsLayer(buildings, { extruded: is3D, ghosted: isSubstructure }) as Layer) : null,
+    [buildings, is3D, isSubstructure],
+  );
+  const memoizedRoofsLayer = useMemo<Layer | null>(
+    () => {
+      if (!buildings || !is3D || isSubstructure) return null;
+      const maxRoofs = zoomBucket === 2 ? 3200 : zoomBucket === 1 ? 1400 : 500;
+      return buildingRoofsLayer(buildings, { maxRoofs, elevationScale: 1.65 }) as Layer;
+    },
+    [buildings, is3D, isSubstructure, zoomBucket],
+  );
+
   const layers = useMemo<Layer[]>(() => {
     const out: Layer[] = [];
     // Imagery first — renders beneath all vector data
@@ -804,12 +878,10 @@ export default function App() {
     const showBoundaryLine = enabledLayers.has("municipality-boundary-line") || showBoundaryFill;
     if ((showBoundaryLine || showBoundaryFill) && campus)
       out.push(campusBoundaryLayer(campus, { filled: showBoundaryFill, stroked: showBoundaryLine }) as Layer);
-    if ((enabledLayers.has("municipality-buildings") || enabledLayers.has("campus-buildings")) && buildings)
-      out.push(buildingsLayer(buildings, { extruded: is3D, ghosted: isSubstructure }) as Layer);
-    if (enabledLayers.has("building-roofs") && buildings && is3D && !isSubstructure) {
-      const maxRoofs = zoomBucket === 2 ? 3200 : zoomBucket === 1 ? 1400 : 500;
-      out.push(buildingRoofsLayer(buildings, { maxRoofs, elevationScale: 1.65 }) as Layer);
-    }
+    if ((enabledLayers.has("municipality-buildings") || enabledLayers.has("campus-buildings")) && memoizedBuildingsLayer)
+      out.push(memoizedBuildingsLayer);
+    if (enabledLayers.has("building-roofs") && memoizedRoofsLayer)
+      out.push(memoizedRoofsLayer);
     // 3D Tiles pilot — OGC-standard streaming buildings (replaces extruded GeoJSON when available)
     if (tile3dLayer) out.push(tile3dLayer as Layer);
     if (enabledLayers.has("road-network") && roads)
@@ -928,6 +1000,7 @@ export default function App() {
     return out;
   }, [
     enabledLayers, zoomBucket, is3D, isSubstructure, campus, buildings,
+    memoizedBuildingsLayer, memoizedRoofsLayer,
     cuLands, trafficSamples,
     shuttleRoutes, shuttleStops, transitStations, transitLines, campusGates, roads,
     shuttle.data, cctv.data, cityReports.data,
@@ -1190,10 +1263,7 @@ export default function App() {
           </div>
           <DeckGL
             viewState={viewState}
-            onViewStateChange={({ viewState: vs }) => {
-              const { longitude, latitude, zoom, pitch, bearing } = vs as Record<string, number>;
-              setViewState((prev) => ({ ...prev, longitude, latitude, zoom, pitch, bearing, transitionDuration: 0 }));
-            }}
+            onViewStateChange={handleViewStateChange}
             // Controller options — cast needed because DeckGL's TS types expose only
             // ControllerOptions, but MapController also accepts minZoom/maxZoom/maxBounds
             // from MapStateProps. All three enforce bounds *before* onViewStateChange fires,
@@ -1214,21 +1284,23 @@ export default function App() {
             >
               {/* GIBS satellite raster sources — rendered via MapLibre for
                   reliable tile stretching at any viewport zoom. Only active
-                  layers are mounted so MapLibre only fetches what's needed. */}
-              {GIBS_LAYERS.filter(g => enabledLayers.has(g.id as LayerId)).map(g => (
+                  layers are mounted so MapLibre only fetches what's needed.
+                  `GIBS_RENDER` carries pre-built, stable {tiles, paint} refs
+                  so React-render churn doesn't make MapLibre re-diff every frame. */}
+              {GIBS_RENDER.filter(g => enabledLayers.has(g.id as LayerId)).map(g => (
                 <Source
                   key={g.id}
                   id={`gibs-src-${g.id}`}
                   type="raster"
-                  tiles={[gibsUrl(g.product, g.level, g.format)]}
+                  tiles={g.tiles as unknown as string[]}
                   tileSize={256}
                   minzoom={0}
-                  maxzoom={g.level}
+                  maxzoom={g.maxzoom}
                 >
                   <MapLayer
                     id={`gibs-lyr-${g.id}`}
                     type="raster"
-                    paint={{ "raster-opacity": g.opacity }}
+                    paint={g.paint}
                     beforeId="labels-top"
                   />
                 </Source>

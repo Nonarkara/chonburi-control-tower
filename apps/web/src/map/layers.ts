@@ -460,6 +460,10 @@ export function buildingsLayer(
   return new GeoJsonLayer({
     id: "municipality-buildings",
     data: collection as unknown as FeatureCollection,
+    // Source GeoJSON is already valid (single FeatureCollection with proper
+    // geometry); skipping normalization saves a full pass over 20k+ features
+    // every time the layer instance is created.
+    _normalize: false,
     // Stroke is a full second draw pass over 20k+ polygons. In extruded (3D) mode
     // the lighting already provides depth cues, so we skip the edge pass entirely.
     // In flat 2D mode we keep it — edges are the only way to distinguish footprints.
@@ -514,6 +518,7 @@ export function buildingsLayer(
     updateTriggers: {
       getFillColor: [extruded, ghosted],
       getLineColor: [ghosted],
+      getElevation: [extruded, ghosted],
     },
   });
 }
@@ -570,6 +575,8 @@ export function buildingRoofsLayer(
   return new GeoJsonLayer({
     id: "building-roofs",
     data: roofCollection,
+    // Source GeoJSON is already valid — skip normalization.
+    _normalize: false,
     stroked: false,
     filled: true,
     pickable: false,
@@ -586,6 +593,13 @@ export function buildingRoofsLayer(
     getElevation: ((f: Feature<Polygon | MultiPolygon, BuildingProperties>) =>
       buildingHeightMeters(f.properties) + roofBonus(f.properties)) as unknown as number,
     opacity: 0.92,
+    // Without updateTriggers, deck.gl falls back to conservative heuristics and
+    // re-runs the elevation/color accessors every time the layer is instantiated.
+    // The accessors are pure functions of feature properties + scale, so we tag
+    // the only inputs that actually change.
+    updateTriggers: {
+      getElevation: [scale],
+    },
   });
 }
 
