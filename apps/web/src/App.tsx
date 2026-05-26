@@ -779,6 +779,10 @@ export default function App() {
     tilesetUrl: "/geo/3d-tiles/tileset.json",
   });
 
+  // Quantized zoom level — only changes when crossing the discrete thresholds
+  // used for maxRoofs. Prevents the layers useMemo from firing on every zoom tick.
+  const zoomBucket = viewState.zoom >= 16.5 ? 2 : viewState.zoom >= 15.2 ? 1 : 0;
+
   const layers = useMemo<Layer[]>(() => {
     const out: Layer[] = [];
     // Imagery first — renders beneath all vector data
@@ -803,7 +807,7 @@ export default function App() {
     if ((enabledLayers.has("municipality-buildings") || enabledLayers.has("campus-buildings")) && buildings)
       out.push(buildingsLayer(buildings, { extruded: is3D, ghosted: isSubstructure }) as Layer);
     if (enabledLayers.has("building-roofs") && buildings && is3D && !isSubstructure) {
-      const maxRoofs = viewState.zoom >= 16.5 ? 3200 : viewState.zoom >= 15.2 ? 1400 : 500;
+      const maxRoofs = zoomBucket === 2 ? 3200 : zoomBucket === 1 ? 1400 : 500;
       out.push(buildingRoofsLayer(buildings, { maxRoofs, elevationScale: 1.65 }) as Layer);
     }
     // 3D Tiles pilot — OGC-standard streaming buildings (replaces extruded GeoJSON when available)
@@ -923,7 +927,7 @@ export default function App() {
 
     return out;
   }, [
-    enabledLayers, viewState.zoom, is3D, isSubstructure, campus, buildings,
+    enabledLayers, zoomBucket, is3D, isSubstructure, campus, buildings,
     cuLands, trafficSamples,
     shuttleRoutes, shuttleStops, transitStations, transitLines, campusGates, roads,
     shuttle.data, cctv.data, cityReports.data,
@@ -1187,8 +1191,11 @@ export default function App() {
           <DeckGL
             viewState={viewState}
             onViewStateChange={({ viewState: vs }) => {
-              const { longitude, latitude, zoom, pitch, bearing } = vs as Record<string, number>;
-              setViewState((prev) => ({ ...prev, longitude, latitude, zoom, pitch, bearing, transitionDuration: 0 }));
+              const { longitude, latitude, zoom: rawZoom, pitch, bearing } = vs as Record<string, number>;
+              setViewState((prev) => ({
+                ...prev, longitude, latitude, pitch, bearing, transitionDuration: 0,
+                zoom: Math.max(prev.minZoom ?? 13, Math.min(prev.maxZoom ?? 20, rawZoom)),
+              }));
             }}
             controller
             layers={layers}
