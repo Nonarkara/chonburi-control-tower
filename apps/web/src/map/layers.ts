@@ -460,9 +460,13 @@ export function buildingsLayer(
   return new GeoJsonLayer({
     id: "municipality-buildings",
     data: collection as unknown as FeatureCollection,
-    stroked: true,
+    // Stroke is a full second draw pass over 20k+ polygons. In extruded (3D) mode
+    // the lighting already provides depth cues, so we skip the edge pass entirely.
+    // In flat 2D mode we keep it — edges are the only way to distinguish footprints.
+    stroked: !extruded,
     filled: true,
     pickable: true,
+    autoHighlight: false,
     extruded,
     elevationScale: extruded && !ghosted ? 1.65 : 1,
     material: extruded && !ghosted

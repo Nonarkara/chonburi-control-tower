@@ -1191,13 +1191,17 @@ export default function App() {
           <DeckGL
             viewState={viewState}
             onViewStateChange={({ viewState: vs }) => {
-              const { longitude, latitude, zoom: rawZoom, pitch, bearing } = vs as Record<string, number>;
-              setViewState((prev) => ({
-                ...prev, longitude, latitude, pitch, bearing, transitionDuration: 0,
-                zoom: Math.max(prev.minZoom ?? 13, Math.min(prev.maxZoom ?? 20, rawZoom)),
-              }));
+              const { longitude, latitude, zoom, pitch, bearing } = vs as Record<string, number>;
+              setViewState((prev) => ({ ...prev, longitude, latitude, zoom, pitch, bearing, transitionDuration: 0 }));
             }}
-            controller
+            // Controller options — cast needed because DeckGL's TS types expose only
+            // ControllerOptions, but MapController also accepts minZoom/maxZoom/maxBounds
+            // from MapStateProps. All three enforce bounds *before* onViewStateChange fires,
+            // preventing the one-frame "flash to outer space" that a pure React clamp cannot.
+            // scrollZoom.speed: default 0.01 → one fast trackpad swipe jumps 5+ levels;
+            // 0.004 is ~2.5× slower, still comfortable but safe.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            controller={{ minZoom: 13, maxZoom: 20, maxBounds: CHONBURI.outerBounds, scrollZoom: { speed: 0.004, smooth: false } } as any}
             layers={layers}
             getTooltip={tooltipForPickMemo}
             onClick={handleMapClick}
