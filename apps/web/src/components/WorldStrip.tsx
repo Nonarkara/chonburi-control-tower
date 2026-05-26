@@ -2,16 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useCustomClocks, searchCities, type ClockSpec } from "../hooks/useCustomClocks";
 import type { PrecipNowcast } from "@chonburi/shared";
 
-interface TrendPoint { at: string; aqi: number; pm25: number }
-
-interface AqiTrend {
-  station: string;
-  category: "good" | "moderate" | "unhealthy-sg" | "unhealthy" | "very-unhealthy" | "hazardous";
-  current: { aqi: number; pm25: number; observedAt: string };
-  next8h: TrendPoint[];
-  source: string;
-}
-
 interface Props {
   hostAqi: number | null;
   hostPm25: number | null;
@@ -148,12 +138,14 @@ export function WorldStrip({ hostAqi, hostPm25, hostWeather, hostPulse, precipNo
 
   const aqi = aqiBand(hostAqi);
   const uv = uvBand(hostWeather?.uv ?? null);
+  const rain = rainBadge(precipNowcast);
   const wind = hostWeather?.windKmh ?? null;
   const windDir = windDirLabel(hostWeather?.windDeg ?? null);
   const sunrise = hmFromIso(hostWeather?.sunrise ?? null);
   const sunset = hmFromIso(hostWeather?.sunset ?? null);
   const sunLabel = hostWeather?.isDay === false ? "SUNRISE" : "SUNSET";
   const sunTime = hostWeather?.isDay === false ? sunrise : sunset;
+  const hostTime = timeInTz("Asia/Bangkok", now);
 
   return (
     <div className="world-strip">
@@ -161,7 +153,7 @@ export function WorldStrip({ hostAqi, hostPm25, hostWeather, hostPulse, precipNo
         <div className="world-host-head">
           <span className="eyebrow mono">Chonburi · host</span>
           <span className="mono caption">
-            {timeInTz("Asia/Bangkok", now).hms} · {timeInTz("Asia/Bangkok", now).offset}
+            {hostTime.hms} · {hostTime.offset}
           </span>
         </div>
         <div className="world-host-row">
@@ -196,12 +188,8 @@ export function WorldStrip({ hostAqi, hostPm25, hostWeather, hostPulse, precipNo
             </div>
             <div className="world-stat">
               <span className="lbl">NOWCAST</span>
-              <span className="val mono" style={{ color: rainBadge(precipNowcast).color }}>
-                {rainBadge(precipNowcast).label}
-              </span>
-              <span className="sub mono" style={{ color: rainBadge(precipNowcast).color }}>
-                {rainBadge(precipNowcast).sub}
-              </span>
+              <span className="val mono" style={{ color: rain.color }}>{rain.label}</span>
+              <span className="sub mono" style={{ color: rain.color }}>{rain.sub}</span>
             </div>
             <div className="world-stat">
               <span className="lbl">RAIN NOW</span>

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
 import type { CuLandProperties } from "../map/layers";
 import type { IncidentFeature } from "@chonburi/shared";
+import { PanelHeader } from "./PanelHeader";
 
 interface Props {
   hour: number;
@@ -108,6 +109,20 @@ export function PmcuBrief({ hour, isWeekend, iticEvents, cityReports, trafficSam
 
   return (
     <div className="pmcu-brief">
+      <PanelHeader
+        title="MUNICIPALITY OPS"
+        fallbackTier="scenario"
+        source="live-incidents·cu-lands·model"
+        actions={
+          <span
+            className="mono caption data-age--warn"
+            title="Arterial load and parking occupancy are sinusoidal models. Incident counts are live."
+            aria-label="Partly modelled data"
+          >
+            PART MODELLED
+          </span>
+        }
+      />
       {/* ── Municipality overview ── */}
       <section className="pmcu-section">
         <header className="pmcu-h">
