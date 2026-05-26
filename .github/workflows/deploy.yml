@@ -1,8 +1,10 @@
 name: Build + Deploy → Cloudflare Pages
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Test"]
     branches: [main]
+    types: [completed]
   workflow_dispatch:
 
 concurrency:
@@ -13,6 +15,8 @@ jobs:
   deploy:
     name: Build & deploy
     runs-on: ubuntu-latest
+    # Only run when the Test workflow succeeded on main (or when manually dispatched)
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -27,9 +31,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Typecheck
-        run: pnpm --filter @chonburi/web typecheck
 
       - name: Build
         run: pnpm --filter @chonburi/web build
