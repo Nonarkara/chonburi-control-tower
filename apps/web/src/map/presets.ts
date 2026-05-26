@@ -156,7 +156,6 @@ export const LENSES: Lens[] = [
       "ferry-terminals",
       "navigation-aids",
       "ais-vessels",
-      "fisheries",
       "distance-grid",
     ],
   },
