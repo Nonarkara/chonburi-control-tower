@@ -1,5 +1,5 @@
 import type { IntelligenceItem, NormalizedFeed } from "@chonburi/shared";
-import { cacheAgeMinutes, cached } from "../lib/cache.js";
+import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
 import { fetchTextOrNull } from "./common.js";
 // Archive is Node-only (uses fs). Dynamic import keeps Workers happy.
 async function tryArchive(items: IntelligenceItem[]): Promise<void> {

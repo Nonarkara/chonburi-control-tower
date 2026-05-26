@@ -19,7 +19,7 @@
  */
 
 import type { NormalizedFeed } from "@chonburi/shared";
-import { cacheAgeMinutes, cached } from "../lib/cache.js";
+import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
 import { fetchJsonOrNull } from "./common.js";
 
 export interface FacebookPost {

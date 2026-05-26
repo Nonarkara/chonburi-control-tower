@@ -10,7 +10,7 @@
 
 import type { NormalizedFeed, PrecipNowcast } from "@chonburi/shared";
 import { CHONBURI } from "@chonburi/shared";
-import { cacheAgeMinutes, cached } from "../lib/cache.js";
+import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
 import { fetchJsonOrNull } from "./common.js";
 
 const TTL_SECONDS = 1800; // 30min // 10 min — nowcasts update fast

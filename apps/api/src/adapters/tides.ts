@@ -26,7 +26,7 @@
  */
 
 import type { NormalizedFeed } from "@chonburi/shared";
-import { cacheAgeMinutes, cached } from "../lib/cache.js";
+import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
 
 // ── Harmonic constituents (Si Racha approximation) ──────────────────────
 // H = amplitude (m), g = phase lag (degrees, astronomical argument)

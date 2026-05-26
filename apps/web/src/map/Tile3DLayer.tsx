@@ -30,13 +30,13 @@ export function useTile3DLayer({ visible, tilesetUrl }: Props) {
     data: tilesetUrl,
     onTilesetLoad: (ts: unknown) => {
       setTilesetLoaded(true);
-      console.log("[Tile3DLayer] Tileset loaded", ts);
+      if (import.meta.env.DEV) console.log("[Tile3DLayer] Tileset loaded", ts);
     },
     onTileLoad: (tile: unknown) => {
       void tile;
     },
     onTileError: (err: unknown) => {
-      console.error("[Tile3DLayer] Tile error", err);
+      if (import.meta.env.DEV) console.error("[Tile3DLayer] Tile error", err);
     },
     // Styling — warm concrete with subtle blue glass tint
     getFillColor: [210, 215, 225, 235] as [number, number, number, number],

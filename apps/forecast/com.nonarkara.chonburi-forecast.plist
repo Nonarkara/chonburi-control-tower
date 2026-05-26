@@ -10,13 +10,13 @@
   <!-- Command: run the standalone script with the venv Python -->
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/nonarkara/Projects/dashboards/chonburi/apps/forecast/.venv/bin/python3</string>
-    <string>/Users/nonarkara/Projects/dashboards/chonburi/apps/forecast/run_local.py</string>
+    <string>/Users/axiom/Projects/dashboards/chonburi/apps/forecast/.venv/bin/python3</string>
+    <string>/Users/axiom/Projects/dashboards/chonburi/apps/forecast/run_local.py</string>
   </array>
 
   <!-- Set working directory so relative imports in db.py / timesfm_runner.py resolve -->
   <key>WorkingDirectory</key>
-  <string>/Users/nonarkara/Projects/dashboards/chonburi/apps/forecast</string>
+  <string>/Users/axiom/Projects/dashboards/chonburi/apps/forecast</string>
 
   <!-- Environment: replace PASTE_YOUR_SUPABASE_URL_HERE with the real connection string -->
   <key>EnvironmentVariables</key>
@@ -28,7 +28,7 @@
     <string>1</string>
     <!-- HuggingFace model cache — keeps the 800 MB checkpoint out of your home dir -->
     <key>HF_HOME</key>
-    <string>/Users/nonarkara/Projects/dashboards/chonburi/apps/forecast/.hf_cache</string>
+    <string>/Users/axiom/Projects/dashboards/chonburi/apps/forecast/.hf_cache</string>
   </dict>
 
   <!-- Fire every 3600 seconds (1 hour); also run at login -->

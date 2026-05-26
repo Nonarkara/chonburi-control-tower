@@ -6,27 +6,27 @@
     <string>org.nonarkara.chonburi-api</string>
 
     <key>WorkingDirectory</key>
-    <string>/Users/nonarkara/Projects/dashboards/Chonburi/apps/api</string>
+    <string>/Users/axiom/Projects/dashboards/chonburi/apps/api</string>
 
     <key>ProgramArguments</key>
     <array>
         <string>/usr/bin/caffeinate</string>
         <string>-is</string>
-        <string>/Users/nonarkara/Library/pnpm/pnpm</string>
+        <string>/Users/axiom/Library/pnpm/pnpm</string>
         <string>start:node</string>
     </array>
 
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
-        <string>/opt/homebrew/bin:/usr/bin:/bin:/Users/nonarkara/Library/pnpm:/Users/nonarkara/.local/bin</string>
+        <string>/opt/homebrew/bin:/usr/bin:/bin:/Users/axiom/Library/pnpm:/Users/axiom/.local/bin</string>
         <key>HOST</key>
         <string>127.0.0.1</string>
         <key>PORT</key>
-        <string>8787</string>
+        <string>8788</string>
         <key>ENVIRONMENT</key>
         <string>production</string>
-        <!-- GEMINI_API_KEY is injected into the live plist at
+        <!-- GEMINI_API_KEY and other secrets are injected into the live plist at
              ~/Library/LaunchAgents/org.nonarkara.chonburi-api.plist (not committed). -->
     </dict>
 
@@ -45,9 +45,9 @@
     <integer>10</integer>
 
     <key>StandardOutPath</key>
-    <string>/Users/nonarkara/Projects/dashboards/Chonburi/var/api.out.log</string>
+    <string>/Users/axiom/Projects/dashboards/chonburi/var/api.out.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/nonarkara/Projects/dashboards/Chonburi/var/api.err.log</string>
+    <string>/Users/axiom/Projects/dashboards/chonburi/var/api.err.log</string>
 
     <key>ProcessType</key>
     <string>Background</string>

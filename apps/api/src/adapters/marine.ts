@@ -16,7 +16,7 @@
  */
 
 import type { NormalizedFeed } from "@chonburi/shared";
-import { cacheAgeMinutes, cached } from "../lib/cache.js";
+import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
 import { fetchJsonOrNull } from "./common.js";
 
 const SEA_POINT: [number, number] = [100.95, 13.34];

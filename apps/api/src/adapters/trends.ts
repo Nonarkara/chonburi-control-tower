@@ -3,7 +3,7 @@
 // Cached 15 min to stay under Google's soft rate limits.
 
 import type { NormalizedFeed } from "@chonburi/shared";
-import { cacheAgeMinutes, cached } from "../lib/cache.js";
+import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
 
 interface TrendPoint { time: string; value: number }
 interface RelatedQuery { query: string; value: number; link?: string | null }
