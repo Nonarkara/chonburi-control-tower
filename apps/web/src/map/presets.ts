@@ -374,3 +374,36 @@ export const ALL_LAYERS: {
   { id: "satellite-flood",   label: "Flood detection",          swatch: "#38BDF8", group: "imagery",
     describe: "MODIS 3-day combined flood detection — water surfaces flagged by satellite. Critical during monsoon." },
 ];
+
+/**
+ * Layers whose render output is computed or decorative — no backing FeatureCollection,
+ * so the per-layer "feature count" badge is meaningless (always 0) and misleads operators
+ * into thinking the data feed has failed. The palette suppresses the count badge for
+ * these IDs and falls back to a plain "on/off" indicator.
+ *
+ * Includes: programmatic geometry (distance grid), supplementary 3D extrusions
+ * (building roofs), and all raster tile layers (satellite imagery, maritime overlay,
+ * historical map, 3D tiles).
+ */
+export const COMPUTED_LAYERS: ReadonlySet<LayerId> = new Set<LayerId>([
+  "distance-grid",
+  "building-roofs",
+  "cu-map-2015",
+  "maritime-overlay",
+  "tile3d-buildings",
+  "heritage-old-town",
+  "heritage-temple-spires",
+  // All GIBS + Esri satellite rasters
+  "satellite-esri",
+  "satellite-true-color",
+  "satellite-viirs-truecolor",
+  "satellite-night",
+  "satellite-ndvi",
+  "satellite-lst",
+  "satellite-aerosol",
+  "satellite-no2",
+  "satellite-flood",
+  "satellite-terrain",
+  "satellite-himawari",
+  "satellite-imerg",
+]);

@@ -14,7 +14,18 @@ export function HourRail({ hour, isWeekend, onHourChange, onWeekendToggle }: Pro
     <div className="hour-rail">
       <div className="spread">
         <div>
-          <span className="eyebrow">Traffic — hour of day</span>
+          <div className="row" style={{ gap: 6, alignItems: "center" }}>
+            <span className="eyebrow">Traffic — hour of day</span>
+            {/* Honest labelling: the heatmap is a sinusoidal model (peaks 8:00 / 17:30)
+                weighted by road class + weekday/weekend, not live sensor data. */}
+            <span
+              className="mono caption data-age--warn"
+              title="Modelled from road class + hour + weekday/weekend. Not live sensor data."
+              aria-label="Modelled — not live sensor data"
+            >
+              MODELLED
+            </span>
+          </div>
           <div className="mono" style={{ fontSize: "1.1rem", marginTop: 2 }}>
             {fmt(hour)} <span style={{ color: "var(--text-3)", fontSize: "0.7rem" }}>local</span>
           </div>

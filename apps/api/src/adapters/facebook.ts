@@ -58,6 +58,10 @@ export async function fetchFacebookPosts(env: {
     const fetchedAt = new Date().toISOString();
 
     if (!env.FACEBOOK_PAGE_ID || !env.FACEBOOK_PAGE_TOKEN) {
+      const missing = [
+        !env.FACEBOOK_PAGE_ID ? "FACEBOOK_PAGE_ID" : null,
+        !env.FACEBOOK_PAGE_TOKEN ? "FACEBOOK_PAGE_TOKEN" : null,
+      ].filter(Boolean).join(" + ");
       return {
         features: [] as FacebookPost[],
         meta: {
@@ -65,6 +69,7 @@ export async function fetchFacebookPosts(env: {
           fetchedAt,
           ageMinutes: 0,
           fallbackTier: "unavailable" as const,
+          note: `Missing ${missing} env var${missing.includes("+") ? "s" : ""} — Facebook feed disabled`,
         },
       };
     }
@@ -91,6 +96,7 @@ export async function fetchFacebookPosts(env: {
         fetchedAt,
         ageMinutes: cacheAgeMinutes(fetchedAt),
         fallbackTier: posts.length > 0 ? "live" : "unavailable",
+        ...(posts.length === 0 ? { note: "Graph API returned no posts — token may have expired" } : {}),
       },
     };
   });

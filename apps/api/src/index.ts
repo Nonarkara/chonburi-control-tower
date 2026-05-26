@@ -198,7 +198,16 @@ async function safeFeed<T>(
   try {
     const feed = await fetcher();
     setMetaHeaders(c, feed);
-    if (adapterName) recordAdapterSuccess(adapterName, feed.meta.ageMinutes);
+    if (adapterName) {
+      // Treat "unavailable" fallback tier as a health error so the SOURCES catalog
+      // can surface missing-API-key conditions (and other silent failures) instead
+      // of just showing a green dot for a feed that returns zero features.
+      if (feed.meta.fallbackTier === "unavailable") {
+        recordAdapterError(adapterName, feed.meta.note ?? `Adapter unavailable (${feed.meta.source})`);
+      } else {
+        recordAdapterSuccess(adapterName, feed.meta.ageMinutes);
+      }
+    }
     return c.json(feed);
   } catch (err) {
     const message = (err as Error).message ?? "Internal server error";
@@ -252,11 +261,7 @@ app.get("/api/air-quality", async (c) => safeFeed(c, fetchAirQuality, "air-quali
 app.get("/api/air-quality/trend", async (c) => safeFeed(c, fetchAirQualityTrend, "air-quality-trend"));
 app.get("/api/cctv/longdo", async (c) => safeFeed(c, fetchCctv, "cctv"));
 app.get("/api/trends", async (c) => safeFeed(c, fetchTrends, "trends"));
-app.get("/api/maritime/ais", (c) => {
-  const feed = fetchAisVessels();
-  setMetaHeaders(c, feed);
-  return c.json(feed);
-});
+app.get("/api/maritime/ais", async (c) => safeFeed(c, async () => fetchAisVessels(), "ais"));
 app.get("/api/datago/points", (c) => {
   const feed = fetchDatagoPoints();
   setMetaHeaders(c, feed);

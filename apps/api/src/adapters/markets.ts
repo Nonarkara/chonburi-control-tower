@@ -104,6 +104,7 @@ export async function fetchMarkets(env: {
           fetchedAt,
           ageMinutes: 0,
           fallbackTier: "unavailable" as const,
+          note: "Missing FMP_API_KEY and FRED_API_KEY env vars — markets feed disabled",
         },
       };
     }
@@ -140,6 +141,7 @@ export async function fetchMarkets(env: {
         fetchedAt,
         ageMinutes: cacheAgeMinutes(fetchedAt),
         fallbackTier: ticks.length > 0 ? "live" as const : "unavailable" as const,
+        ...(ticks.length === 0 ? { note: "FMP/FRED returned no ticks — rate limit or upstream outage" } : {}),
       },
     };
   });

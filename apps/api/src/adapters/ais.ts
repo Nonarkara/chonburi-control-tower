@@ -33,6 +33,9 @@ const BBOX: [number, number, number, number] = [12.5, 100.5, 13.6, 101.3];
 const positions = new Map<string, AisVessel>();
 let wsConnected = false;
 let wsStartedAt: number | null = null;
+/** True once `startAisStream(token)` has been called with a non-empty token. Used
+ *  to distinguish "no AISSTREAM_TOKEN configured" from "configured but upstream down". */
+let wsTokenConfigured = false;
 let retryDelay = 2_000;
 const MAX_RETRY_DELAY = 60_000;
 
@@ -78,6 +81,7 @@ function shipType(code: number | undefined): string {
 export function startAisStream(token: string): void {
   if (typeof process === "undefined" || !process.versions?.node) return;
   if (wsConnected) return;
+  if (token) wsTokenConfigured = true;
 
   import("ws").then(({ default: WebSocket }) => {
     const ws = new WebSocket("wss://stream.aisstream.io/v0/stream");
@@ -154,13 +158,21 @@ export function fetchAisVessels(): NormalizedFeed<AisVessel> {
   pruneStale();
   const features = Array.from(positions.values()).slice(0, 500);
   const fetchedAt = new Date().toISOString();
+  const isLive = wsConnected && features.length > 0;
+  let note: string | undefined;
+  if (!isLive) {
+    if (!wsTokenConfigured) note = "Missing AISSTREAM_TOKEN env var — AIS vessel feed disabled";
+    else if (!wsConnected) note = "AISStream WebSocket disconnected — reconnecting";
+    else note = "AISStream connected but no vessels in bbox";
+  }
   return {
     features,
     meta: {
       source: "aisstream.io",
       fetchedAt,
       ageMinutes: wsStartedAt ? Math.floor((Date.now() - wsStartedAt) / 60_000) : 0,
-      fallbackTier: wsConnected && features.length > 0 ? "live" : "unavailable",
+      fallbackTier: isLive ? "live" : "unavailable",
+      ...(note ? { note } : {}),
     },
   };
 }

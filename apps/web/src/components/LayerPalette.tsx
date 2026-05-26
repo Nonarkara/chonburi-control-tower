@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   ALL_LAYERS,
+  COMPUTED_LAYERS,
   LAYER_GROUP_LABEL,
   LENSES,
   satelliteFreshness,
@@ -119,7 +120,9 @@ export function LayerPalette({ lens, onLensChange, enabled, onToggleLayer, count
                                 {freshness.label}
                               </span>
                             )}
-                            {counts != null && counts[l.id] != null ? (
+                            {/* Computed/decorative layers have no feature collection — a "0" count would
+                                falsely suggest a failed feed. Fall back to on/off for those. */}
+                            {!COMPUTED_LAYERS.has(l.id) && counts != null && counts[l.id] != null ? (
                               <span
                                 className={`mono caption layer-count ${counts[l.id]! > 0 ? "layer-count-ok" : "layer-count-zero"}`}
                                 title={`${counts[l.id]!.toLocaleString()} features loaded`}

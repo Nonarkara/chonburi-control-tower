@@ -104,7 +104,7 @@ export async function fetchGistdaPoi(): Promise<NormalizedFeed<GistdaPoi>> {
     }
     const data = await fetchJsonOrNull<ArcGisFeatureSet>(url);
     if (!data?.features) {
-      return { features: [], meta: { source: "gistda-poi", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const } };
+      return { features: [], meta: { source: "gistda-poi", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const, note: "GISTDA ArcGIS endpoint returned no features — upstream may be down" } };
     }
 
     const features: GistdaPoi[] = data.features
@@ -167,7 +167,7 @@ export async function fetchGistdaSolar(month?: number): Promise<NormalizedFeed<G
     }
     const data = await fetchJsonOrNull<ArcGisFeatureSet>(url);
     if (!data?.features?.length) {
-      return { features: [], meta: { source: "gistda-solar", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const } };
+      return { features: [], meta: { source: "gistda-solar", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const, note: "GISTDA solar dataset unavailable — upstream may be down" } };
     }
 
     const features: GistdaSolarBuilding[] = data.features.map(f => {
@@ -232,7 +232,7 @@ export async function fetchGistdaLandUse(): Promise<NormalizedFeed<GistdaLandUse
     }
     const data = await fetchJsonOrNull<ArcGisFeatureSet>(url);
     if (!data?.features?.length) {
-      return { features: [], meta: { source: "gistda-landuse", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const } };
+      return { features: [], meta: { source: "gistda-landuse", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const, note: "GISTDA land-use dataset unavailable — upstream may be down" } };
     }
 
     const features: GistdaLandUse[] = data.features

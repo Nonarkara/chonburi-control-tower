@@ -19,7 +19,13 @@ import type { NormalizedFeed } from "@chonburi/shared";
 import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
 import { fetchJsonOrNull } from "./common.js";
 
-const SEA_POINT: [number, number] = [100.95, 13.34];
+// Open-water Gulf of Thailand point — ~10 km offshore from Si Racha shipping lane.
+// Previously [100.95, 13.34] which is shallow Chonburi Bay; Open-Meteo Marine API
+// returns sparse/null for that coordinate, cascading into "—" in CoastalBrief and
+// "NO MARINE DATA" for every zone in FisheryPanel. The five tracked fishery zones
+// (Ang Sila, Bang Saen, Bang Phra, Chonburi Bay, Koh Si Chang) all sit within
+// ~30 km of this point so a single offshore reading is representative.
+const SEA_POINT: [number, number] = [100.85, 13.00];
 
 export interface MarineSnapshot {
   observedAt: string;

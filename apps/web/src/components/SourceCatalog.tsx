@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { SOURCE_CATALOG, type SourceCategory, type SourceEntry, type SourceStatus } from "@chonburi/shared";
+import { useEffect, useMemo, useState } from "react";
+import { SOURCE_CATALOG, type SourceCategory, type SourceEntry, type SourceStatus, type AdapterHealth } from "@chonburi/shared";
 
 const STATUS_COLOR: Record<SourceStatus, string> = {
   live: "var(--good)",
@@ -21,10 +21,79 @@ const CATEGORY_LABEL: Record<SourceCategory, string> = {
   campus: "LEG",
 };
 
+/**
+ * Map an apiPath ending segment / pattern → adapter name used by /api/health/detailed.
+ * Adapter names come from the second arg of `safeFeed(c, fn, "adapter-name")` in apps/api/src/index.ts.
+ * Keep this in sync when new routes are added.
+ */
+const API_PATH_TO_ADAPTER: Array<[RegExp, string]> = [
+  [/\/api\/incidents\/city-reports$/, "city-reports"],
+  [/\/api\/incidents\/itic$/, "itic"],
+  [/\/api\/news$/, "news"],
+  [/\/api\/weather$/, "weather"],
+  [/\/api\/precip-nowcast$/, "precip-nowcast"],
+  [/\/api\/air-quality$/, "air-quality"],
+  [/\/api\/air-quality\/trend$/, "air-quality-trend"],
+  [/\/api\/cctv\/longdo$/, "cctv"],
+  [/\/api\/trends$/, "trends"],
+  [/\/api\/datago\/datasets$/, "datago-datasets"],
+  [/\/api\/datago\/reservoirs$/, "reservoirs"],
+  [/\/api\/datago\/disasters$/, "disasters"],
+  [/\/api\/datago\/fahfon$/, "fahfon"],
+  [/\/api\/marine$/, "marine"],
+  [/\/api\/tides$/, "tides"],
+  [/\/api\/gistda\/poi$/, "gistda-poi"],
+  [/\/api\/gistda\/solar$/, "gistda-solar"],
+  [/\/api\/gistda\/landuse$/, "gistda-landuse"],
+  [/\/api\/nasa\/earth-readings$/, "nasa-power"],
+  [/\/api\/social\/facebook$/, "facebook"],
+  [/\/api\/markets$/, "markets"],
+  [/\/api\/maritime\/ais$/, "ais"],
+];
+
+function adapterNameFor(apiPath: string | undefined): string | null {
+  if (!apiPath) return null;
+  for (const [re, name] of API_PATH_TO_ADAPTER) if (re.test(apiPath)) return name;
+  return null;
+}
+
+const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "";
+
+interface HealthPayload {
+  system: { status: string; healthy: number; degraded: number; down: number; total: number };
+  adapters: AdapterHealth[];
+}
+
 interface Props { open: boolean; onClose: () => void }
 
 export function SourceCatalog({ open, onClose }: Props) {
   const [filter, setFilter] = useState<"all" | SourceStatus>("all");
+  const [health, setHealth] = useState<HealthPayload | null>(null);
+
+  // Fetch detailed adapter health when the modal opens. Refetch every 60 s while open.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/health/detailed`);
+        if (!res.ok) return;
+        const json = (await res.json()) as HealthPayload;
+        if (!cancelled) setHealth(json);
+      } catch {
+        // Silent — health surface is best-effort
+      }
+    };
+    load();
+    const id = window.setInterval(load, 60_000);
+    return () => { cancelled = true; window.clearInterval(id); };
+  }, [open]);
+
+  const healthByAdapter = useMemo(() => {
+    const map = new Map<string, AdapterHealth>();
+    for (const a of health?.adapters ?? []) map.set(a.name, a);
+    return map;
+  }, [health]);
 
   const grouped = useMemo(() => {
     const list = filter === "all"
@@ -47,6 +116,8 @@ export function SourceCatalog({ open, onClose }: Props) {
 
   if (!open) return null;
 
+  const sysStatus = health?.system;
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Source catalog">
@@ -65,6 +136,17 @@ export function SourceCatalog({ open, onClose }: Props) {
           <span><span className="dot unavailable" /> RESEARCH {counts.research}</span>
           {counts.stub > 0 && <span><span className="dot unavailable" /> STUB {counts.stub}</span>}
         </div>
+
+        {/* Runtime adapter health — distinguish "configured live" from "actually working" */}
+        {sysStatus && (
+          <div className="modal-summary mono" role="status" aria-live="polite">
+            <span style={{ color: "var(--text-3)" }}>RUNTIME ·</span>
+            <span style={{ color: "var(--good)" }}>{sysStatus.healthy} healthy</span>
+            {sysStatus.degraded > 0 && <span style={{ color: "var(--warn)" }}>{sysStatus.degraded} degraded</span>}
+            {sysStatus.down > 0 && <span style={{ color: "var(--bad)" }}>{sysStatus.down} down</span>}
+            <span style={{ color: "var(--text-3)" }}>· of {sysStatus.total} tracked</span>
+          </div>
+        )}
 
         <div className="modal-filter">
           {(["all", "live", "ready", "planned", "research", "stub"] as const).map((f) => (
@@ -119,32 +201,51 @@ export function SourceCatalog({ open, onClose }: Props) {
                 <span className="mono caption">{items.length}</span>
               </header>
               <ul className="catalog-list">
-                {items.map((s) => (
-                  <li key={s.id} className="catalog-row">
-                    <span
-                      className="catalog-status mono"
-                      style={{ background: STATUS_COLOR[s.status] }}
-                      aria-label={s.status}
-                    >
-                      {s.status.toUpperCase()}
-                    </span>
-                    <div className="col" style={{ gap: 2, flex: 1, minWidth: 0 }}>
-                      <div className="catalog-title">
-                        <strong>{s.label}</strong>
-                        <span className="caption">· {s.vendor}</span>
+                {items.map((s) => {
+                  const adapter = adapterNameFor(s.apiPath);
+                  const h = adapter ? healthByAdapter.get(adapter) : null;
+                  const isMissingKey = h?.lastErrorMessage?.startsWith("Missing ") ?? false;
+                  return (
+                    <li key={s.id} className="catalog-row">
+                      <span
+                        className="catalog-status mono"
+                        style={{ background: STATUS_COLOR[s.status] }}
+                        aria-label={s.status}
+                      >
+                        {s.status.toUpperCase()}
+                      </span>
+                      <div className="col" style={{ gap: 2, flex: 1, minWidth: 0 }}>
+                        <div className="catalog-title">
+                          <strong>{s.label}</strong>
+                          <span className="caption">· {s.vendor}</span>
+                          {h && h.status !== "healthy" && h.status !== "unknown" && (
+                            <span
+                              className={`mono caption ${h.status === "down" ? "data-age--crit" : "data-age--warn"}`}
+                              title={h.lastErrorMessage ?? `Adapter status: ${h.status}`}
+                              style={{ marginLeft: 8 }}
+                            >
+                              {isMissingKey ? `⚠ KEY MISSING${s.keyEnv ? ` · ${s.keyEnv}` : ""}` : `⚠ ${h.status.toUpperCase()}`}
+                            </span>
+                          )}
+                        </div>
+                        <div className="caption" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {s.describe}
+                        </div>
+                        <div className="catalog-meta mono caption">
+                          {s.apiPath && <span>api {s.apiPath}</span>}
+                          {s.endpoint && !s.apiPath && <span>upstream {s.endpoint.replace(/^https?:\/\//, "").slice(0, 56)}</span>}
+                          {s.pollSeconds && <span>poll {s.pollSeconds}s</span>}
+                          {s.keyEnv && <span>key {s.keyEnv}</span>}
+                          {h && h.consecutiveFailures > 0 && (
+                            <span style={{ color: "var(--bad)" }}>
+                              {h.consecutiveFailures} consec. {h.consecutiveFailures === 1 ? "failure" : "failures"}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="caption" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {s.describe}
-                      </div>
-                      <div className="catalog-meta mono caption">
-                        {s.apiPath && <span>api {s.apiPath}</span>}
-                        {s.endpoint && !s.apiPath && <span>upstream {s.endpoint.replace(/^https?:\/\//, "").slice(0, 56)}</span>}
-                        {s.pollSeconds && <span>poll {s.pollSeconds}s</span>}
-                        {s.keyEnv && <span>key {s.keyEnv}</span>}
-                      </div>
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           ))}

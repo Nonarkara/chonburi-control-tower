@@ -171,6 +171,9 @@ export async function fetchDatagoDatasets(): Promise<NormalizedFeed<DatagoDatase
 
 const CKAN = "https://data.go.th/api/3/action/datastore_search";
 
+/** Set on the meta when the env var is missing so SourceCatalog can show "KEY MISSING". */
+const NO_TOKEN_NOTE = "Missing DATA_GO_TH_TOKEN env var — data.go.th feeds disabled";
+
 async function ckanFetch<T>(
   resourceId: string,
   token: string,
@@ -214,7 +217,7 @@ export async function fetchReservoirs(token: string): Promise<NormalizedFeed<Res
   return cached("datago-reservoirs", 3600, async () => {
     const fetchedAt = new Date().toISOString();
     const rows = await ckanFetch<Record<string, unknown>>(RESERVOIR_RESOURCE, token);
-    if (!rows) return { features: [], meta: { source: "datago-reservoirs", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const } };
+    if (!rows) return { features: [], meta: { source: "datago-reservoirs", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const, note: token ? "CKAN returned no rows — upstream may be down" : NO_TOKEN_NOTE } };
 
     const features: ReservoirStatus[] = rows.map((r) => {
       const vol      = Number(r["Current Water Volume (million cubic meters)"]) || null;
@@ -260,7 +263,7 @@ export async function fetchDisasterStats(token: string): Promise<NormalizedFeed<
   return cached("datago-disasters", 86400, async () => {
     const fetchedAt = new Date().toISOString();
     const rows = await ckanFetch<Record<string, unknown>>(DISASTER_RESOURCE, token);
-    if (!rows) return { features: [], meta: { source: "datago-disasters", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const } };
+    if (!rows) return { features: [], meta: { source: "datago-disasters", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const, note: token ? "CKAN returned no rows — upstream may be down" : NO_TOKEN_NOTE } };
     const features: DisasterStat[] = rows.map((r) => ({
       type: String(r["ประเภทภัย"] ?? ""),
       year: Number(r["ปี"] ?? 0),
@@ -289,7 +292,7 @@ export async function fetchFahfon(token: string): Promise<NormalizedFeed<FahfonR
     const fetchedAt = new Date().toISOString();
     // Get the most recent readings sorted by _id desc
     const rows = await ckanFetch<Record<string, unknown>>(FAHFON_RESOURCE, token, { limit: 20, sort: "_id desc" });
-    if (!rows) return { features: [], meta: { source: "datago-fahfon", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const } };
+    if (!rows) return { features: [], meta: { source: "datago-fahfon", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const, note: token ? "CKAN returned no rows — upstream may be down" : NO_TOKEN_NOTE } };
     const features: FahfonReading[] = rows.map((r) => ({
       station: String(r["สถานีตรวจวัดอากาศ"] ?? ""),
       date: String(r["DATE"] ?? "").slice(0, 10),
@@ -493,7 +496,7 @@ export async function fetchRoadSafety(token: string): Promise<NormalizedFeed<Roa
     const district = ok(districtRaw) ?? [];
 
     if (!monthly.length) {
-      return { features: [], meta: { source: "datago-road-safety", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const } };
+      return { features: [], meta: { source: "datago-road-safety", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const, note: token ? "CKAN returned no rows — upstream may be down" : NO_TOKEN_NOTE } };
     }
 
     // Latest year available

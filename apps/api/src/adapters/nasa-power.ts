@@ -117,6 +117,7 @@ export async function fetchNasaEarth(): Promise<NormalizedFeed<NasaEarthReadings
         fetchedAt,
         ageMinutes: cacheAgeMinutes(fetchedAt),
         fallbackTier: params ? ("live" as const) : ("unavailable" as const),
+        ...(params ? {} : { note: "NASA POWER API returned no parameters — endpoint may be in maintenance" }),
       },
     };
   });

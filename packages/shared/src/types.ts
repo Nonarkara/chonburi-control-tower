@@ -18,6 +18,13 @@ export interface SourceMeta {
   fetchedAt: string;
   ageMinutes: number;
   fallbackTier: FallbackTier;
+  /**
+   * Human-readable reason set when `fallbackTier` is "unavailable" or "scenario" —
+   * surfaced by `/api/health/detailed` and shown inline in the SOURCES catalog so
+   * operators can distinguish missing API keys from upstream outages.
+   * Example: "Missing GEMINI_API_KEY env var — adapter disabled".
+   */
+  note?: string;
 }
 
 export interface NormalizedFeed<T> {
