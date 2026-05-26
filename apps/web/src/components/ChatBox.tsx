@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { safeUrl } from "../lib/safeUrl";
 
 interface ChatMessage {
@@ -189,7 +189,8 @@ export function ChatBox({ apiBase }: Props) {
         setBusy(false);
       }
     },
-    [apiBase, busy, messages],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [apiBase, messages], // busy omitted: read via busyRef to avoid re-creating on every state flip
   );
 
   const onSubmit = useCallback(
@@ -207,7 +208,7 @@ export function ChatBox({ apiBase }: Props) {
     setBusy(false);
   }, []);
 
-  const turnCount = useMemo(() => messages.length, [messages]);
+  const turnCount = messages.length;
 
   return (
     <div className={`chatbox ${open ? "chatbox-open" : "chatbox-closed"}`}>

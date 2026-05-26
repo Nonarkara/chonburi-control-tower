@@ -175,6 +175,29 @@ test.describe("Source catalog — filter buttons", () => {
   });
 });
 
+test.describe("ChatBox — open / close", () => {
+  test("Ask CTM button opens chat panel; ESC closes it", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator(".map-host")).toBeVisible({ timeout: 20_000 });
+
+    // Chat handle must be visible before opening
+    const handle = page.getByRole("button", { name: /Open concierge chat/i });
+    await expect(handle).toBeVisible({ timeout: 10_000 });
+    await handle.click();
+
+    // Dialog opens — aria-label set in ChatBox
+    const chat = page.getByRole("dialog", { name: /Concierge chat/i });
+    await expect(chat).toBeVisible({ timeout: 5_000 });
+
+    // Input field and clear button must be present
+    await expect(chat.getByRole("textbox")).toBeVisible();
+
+    // ESC closes the panel
+    await page.keyboard.press("Escape");
+    await expect(chat).toBeHidden({ timeout: 5_000 });
+  });
+});
+
 test.describe("PART MODELLED chip on municipality ops panel", () => {
   test("PmcuBrief renders its PART MODELLED chip with accessible label", async ({ page }) => {
     await page.goto("/");
