@@ -118,3 +118,82 @@ test.describe("MAR lens — panel headers", () => {
     await expect(page.getByText(/FISHERY CONDITIONS/i).first()).toBeVisible({ timeout: 10_000 });
   });
 });
+
+test.describe("EAR lens — Earth obs panel header", () => {
+  test("EarthAlphaBrief PanelHeader eyebrow is visible in EAR lens", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator(".map-host")).toBeVisible({ timeout: 20_000 });
+
+    const earButton = page.locator(".lens").getByRole("button", { name: /^EAR$/i });
+    await earButton.click();
+    await expect(earButton).toHaveAttribute("aria-pressed", "true");
+
+    // EarthAlphaBrief renders "EARTH OBS" as its PanelHeader title
+    await expect(page.getByText(/EARTH OBS/i).first()).toBeVisible({ timeout: 15_000 });
+    // SHEETS status badge is rendered as the `actions` prop
+    await expect(page.getByText(/SHEETS (ON|READY)/i).first()).toBeVisible({ timeout: 5_000 });
+  });
+});
+
+test.describe("EXEC lens — executive briefing header", () => {
+  test("ExecutiveBriefing PanelHeader eyebrow is visible in EXEC lens", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator(".map-host")).toBeVisible({ timeout: 20_000 });
+
+    const execButton = page.locator(".lens").getByRole("button", { name: /^EXEC$/i });
+    await execButton.click();
+    await expect(execButton).toHaveAttribute("aria-pressed", "true");
+
+    // ExecutiveBriefing renders "EXECUTIVE BRIEF" as its PanelHeader title
+    await expect(page.getByText(/EXECUTIVE BRIEF/i).first()).toBeVisible({ timeout: 15_000 });
+  });
+});
+
+test.describe("Source catalog — filter buttons", () => {
+  test("LIVE filter narrows the catalog to live-status entries only", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator(".map-host")).toBeVisible({ timeout: 20_000 });
+
+    // Open the catalog
+    await page.getByRole("button", { name: "Open source catalog" }).click();
+    const dialog = page.getByRole("dialog", { name: /Source catalog/i });
+    await expect(dialog).toBeVisible();
+
+    // Click the LIVE filter button
+    const liveFilter = dialog.getByRole("button", { name: /^LIVE$/i });
+    await liveFilter.click();
+    await expect(liveFilter).toHaveAttribute("aria-pressed", "true");
+
+    // After LIVE filter: all visible status pills should read LIVE (not READY/PLANNED/etc.)
+    const statusPills = dialog.locator(".catalog-status");
+    const count = await statusPills.count();
+    // At least some live entries must be showing
+    expect(count).toBeGreaterThan(0);
+    // Every pill in a LIVE-filtered view must say "LIVE"
+    for (let i = 0; i < count; i++) {
+      await expect(statusPills.nth(i)).toHaveText("LIVE");
+    }
+  });
+});
+
+test.describe("EO layer toggles", () => {
+  test("clicking a satellite layer toggle flips its aria-pressed state", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator(".map-host")).toBeVisible({ timeout: 20_000 });
+
+    // Switch to EAR lens so the EO toggles are in view
+    await page.locator(".lens").getByRole("button", { name: /^EAR$/i }).click();
+    await expect(page.getByText(/EARTH OBS/i).first()).toBeVisible({ timeout: 15_000 });
+
+    // The Rain toggle (satellite-imerg) is a button with aria-pressed
+    const rainToggle = page.getByRole("button", { name: /Enable Rain|Disable Rain/i }).first();
+    await expect(rainToggle).toBeVisible({ timeout: 10_000 });
+
+    const initialState = await rainToggle.getAttribute("aria-pressed");
+    await rainToggle.click();
+    const newState = await rainToggle.getAttribute("aria-pressed");
+
+    // State must have flipped
+    expect(newState).not.toBe(initialState);
+  });
+});

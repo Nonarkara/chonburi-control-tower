@@ -13,6 +13,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { LayerId } from "../map/presets";
+import { PanelHeader } from "./PanelHeader";
 
 interface ForecastPoint {
   time: string;
@@ -58,6 +59,8 @@ interface Props {
   onMetricClick?: (metric: string) => void;
   onAlert?: (metric: string) => void;
   onForecastsLoaded?: (forecasts: ForecastMetric[]) => void;
+  ageMinutes?: number | null;
+  fallbackTier?: import("@chonburi/shared").FallbackTier;
 }
 
 // Width × height of each sparkline SVG in px
@@ -139,7 +142,7 @@ function peakLabel(points: ForecastPoint[], unit: string): string {
   return `${peak.toFixed(1)}${unit ? " " + unit : ""} peak`;
 }
 
-export function PredictivePanel({ apiBase, onMetricClick, onAlert, onForecastsLoaded }: Props) {
+export function PredictivePanel({ apiBase, onMetricClick, onAlert, onForecastsLoaded, ageMinutes, fallbackTier }: Props) {
   const [data, setData] = useState<PredictionsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -189,12 +192,12 @@ export function PredictivePanel({ apiBase, onMetricClick, onAlert, onForecastsLo
 
   return (
     <div className="col predictive-panel">
-      <div className="spread" style={{ alignItems: "center" }}>
-        <span className="eyebrow">PREDICTIVE INTELLIGENCE</span>
-        <span className="eyebrow mono" style={{ color: "var(--text-3)", fontSize: "0.58rem" }}>
-          TIMESFM·ZS
-        </span>
-      </div>
+      <PanelHeader
+        title="PREDICTIVE INTELLIGENCE"
+        ageMinutes={ageMinutes}
+        fallbackTier={fallbackTier}
+        source="timesfm·zs"
+      />
 
       {loading && !data && (
         <div className="eyebrow mono" style={{ color: "var(--text-3)" }}>LOADING …</div>

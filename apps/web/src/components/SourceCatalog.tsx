@@ -34,6 +34,7 @@ const API_PATH_TO_ADAPTER: Array<[RegExp, string]> = [
   [/\/api\/precip-nowcast$/, "precip-nowcast"],
   [/\/api\/air-quality$/, "air-quality"],
   [/\/api\/air-quality\/trend$/, "air-quality-trend"],
+  [/\/api\/air-quality\/aqicn$/, "aqicn"],
   [/\/api\/cctv\/longdo$/, "cctv"],
   [/\/api\/trends$/, "trends"],
   [/\/api\/datago\/datasets$/, "datago-datasets"],

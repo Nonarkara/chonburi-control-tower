@@ -25,8 +25,8 @@ The codebase has a test foundation — please keep it green.
 
 ```bash
 pnpm --filter @chonburi/shared test     # 24 unit tests (locale, fmtAge, tierLabel, SOURCE_CATALOG invariants)
-pnpm --filter @chonburi/api test        # 32 unit tests (health state machine, cache dedup, adapter notes, AIS + GISTDA contracts)
-pnpm --filter @chonburi/web test:e2e    # 7 Playwright smoke tests (boot, lens, modal, MODELLED chip, count badges, MAR panels)
+pnpm --filter @chonburi/api test        # 59 unit tests (health state machine, cache dedup, adapter contracts: weather, tides, marine, datago, nasa-power, air-quality, aqicn, AIS, GISTDA, markets, facebook)
+pnpm --filter @chonburi/web test:e2e    # 11 Playwright smoke tests (boot, lens, modal, MODELLED chip, count badges, MAR/EAR/EXEC panels, catalog filter, layer toggle)
 ```
 
 CI (`.github/workflows/test.yml`) runs typecheck + unit + E2E on every PR. Deploy
@@ -133,9 +133,12 @@ Default lens: `"operations"`.
 | `CoastalBrief` | Sea state / Gulf of Thailand | ✅ |
 | `TidePanel` | Tidal forecasts | ✅ |
 | `FisheryPanel` | Fishery zone conditions | ✅ |
-| `ExecutiveBriefing` | Strategic KPIs | ❌ needs adding |
-| `EarthAlphaBrief` | Earth obs summary | check |
-| `PredictivePanel` | TimeFM forecasts | check |
+| `ExecutiveBriefing` | Strategic KPIs | ✅ |
+| `EarthAlphaBrief` | Earth obs summary | ✅ |
+| `PredictivePanel` | TimeFM forecasts | ✅ |
+| `FacebookPanel` | Municipal Facebook feed | ✅ |
+| `TrendsPanel` | Google Trends · #Chonburi | ✅ |
+| `ProvincialKPIs` | Province data.go.th KPIs | ✅ |
 
 ## Data Sources
 

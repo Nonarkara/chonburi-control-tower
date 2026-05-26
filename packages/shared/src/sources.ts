@@ -695,9 +695,10 @@ export const SOURCE_CATALOG: SourceEntry[] = [
     vendor: "World Air Quality Index project",
     category: "environment",
     status: "live",
+    keyEnv: "AQICN_TOKEN",
     endpoint: "https://aqicn.org/city/chon-buri/",
-    apiPath: "/api/air-quality",
-    describe: "Real-time AQI from Thailand's Pollution Control Department station in Chonburi. Already wired via the AQ adapter; AQICN cross-validates Open-Meteo.",
+    apiPath: "/api/air-quality/aqicn",
+    describe: "Real-time AQI from Thailand's Pollution Control Department nearest station. Cross-validates and supplements Open-Meteo AQ grid. Requires AQICN_TOKEN (free at aqicn.org/data-platform/token).",
     docs: "https://aqicn.org/api/",
   },
   {

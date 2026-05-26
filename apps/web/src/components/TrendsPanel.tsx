@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { safeUrl } from "../lib/safeUrl";
+import { PanelHeader } from "./PanelHeader";
+import type { FallbackTier } from "@chonburi/shared";
 
 interface TrendPoint { time: string; value: number }
 interface RelatedQuery { query: string; value: number; link?: string | null }
@@ -20,6 +22,7 @@ interface Props {
   loading: boolean;
   ageMinutes: number;
   onRefresh: () => void;
+  fallbackTier?: FallbackTier;
 }
 
 const LANGS: Array<{ id: TrendsSnapshot["lang"]; label: string }> = [
@@ -33,7 +36,7 @@ const LANGS: Array<{ id: TrendsSnapshot["lang"]; label: string }> = [
  * around the active "Chonburi" keyword in each language, with the past-90-day
  * interest curve as a tiny sparkline.
  */
-export function TrendsPanel({ snapshots, loading, ageMinutes, onRefresh }: Props) {
+export function TrendsPanel({ snapshots, loading, ageMinutes, onRefresh, fallbackTier }: Props) {
   const [lang, setLang] = useState<TrendsSnapshot["lang"]>("en");
   const active = useMemo(
     () => snapshots.find((s) => s.lang === lang) ?? snapshots[0] ?? null,
@@ -61,23 +64,28 @@ export function TrendsPanel({ snapshots, loading, ageMinutes, onRefresh }: Props
 
   return (
     <section className="trends-panel">
-      <header className="trends-head">
-        <div className="trends-tag">
-          <span className="eyebrow mono">Trends · #Chonburi · 90 d</span>
-          {active && <span className="trends-keyword">{active.keyword}</span>}
-        </div>
-        <button
-          type="button"
-          className="trends-refresh mono"
-          onClick={onRefresh}
-          disabled={loading}
-          aria-label={loading ? "Refreshing trends, please wait" : `Refresh Google Trends data — last refreshed ${ageMinutes}m ago`}
-          aria-busy={loading}
-          title={`Refreshed ${ageMinutes}m ago — click to refresh`}
-        >
-          {loading ? "…" : "↻"}
-        </button>
-      </header>
+      <PanelHeader
+        title="TRENDS · #CHONBURI · 90 D"
+        ageMinutes={ageMinutes}
+        fallbackTier={fallbackTier}
+        source="google-trends"
+        actions={
+          <>
+            {active && <span className="trends-keyword">{active.keyword}</span>}
+            <button
+              type="button"
+              className="trends-refresh mono"
+              onClick={onRefresh}
+              disabled={loading}
+              aria-label={loading ? "Refreshing trends, please wait" : `Refresh Google Trends data — last refreshed ${ageMinutes}m ago`}
+              aria-busy={loading}
+              title={`Refreshed ${ageMinutes}m ago — click to refresh`}
+            >
+              {loading ? "…" : "↻"}
+            </button>
+          </>
+        }
+      />
 
       <div className="trends-lang">
         {LANGS.map((l) => (

@@ -20,9 +20,14 @@ interface FbPost {
   shares?: number;
 }
 
+import { PanelHeader } from "./PanelHeader";
+import type { FallbackTier } from "@chonburi/shared";
+
 interface Props {
   posts: FbPost[];
   loading: boolean;
+  ageMinutes?: number | null;
+  fallbackTier?: FallbackTier;
 }
 
 const PAGE_URL = "https://www.facebook.com/mueangchonburi";
@@ -40,7 +45,7 @@ function ago(iso: string): string {
   return `${Math.round(h / 24)}D`;
 }
 
-export function FacebookPanel({ posts, loading }: Props) {
+export function FacebookPanel({ posts, loading, ageMinutes, fallbackTier }: Props) {
   const embedSrc = `https://www.facebook.com/plugins/page.php?` +
     `href=${encodeURIComponent(PAGE_URL)}` +
     `&tabs=timeline&width=320&height=420` +
@@ -48,18 +53,23 @@ export function FacebookPanel({ posts, loading }: Props) {
 
   return (
     <div className="col" style={{ gap: 8 }}>
-      <div className="spread" style={{ alignItems: "center" }}>
-        <span className="eyebrow">FACEBOOK // เทศบาลเมืองชลบุรี</span>
-        <a
-          href={PAGE_URL}
-          target="_blank"
-          rel="noreferrer noopener"
-          className="mono caption"
-          style={{ color: "var(--accent)", letterSpacing: "0.05em" }}
-        >
-          @{PAGE_USERNAME} ↗
-        </a>
-      </div>
+      <PanelHeader
+        title="FACEBOOK // เทศบาลเมืองชลบุรี"
+        ageMinutes={ageMinutes}
+        fallbackTier={fallbackTier}
+        source="facebook-graph"
+        actions={
+          <a
+            href={PAGE_URL}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="mono caption"
+            style={{ color: "var(--accent)", letterSpacing: "0.05em" }}
+          >
+            @{PAGE_USERNAME} ↗
+          </a>
+        }
+      />
 
       {/* Server-side posts via Graph API (only when token configured) */}
       {posts.length > 0 && (

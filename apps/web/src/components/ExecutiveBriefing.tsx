@@ -11,8 +11,10 @@ import type {
   WeatherSnapshot,
   AirQualityPoint,
   MarketSnapshot,
+  FallbackTier,
 } from "@chonburi/shared";
 import type { ReservoirStatus } from "./WaterPanel";
+import { PanelHeader } from "./PanelHeader";
 
 interface Props {
   executive: ExecutiveSnapshot | null;
@@ -21,6 +23,8 @@ interface Props {
   openIncidents: number;
   reservoirs: ReservoirStatus[];
   markets: MarketSnapshot | null;
+  ageMinutes?: number | null;
+  fallbackTier?: FallbackTier;
 }
 
 const LEVEL_COLOR: Record<string, string> = {
@@ -84,6 +88,8 @@ export function ExecutiveBriefing({
   openIncidents,
   reservoirs,
   markets,
+  ageMinutes,
+  fallbackTier,
 }: Props) {
   const alerts = executive?.alerts ?? [];
   const initiatives = executive?.initiatives ?? [];
@@ -98,10 +104,15 @@ export function ExecutiveBriefing({
   return (
     <div className="executive-briefing">
       {/* Header */}
-      <div className="exec-briefing-head">
-        <span className="mono eyebrow">EXECUTIVE BRIEF</span>
-        <span className="mono caption" style={{ color: "var(--text-3)" }}>{nowStr}</span>
-      </div>
+      <PanelHeader
+        title="EXECUTIVE BRIEF"
+        source="live-feeds"
+        ageMinutes={ageMinutes}
+        fallbackTier={fallbackTier}
+        actions={
+          <span className="mono caption" style={{ color: "var(--text-3)" }}>{nowStr}</span>
+        }
+      />
 
       {/* Situation alerts */}
       <div className="exec-briefing-section">

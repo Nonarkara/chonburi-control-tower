@@ -44,9 +44,14 @@ export interface ProvincialKPIs {
   welfare: { elderly: number; disabled: number } | null;
 }
 
+import { PanelHeader } from "./PanelHeader";
+import type { FallbackTier } from "@chonburi/shared";
+
 interface Props {
   data: ProvincialKPIs | null;
   loading: boolean;
+  ageMinutes?: number | null;
+  fallbackTier?: FallbackTier;
 }
 
 function KpiTile({ label, value, sub, color }: Kpi) {
@@ -65,11 +70,11 @@ function KpiTile({ label, value, sub, color }: Kpi) {
   );
 }
 
-export function ProvincialKPIs({ data, loading }: Props) {
+export function ProvincialKPIs({ data, loading, ageMinutes, fallbackTier }: Props) {
   if (loading && !data) {
     return (
       <div className="col" role="status" aria-busy="true" aria-label="Loading provincial KPIs">
-        <div className="eyebrow">CHONBURI PROVINCE // DATA.GO.TH</div>
+        <PanelHeader title="CHONBURI PROVINCE // DATA.GO.TH" ageMinutes={ageMinutes} fallbackTier={fallbackTier} source="data.go.th" />
         <div className="skeleton" style={{ height: 28, marginTop: 8 }} />
         <div className="skeleton" style={{ height: 28, marginTop: 6 }} />
       </div>
@@ -144,7 +149,7 @@ export function ProvincialKPIs({ data, loading }: Props) {
 
   return (
     <div className="col" style={{ gap: 8 }}>
-      <div className="eyebrow">CHONBURI PROVINCE // DATA.GO.TH</div>
+      <PanelHeader title="CHONBURI PROVINCE // DATA.GO.TH" ageMinutes={ageMinutes} fallbackTier={fallbackTier} source="data.go.th" />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 16px" }}>
         {kpis.map((k) => <KpiTile key={k.label} {...k} />)}
       </div>

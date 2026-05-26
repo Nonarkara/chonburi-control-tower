@@ -1162,6 +1162,8 @@ export default function App() {
               openIncidents={cityReports.data.filter((r) => r.status !== "resolved").length + iticEvents.data.length}
               reservoirs={reservoirs.data}
               markets={markets.data[0] ?? null}
+              ageMinutes={executive.ageMinutes}
+              fallbackTier={executive.fallbackTier === "loading" ? undefined : executive.fallbackTier}
             />
           </div>
         )}
@@ -1170,6 +1172,8 @@ export default function App() {
             <ProvincialKPIs
               data={provincialKPIs.data[0] ?? null}
               loading={provincialKPIs.fallbackTier === "loading"}
+              ageMinutes={provincialKPIs.ageMinutes}
+              fallbackTier={provincialKPIs.fallbackTier === "loading" ? undefined : provincialKPIs.fallbackTier}
             />
           </div>
         )}
@@ -1218,6 +1222,8 @@ export default function App() {
             sheetsConfigured={sheetsConfigured}
             nasaReadings={nasaEarth.data[0] ?? null}
             avgSolarIrrKWh={avgSolarIrrKWh}
+            ageMinutes={nasaEarth.ageMinutes}
+            fallbackTier={nasaEarth.fallbackTier === "loading" ? undefined : nasaEarth.fallbackTier}
           />
         </div>
         {reservoirs.data.length > 0 && (
@@ -1379,6 +1385,7 @@ export default function App() {
             loading={trends.fallbackTier === "loading"}
             ageMinutes={trends.ageMinutes}
             onRefresh={trends.refetch}
+            fallbackTier={trends.fallbackTier === "loading" ? undefined : trends.fallbackTier}
           />
         </div>
         <div className="right-news">
@@ -1392,6 +1399,8 @@ export default function App() {
             <FacebookPanel
               posts={facebook.data}
               loading={facebook.fallbackTier === "loading"}
+              ageMinutes={facebook.ageMinutes}
+              fallbackTier={facebook.fallbackTier === "loading" ? undefined : facebook.fallbackTier}
             />
           </div>
         </div>

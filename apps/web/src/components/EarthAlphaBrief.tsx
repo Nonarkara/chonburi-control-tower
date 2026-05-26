@@ -1,8 +1,9 @@
-import type { NasaEarthReadings } from "@chonburi/shared";
+import type { NasaEarthReadings, FallbackTier } from "@chonburi/shared";
 import {
   satelliteFreshness,
   type LayerId,
 } from "../map/presets";
+import { PanelHeader } from "./PanelHeader";
 
 interface Props {
   enabledLayers: Set<LayerId>;
@@ -17,6 +18,8 @@ interface Props {
   sheetsConfigured: boolean;
   nasaReadings: NasaEarthReadings | null;
   avgSolarIrrKWh: number | null;
+  ageMinutes?: number;
+  fallbackTier?: FallbackTier;
 }
 
 const EARTH_LAYERS: Array<{ id: LayerId; label: string }> = [
@@ -64,6 +67,8 @@ export function EarthAlphaBrief({
   sheetsConfigured,
   nasaReadings,
   avgSolarIrrKWh,
+  ageMinutes,
+  fallbackTier,
 }: Props) {
   const activeEarthLayers = EARTH_LAYERS.filter((l) => enabledLayers.has(l.id));
   const floodFreshness = satelliteFreshness("satellite-flood");
@@ -76,12 +81,17 @@ export function EarthAlphaBrief({
 
   return (
     <div className="col" style={{ gap: 8 }}>
-      <div className="spread" style={{ alignItems: "center" }}>
-        <span className="eyebrow">EARTH OBS · NASA GIBS + GISTDA</span>
-        <span className="eyebrow mono" style={{ color: sheetsConfigured ? "var(--good)" : "var(--warn)" }}>
-          SHEETS {sheetsConfigured ? "ON" : "READY"}
-        </span>
-      </div>
+      <PanelHeader
+        title="EARTH OBS · NASA GIBS + GISTDA"
+        source="nasa-gibs·gistda"
+        ageMinutes={ageMinutes}
+        fallbackTier={fallbackTier}
+        actions={
+          <span className="eyebrow mono" style={{ color: sheetsConfigured ? "var(--good)" : "var(--warn)" }}>
+            SHEETS {sheetsConfigured ? "ON" : "READY"}
+          </span>
+        }
+      />
 
       {/* ── LIVE READINGS — NASA MERRA-2 + GISTDA ── */}
       <div style={{ borderTop: "2px solid var(--data)", paddingTop: 8 }}>
