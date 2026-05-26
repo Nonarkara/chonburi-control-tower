@@ -28,9 +28,12 @@ function centroid(geom: Polygon | MultiPolygon): [number, number] {
   return [sx / ring.length, sy / ring.length];
 }
 
+const LISTBOX_ID = "building-search-results";
+
 export function BuildingSearch({ buildings, onSelect }: Props) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
   const timeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -82,6 +85,24 @@ export function BuildingSearch({ buildings, onSelect }: Props) {
     onSelect(h.centroid, h.feature.properties);
     setQ(h.display);
     setOpen(false);
+    setFocusedIndex(-1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!open || results.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setFocusedIndex((i) => Math.min(i + 1, results.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setFocusedIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter" && focusedIndex >= 0) {
+      e.preventDefault();
+      pick(results[focusedIndex]);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+      setFocusedIndex(-1);
+    }
   };
 
   return (
@@ -89,28 +110,46 @@ export function BuildingSearch({ buildings, onSelect }: Props) {
       <input
         className="building-search-input mono"
         type="search"
+        role="combobox"
+        aria-label="Search buildings by name"
+        aria-controls={open && results.length > 0 ? LISTBOX_ID : undefined}
+        aria-expanded={open && results.length > 0}
+        aria-autocomplete="list"
+        aria-activedescendant={
+          focusedIndex >= 0
+            ? `bsr-${results[focusedIndex]?.feature.properties.id}`
+            : undefined
+        }
         placeholder={
           buildings
-            ? `Search ${index.length} named landmarks among ${buildings.features.length.toLocaleString()} buildings in Chonburi Town — "city hall" / "วัด" / "ตลาด"`
+            ? `Search ${index.length} landmarks · "city hall" / "วัด" / "ตลาด"`
             : "Loading Chonburi buildings…"
         }
         value={q}
         onChange={(e) => {
           setQ(e.target.value);
           setOpen(true);
+          setFocusedIndex(-1);
         }}
         onFocus={() => setOpen(true)}
         onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
         spellCheck={false}
         autoComplete="off"
       />
       {open && results.length > 0 && (
-        <ul className="building-search-results" role="listbox">
-          {results.map((h) => (
+        <ul
+          id={LISTBOX_ID}
+          className="building-search-results"
+          role="listbox"
+          aria-label="Building search results"
+        >
+          {results.map((h, i) => (
             <li
+              id={`bsr-${h.feature.properties.id}`}
               key={h.feature.properties.id}
               role="option"
-              aria-selected={false}
+              aria-selected={i === focusedIndex}
               tabIndex={0}
               onClick={() => pick(h)}
               onKeyDown={(e) => {

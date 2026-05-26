@@ -231,7 +231,7 @@ export function WorldStrip({ hostAqi, hostPm25, hostWeather, hostPulse, precipNo
                 <span className="lbl">iTIC EVT</span>
                 <span
                   className="val mono"
-                  style={{ color: pulseColor(hostPulse.iticEvents, 1, 6) }}
+                  style={{ color: pulseColor(hostPulse.iticEvents, 5, 15) }}
                 >
                   {hostPulse.iticEvents}
                 </span>
@@ -240,7 +240,7 @@ export function WorldStrip({ hostAqi, hostPm25, hostWeather, hostPulse, precipNo
                 <span className="lbl">CR OPEN</span>
                 <span
                   className="val mono"
-                  style={{ color: pulseColor(hostPulse.openReports, 1, 11) }}
+                  style={{ color: pulseColor(hostPulse.openReports, 6, 21) }}
                 >
                   {hostPulse.openReports}
                 </span>
@@ -298,7 +298,7 @@ export function WorldStrip({ hostAqi, hostPm25, hostWeather, hostPulse, precipNo
               <span className="world-city-meta mono">
                 {c.country} · {timeInTz(c.tz, now).offset.replace("GMT", "UTC")}
               </span>
-              <span className="world-city-tz mono">{c.tz.split("/")[1]?.replace(/_/g, " ") ?? c.tz}</span>
+              <span className="world-city-tz mono">{c.tz}</span>
             </button>
           ) : (
             <button

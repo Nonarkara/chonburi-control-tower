@@ -79,8 +79,8 @@ export function NewsDesk({ items, loading, ageMinutes, onRefresh }: Props) {
       </div>
       <div>
         {visible.map((it, i) => (
-          <a key={it.id} href={safeUrl(it.sourceUrl) ?? "#"} target="_blank" rel="noreferrer noopener" className="news-item">
-            <div className="news-header" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          <a key={it.id} href={safeUrl(it.sourceUrl) ?? undefined} target="_blank" rel="noreferrer noopener" className="news-item">
+            <div className="news-header">
               <span className="news-ref mono">[{String(i + 1).padStart(3, "0")}]</span>
               {(it.tags ?? []).map((t) => {
                 const a = ACTION_TAG[t];

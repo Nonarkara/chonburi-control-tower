@@ -99,21 +99,15 @@ export function LayerPalette({ lens, onLensChange, enabled, onToggleLayer, count
                         ? `${l.describe}\n\nImagery date: ${freshness.date} (${freshness.label})`
                         : l.describe;
                       return (
-                        <div
+                        <button
+                          type="button"
                           key={l.id}
                           className={`layer-toggle ${isOn ? "on" : "off"}`}
                           role="checkbox"
                           aria-checked={isOn}
-                          tabIndex={0}
                           title={fullTitle}
                           aria-label={`${l.label} — ${l.describe}`}
                           onClick={() => onToggleLayer(l.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              onToggleLayer(l.id);
-                            }
-                          }}
                         >
                           <span className="row">
                             <span className="swatch" style={{ background: l.swatch }} />
@@ -136,7 +130,7 @@ export function LayerPalette({ lens, onLensChange, enabled, onToggleLayer, count
                               <span className="mono caption">{isOn ? "on" : "off"}</span>
                             )}
                           </span>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>

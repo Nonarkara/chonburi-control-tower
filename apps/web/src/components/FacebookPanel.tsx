@@ -47,7 +47,7 @@ export function FacebookPanel({ posts, loading }: Props) {
     `&small_header=true&adapt_container_width=true&hide_cover=true&show_facepile=false`;
 
   return (
-    <div className="col" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <div className="col" style={{ gap: 8 }}>
       <div className="spread" style={{ alignItems: "center" }}>
         <span className="eyebrow">FACEBOOK // เทศบาลเมืองชลบุรี</span>
         <a
@@ -87,24 +87,23 @@ export function FacebookPanel({ posts, loading }: Props) {
 
       {/* Meta's free page-plugin iframe — always works, no token needed.
           Width sized to column minus a 12 px right gutter so it never
-          bleeds past the right edge of the news rail. */}
-      <iframe
-        src={embedSrc}
-        height="420"
-        style={{
-          border: "1px solid var(--line)",
-          background: "var(--bg-2)",
-          display: "block",
-          width: "calc(100% - 12px)",
-          maxWidth: 320,
-          marginLeft: 0,
-          marginRight: "auto",
-        }}
-        scrolling="no"
-        title="Mueang Chonburi Facebook page timeline"
-        allow="encrypted-media"
-        loading="lazy"
-      />
+          bleeds past the right edge of the news rail. Wrapper clips any
+          overflow so the iframe never pushes into adjacent layout zones. */}
+      <div style={{ overflow: "hidden", maxWidth: 320, width: "calc(100% - 12px)" }}>
+        <iframe
+          src={embedSrc}
+          height="420"
+          style={{
+            border: "1px solid var(--line)",
+            background: "var(--bg-2)",
+            display: "block",
+            width: "100%",
+          }}
+          title="Mueang Chonburi Facebook page timeline"
+          allow="encrypted-media"
+          loading="lazy"
+        />
+      </div>
 
       {posts.length === 0 && !loading && (
         <div className="eyebrow mono" style={{ color: "var(--text-3)" }}>

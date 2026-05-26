@@ -51,7 +51,11 @@ interface Props {
 
 function KpiTile({ label, value, sub, color }: Kpi) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+    <div
+      style={{ display: "flex", flexDirection: "column", gap: 1 }}
+      role="status"
+      aria-label={`${label}: ${value}${sub ? `, ${sub}` : ""}`}
+    >
       <div className="eyebrow">{label}</div>
       <div className="mono" style={{ fontSize: "var(--size-h2)", color: color ?? "var(--text)", lineHeight: 1.05 }}>
         {value}
@@ -64,7 +68,7 @@ function KpiTile({ label, value, sub, color }: Kpi) {
 export function ProvincialKPIs({ data, loading }: Props) {
   if (loading && !data) {
     return (
-      <div className="col">
+      <div className="col" role="status" aria-busy="true" aria-label="Loading provincial KPIs">
         <div className="eyebrow">CHONBURI PROVINCE // DATA.GO.TH</div>
         <div className="skeleton" style={{ height: 28, marginTop: 8 }} />
         <div className="skeleton" style={{ height: 28, marginTop: 6 }} />
@@ -90,7 +94,7 @@ export function ProvincialKPIs({ data, loading }: Props) {
       label: "VISITORS / YEAR",
       value: fmtN(tourism.totalVisitors),
       sub: tourism.year ? `${tourism.year} · ฿${fmtN(tourism.revenueMillionBaht)}M revenue` : undefined,
-      color: "var(--accent)",
+      color: "var(--data)",
     });
   }
 
@@ -139,7 +143,7 @@ export function ProvincialKPIs({ data, loading }: Props) {
   }
 
   return (
-    <div className="col" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <div className="col" style={{ gap: 8 }}>
       <div className="eyebrow">CHONBURI PROVINCE // DATA.GO.TH</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 16px" }}>
         {kpis.map((k) => <KpiTile key={k.label} {...k} />)}

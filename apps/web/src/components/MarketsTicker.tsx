@@ -51,12 +51,23 @@ export function MarketsTicker({ snapshot, loading }: Props) {
     return [...leadTicks, ...rest];
   }, [snapshot]);
 
-  if (loading || ticks.length === 0) {
+  if (loading) {
     return (
       <div className="markets-ticker">
         <span className="markets-ticker-tag mono">MARKETS</span>
         <div className="markets-ticker-track markets-ticker-empty">
           <span className="caption">Loading global markets…</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!snapshot || ticks.length === 0) {
+    return (
+      <div className="markets-ticker">
+        <span className="markets-ticker-tag mono">MARKETS</span>
+        <div className="markets-ticker-track markets-ticker-empty">
+          <span className="caption" style={{ color: "var(--text-3)" }}>Markets unavailable · retrying…</span>
         </div>
       </div>
     );
