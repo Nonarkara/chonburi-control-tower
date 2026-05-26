@@ -54,12 +54,12 @@ export function Manual({ open, onClose }: Props) {
               Hover any control for a tooltip.
             </p>
             <ul className="manual-flow">
-              <li><span className="mono">①</span> Top bar — brand, live-feed health, controls (2D/3D, theme, sources, manual)</li>
+              <li><span className="mono">①</span> Top bar — brand, live-feed health (37+ feeds), controls (2D/3D, theme, sources, manual)</li>
               <li><span className="mono">②</span> World strip — Chonburi weather + 6 user-set city clocks</li>
-              <li><span className="mono">③</span> News ticker — top headlines, scrolls horizontally; hover to pause</li>
-              <li><span className="mono">④</span> Left rail — device check-in, speed test, municipal brief, KPIs</li>
-              <li><span className="mono">⑤</span> Map — the city twin (2D, 3D, or 3DS substructure)</li>
-              <li><span className="mono">⑥</span> Right rail — Google Trends + full news desk</li>
+              <li><span className="mono">③</span> News ticker — top headlines, scrolls horizontally; ⏸ button pauses it</li>
+              <li><span className="mono">④</span> Left rail — device check-in, speed test, municipal brief, KPIs; INT lens shows Situation Digest</li>
+              <li><span className="mono">⑤</span> Map — 20,877-building city twin (2D, 3D, or 3DS substructure). INT lens shows red alert badges here.</li>
+              <li><span className="mono">⑥</span> Right rail — Google Trends + full news desk + Facebook municipal feed</li>
               <li><span className="mono">⑦</span> Bottom — version pill, traffic hour slider, counts</li>
             </ul>
           </section>
@@ -74,10 +74,11 @@ export function Manual({ open, onClose }: Props) {
                 <tr><td className="mono">EXEC</td><td>Executive</td><td>Strategic overview — satellite + Laem Chabang port + transit + GISTDA POIs. Focused on Chonburi Town Municipality (~46 km²).</td></tr>
                 <tr><td className="mono">OPS</td><td>Operations</td><td>Default day-to-day view — buildings, road network, civic POIs, live traffic, incidents, CCTV, news pins.</td></tr>
                 <tr><td className="mono">MOB</td><td>Mobility</td><td>Traffic heatmap, iTIC events, transit stations + lines, ferry terminals, AIS vessels, CCTV.</td></tr>
-                <tr><td className="mono">MAR</td><td>Maritime</td><td>Gulf of Thailand — Laem Chabang port, OpenSeaMap overlay, AIS live vessels, navigation aids, fisheries, 1/5/10 km distance grid.</td></tr>
+                <tr><td className="mono">MAR</td><td>Maritime</td><td>Gulf of Thailand — Laem Chabang port, OpenSeaMap overlay, AIS live vessels, navigation aids, 1/5/10 km distance grid.</td></tr>
                 <tr><td className="mono">ENV</td><td>Environment</td><td>Esri satellite + flood-prone areas + GISTDA solar rooftop irradiance.</td></tr>
-                <tr><td className="mono">EAR</td><td>Earth</td><td>NASA satellite stack — IMERG rainfall, MODIS flood + LST + NDVI + AOD, OMI NO₂, waterways, fisheries, land use.</td></tr>
+                <tr><td className="mono">EAR</td><td>Earth</td><td>NASA satellite stack + MERRA-2 LIVE READINGS — IMERG rainfall, MODIS flood + LST + NDVI + AOD, OMI NO₂, land use.</td></tr>
                 <tr><td className="mono">SAF</td><td>Safety</td><td>Flood-risk zones + citizen reports (Traffy) + iTIC + hospitals/fire/police + waterways + CCTV + MODIS flood detection.</td></tr>
+                <tr><td className="mono">INT</td><td>Intelligence</td><td><strong>NEW</strong> — TimesFM forecast rows are clickable → activates map layer. Red alert badges float above map on threshold breach. Situation Digest in left rail.</td></tr>
                 <tr><td className="mono">VIB</td><td>Vibes</td><td>Presentation view — MODIS true-color satellite + maritime overlay. No data overlays.</td></tr>
               </tbody>
             </table>
@@ -91,7 +92,7 @@ export function Manual({ open, onClose }: Props) {
               <thead><tr><th>Mode</th><th>What changes</th></tr></thead>
               <tbody>
                 <tr><td className="mono">2D</td><td>Top-down. Pitch 0°, bearing 0°. Building footprints flat.</td></tr>
-                <tr><td className="mono">3D</td><td>Tilted (pitch 50°, bearing −18°). Buildings extruded to their real heights — buildings across Chonburi city + EEC industrial zones, plus neighborhood towers ≥30 m (Pathumwan / Silom / Ratchaprasong skyline) when "Skyline" layer is on.</td></tr>
+                <tr><td className="mono">3D</td><td>Tilted (pitch 60°, bearing −18°). 20,877 buildings extruded to real heights — gold (temple/mosque), blue (civic), coral (hospital), magenta→amber height ramp otherwise. Heritage buildings show coloured roof caps.</td></tr>
                 <tr><td className="mono">3DS</td><td>Substructure (SimCity-2000-style). Superstructure ghosts to 35 % opacity; utility pipes drop to burial depth (electricity ≈ 2 m, water ≈ 3 m, storm drains ≈ 4 m). Pitch 62°.</td></tr>
               </tbody>
             </table>
@@ -173,7 +174,8 @@ export function Manual({ open, onClose }: Props) {
                 <dt>OSM</dt><dd>OpenStreetMap — source of building footprints, roads, transit stations.</dd>
                 <dt>GIBS</dt><dd>NASA Global Imagery Browse Services — every satellite layer (MODIS, VIIRS, IMERG, OMI, Himawari, etc.).</dd>
                 <dt>AIS</dt><dd>Automatic Identification System — maritime vessel tracking. Live vessel dots on the MAR lens.</dd>
-                <dt>TimesFM</dt><dd>Google Time-Series Foundation Model (2.0, 200M params) — zero-shot hourly forecasts for 5 metrics shown in Predictive Intelligence panel.</dd>
+                <dt>TimesFM</dt><dd>Google Time-Series Foundation Model (2.0, 200M params) — zero-shot hourly forecasts for 5 metrics shown in Predictive Intelligence panel. In INT lens, each metric row is clickable → activates its map layer.</dd>
+                <dt>MERRA-2</dt><dd>NASA Modern-Era Retrospective analysis for Research and Applications — satellite + model reanalysis. Source of the LIVE READINGS strip in EAR lens (temp, precip, solar, sky clearness). ~3-day publication latency, no API key.</dd>
               </dl>
               <dl>
                 <dt>AQI</dt><dd>Air Quality Index (US EPA scale) — derived from PM2.5 + PM10.</dd>
@@ -205,9 +207,10 @@ export function Manual({ open, onClose }: Props) {
                 <tr><td><span className="mono">+ ADD CLOCK</span></td><td>World strip</td><td>Click an empty slot, search any city, watch its local time. 6 slots.</td></tr>
                 <tr><td><span className="mono">REQUEST GPS FIX</span></td><td>Left rail</td><td>Logs the device on the map (browser permission required). Dot follows you.</td></tr>
                 <tr><td><span className="mono">RUN</span> (speed test)</td><td>Left rail</td><td>Times a 1.1 MB asset download. Reports Mbps + RTT + your location.</td></tr>
+                <tr><td>Predictive metric row</td><td>Left rail (INT lens)</td><td>Click any RAIN / TIDE / INCIDENTS / AQI / VESSELS row → activates its map layer. Red badge floats on map if p50 exceeds threshold.</td></tr>
                 <tr><td>Building search</td><td>Top of map</td><td>Type any building name (EN or Thai). Pick → camera flies to it.</td></tr>
                 <tr><td>Building click</td><td>Map</td><td>Right-rail BuildingCard with name, levels, height, operator.</td></tr>
-                <tr><td><span className="mono">+ / −</span></td><td>Bottom-right of map</td><td>Zoom in / out (works with pinch + trackpad too).</td></tr>
+                <tr><td><span className="mono">+ / −</span></td><td>Bottom-right of map</td><td>Zoom in / out (works with pinch + trackpad too). Zoom is bounded to the municipality — scroll can't escape to Bangkok.</td></tr>
                 <tr><td>Hour slider</td><td>Bottom bar</td><td>Scrubs the traffic heatmap across 24 hours. Weekday / Weekend toggle pairs with it.</td></tr>
               </tbody>
             </table>
