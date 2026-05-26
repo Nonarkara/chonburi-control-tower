@@ -269,6 +269,12 @@ export async function chat(req: ChatRequest, env: ChatEnv): Promise<ChatResponse
     };
   }
 
+  // Fast-fail before the expensive context fetch — no point building live
+  // data snippets (5 API calls) if no backend can use them.
+  if (!env.geminiApiKey && !env.ollamaBaseUrl) {
+    throw new ChatError(503, "Chat service not configured (no Gemini key and no Ollama).");
+  }
+
   const snippet = await liveContextSnippet().catch(() => "");
   const rawPrompt = snippet ? `${SYSTEM_PROMPT_BASE}\n\n${snippet}` : SYSTEM_PROMPT_BASE;
   const systemPrompt =
@@ -298,7 +304,8 @@ export async function chat(req: ChatRequest, env: ChatEnv): Promise<ChatResponse
     return { reply, model: OLLAMA_MODEL, meta: { fallbackTier: "live", source: `${OLLAMA_MODEL}-local`, ageMinutes: 0 } };
   }
 
-  throw new ChatError(503, "Chat service not configured (no Gemini key and no Ollama).");
+  // Reached only when ollamaBaseUrl is set but Ollama is not responding.
+  throw new ChatError(503, "Chat service not configured (Ollama unreachable — check OLLAMA_BASE_URL).");
 }
 
 export { ChatError };
