@@ -1,10 +1,12 @@
 import type { AirQualityPoint, IncidentFeature, WeatherSnapshot } from "@chonburi/shared";
+import { PanelHeader } from './PanelHeader';
 
 interface Props {
   cityReports: IncidentFeature[];
   iticEvents: IncidentFeature[];
   airQuality: AirQualityPoint[];
   weather: WeatherSnapshot[];
+  ageMinutes?: number;
 }
 
 function aqiColor(aqi: number): string {
@@ -22,14 +24,16 @@ function aqiBand(aqi: number): string {
   return "HAZARDOUS";
 }
 
-export function KpiStrip({ cityReports, iticEvents, airQuality, weather }: Props) {
+export function KpiStrip({ cityReports, iticEvents, airQuality, weather, ageMinutes }: Props) {
   const openReports = cityReports.filter((r) => r.status !== "resolved").length;
   const totalEvents = iticEvents.length;
   const aq = airQuality[0];
   const w = weather[0];
 
   return (
-    <div className="kpi-grid">
+    <>
+      <PanelHeader title="CITY PULSE" ageMinutes={ageMinutes} source="traffy·itic·aqicn·openmeteo" />
+      <div className="kpi-grid">
       <div className="kpi" role="status" aria-label={`Citizen reports: ${openReports} open`}>
         <div className="label">TRAFFY:CR</div>
         <div className="value" style={{ color: openReports > 20 ? "var(--bad)" : openReports > 5 ? "var(--warn)" : openReports > 0 ? "var(--text)" : "var(--good)" }}>
@@ -67,5 +71,6 @@ export function KpiStrip({ cityReports, iticEvents, airQuality, weather }: Props
         <div className="sub">{w ? `FL ${Math.round((w.feelsLikeC ?? w.tempC) ?? 0)}° // ${(w.windKmh ?? 0).toFixed(0)} KMH` : "—"}</div>
       </div>
     </div>
+    </>
   );
 }

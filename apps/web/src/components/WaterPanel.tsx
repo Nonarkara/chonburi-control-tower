@@ -7,6 +7,8 @@
  *   → <5 days: CRITICAL (red), <30 days: LOW (amber), <120 days: WATCH (yellow)
  */
 
+import { PanelHeader } from './PanelHeader';
+
 export interface ReservoirStatus {
   name: string;
   district: string;
@@ -72,12 +74,7 @@ export function WaterPanel({ data, loading, ageMinutes }: Props) {
 
   return (
     <div className="col" style={{ gap: 6 }}>
-      <div className="spread" style={{ alignItems: "center" }}>
-        <span className="eyebrow">RESERVOIRS // CHONBURI PROVINCE</span>
-        {ageMinutes != null && (
-          <span className="eyebrow mono" style={{ color: "var(--text-3)" }}>{ageMinutes}M AGO</span>
-        )}
-      </div>
+      <PanelHeader title="RESERVOIRS // CHONBURI PROVINCE" ageMinutes={ageMinutes} source="ddpm·mwa" />
 
       {/* Critical alert if worst < 30 days */}
       {(worstLevel === "critical" || worstLevel === "low") && (

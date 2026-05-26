@@ -1,5 +1,6 @@
 import type { IntelligenceItem } from "@chonburi/shared";
 import { safeUrl } from "../lib/safeUrl";
+import { PanelHeader } from './PanelHeader';
 
 function ago(iso: string): string {
   const t = new Date(iso).getTime();
@@ -57,26 +58,29 @@ export function NewsDesk({ items, loading, ageMinutes, onRefresh }: Props) {
 
   return (
     <div className="col">
-      <div className="spread news-head-row">
-        <span className="eyebrow">MAYOR&apos;S DESK // CHONBURI</span>
-        <span className="news-count-cluster">
-          <span className="news-count mono" title={`${actionable.length} actionable / ${items.length} total`}>
-            {String(actionable.length).padStart(2, "0")}<span style={{ opacity: 0.5 }}>/{String(items.length).padStart(3, "0")}</span>
+      <PanelHeader
+        title="MAYOR'S DESK // CHONBURI"
+        ageMinutes={ageMinutes}
+        actions={
+          <span className="news-count-cluster">
+            <span className="news-count mono" title={`${actionable.length} actionable / ${items.length} total`}>
+              {String(actionable.length).padStart(2, "0")}<span style={{ opacity: 0.5 }}>/{String(items.length).padStart(3, "0")}</span>
+            </span>
+            {onRefresh && (
+              <button
+                type="button"
+                className="news-refresh mono"
+                onClick={onRefresh}
+                disabled={loading}
+                title={ageMinutes != null ? `Refreshed ${ageMinutes}m ago — click to refresh` : "Refresh"}
+                aria-label="Refresh news"
+              >
+                {loading ? "…" : "↻"}
+              </button>
+            )}
           </span>
-          {onRefresh && (
-            <button
-              type="button"
-              className="news-refresh mono"
-              onClick={onRefresh}
-              disabled={loading}
-              title={ageMinutes != null ? `Refreshed ${ageMinutes}m ago — click to refresh` : "Refresh"}
-              aria-label="Refresh news"
-            >
-              {loading ? "…" : "↻"}
-            </button>
-          )}
-        </span>
-      </div>
+        }
+      />
       <div>
         {visible.map((it, i) => (
           <a key={it.id} href={safeUrl(it.sourceUrl) ?? undefined} target="_blank" rel="noreferrer noopener" className="news-item">
