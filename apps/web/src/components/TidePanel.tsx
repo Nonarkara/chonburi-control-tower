@@ -7,6 +7,9 @@
  * Data: computed from Gulf of Thailand tidal constituents — no API key.
  */
 
+import type { FallbackTier } from "@chonburi/shared";
+import { PanelHeader } from "./PanelHeader";
+
 export interface TideExtreme {
   at: string;
   heightM: number;
@@ -32,6 +35,9 @@ export interface TideSnapshot {
 interface Props {
   data: TideSnapshot | null;
   loading: boolean;
+  ageMinutes?: number;
+  fallbackTier?: FallbackTier;
+  source?: string;
 }
 
 function fmtCountdown(hours: number): string {
@@ -60,11 +66,11 @@ const SPRING_NEAP_COLOR: Record<string, string> = {
   neap:    "var(--good)",   // low tidal range — safe
 };
 
-export function TidePanel({ data, loading }: Props) {
+export function TidePanel({ data, loading, ageMinutes, fallbackTier, source }: Props) {
   if (loading && !data) {
     return (
       <div className="col">
-        <div className="eyebrow">TIDAL PREDICTION // SI RACHA STATION</div>
+        <PanelHeader title="TIDAL PREDICTION // SI RACHA STATION" source={source} />
         <div className="skeleton" style={{ height: 32, marginTop: 8 }} />
         <div className="skeleton" style={{ height: 12, width: "80%", marginTop: 8 }} />
       </div>
@@ -104,12 +110,17 @@ export function TidePanel({ data, loading }: Props) {
 
   return (
     <div className="col" style={{ gap: 6 }}>
-      <div className="spread" style={{ alignItems: "center" }}>
-        <span className="eyebrow">TIDAL PREDICTION // SI RACHA STATION</span>
-        <span className="eyebrow mono" style={{ color: snColor }}>
-          {data.springNeap.toUpperCase()}
-        </span>
-      </div>
+      <PanelHeader
+        title="TIDAL PREDICTION // SI RACHA STATION"
+        ageMinutes={ageMinutes}
+        fallbackTier={fallbackTier}
+        source={source ?? "open-meteo-tides"}
+        actions={
+          <span className="eyebrow mono" style={{ color: snColor }}>
+            {data.springNeap.toUpperCase()}
+          </span>
+        }
+      />
 
       {/* Current height + moon */}
       <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>

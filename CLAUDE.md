@@ -25,8 +25,8 @@ The codebase has a test foundation — please keep it green.
 
 ```bash
 pnpm --filter @chonburi/shared test     # 24 unit tests (locale, fmtAge, tierLabel, SOURCE_CATALOG invariants)
-pnpm --filter @chonburi/api test        # 27 unit tests (health state machine, cache dedup, adapter notes)
-pnpm --filter @chonburi/web test:e2e    # 6 Playwright smoke tests (boot, lens, modal, MODELLED chip, count badges)
+pnpm --filter @chonburi/api test        # 32 unit tests (health state machine, cache dedup, adapter notes, AIS + GISTDA contracts)
+pnpm --filter @chonburi/web test:e2e    # 7 Playwright smoke tests (boot, lens, modal, MODELLED chip, count badges, MAR panels)
 ```
 
 CI (`.github/workflows/test.yml`) runs typecheck + unit + E2E on every PR. Deploy
@@ -130,9 +130,9 @@ Default lens: `"operations"`.
 | `KpiStrip` | Main status row (incidents, traffic, AQI, weather) | ✅ |
 | `NewsDesk` | Incident/news feed | ✅ |
 | `WaterPanel` | Reservoir levels | ✅ |
-| `CoastalBrief` | Sea/tide data | ❌ needs adding |
-| `TidePanel` | Tidal forecasts | ❌ needs adding |
-| `FisheryPanel` | Fishery indicators | ❌ needs adding |
+| `CoastalBrief` | Sea state / Gulf of Thailand | ✅ |
+| `TidePanel` | Tidal forecasts | ✅ |
+| `FisheryPanel` | Fishery zone conditions | ✅ |
 | `ExecutiveBriefing` | Strategic KPIs | ❌ needs adding |
 | `EarthAlphaBrief` | Earth obs summary | check |
 | `PredictivePanel` | TimeFM forecasts | check |

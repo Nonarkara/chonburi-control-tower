@@ -7,6 +7,9 @@
  */
 
 import { useMemo } from "react";
+import type { FallbackTier } from "@chonburi/shared";
+import { PanelHeader } from "./PanelHeader";
+
 export interface MarineSnapshot {
   observedAt: string;
   waveHeightM: number | null;
@@ -34,6 +37,8 @@ interface Props {
   data: MarineSnapshot | null;
   loading: boolean;
   ageMinutes?: number;
+  fallbackTier?: FallbackTier;
+  source?: string;
 }
 
 const BEAUFORT_LABEL = [
@@ -56,11 +61,11 @@ function safeColor(safe: boolean): string {
   return safe ? "var(--good)" : "var(--bad)";
 }
 
-export function CoastalBrief({ data, loading, ageMinutes }: Props) {
+export function CoastalBrief({ data, loading, ageMinutes, fallbackTier, source }: Props) {
   if (loading && !data) {
     return (
       <div className="col">
-        <div className="eyebrow">SEA STATE // GULF OF THAILAND</div>
+        <PanelHeader title="SEA STATE // GULF OF THAILAND" source={source} />
         <div className="skeleton" style={{ height: 32, marginTop: 8 }} />
         <div className="skeleton" style={{ height: 12, width: "70%", marginTop: 8 }} />
       </div>
@@ -90,12 +95,12 @@ export function CoastalBrief({ data, loading, ageMinutes }: Props) {
 
   return (
     <div className="col marine-brief">
-      <div className="spread" style={{ alignItems: "center" }}>
-        <span className="eyebrow">SEA STATE // GULF OF THAILAND</span>
-        {ageMinutes != null && (
-          <span className="eyebrow mono" style={{ color: "var(--text-3)" }}>{ageMinutes}M AGO</span>
-        )}
-      </div>
+      <PanelHeader
+        title="SEA STATE // GULF OF THAILAND"
+        ageMinutes={ageMinutes}
+        fallbackTier={fallbackTier}
+        source={source ?? "open-meteo-marine"}
+      />
 
       {/* Vessel safety matrix */}
       <div className="marine-verdicts">
@@ -177,7 +182,7 @@ export function CoastalBrief({ data, loading, ageMinutes }: Props) {
       )}
 
       <div className="eyebrow mono" style={{ color: "var(--text-3)" }}>
-        OPEN-METEO MARINE · 100.95E 13.34N · CHONBURI BAY
+        OPEN-METEO MARINE · 100.85E 13.00N · SI RACHA OFFSHORE
       </div>
     </div>
   );

@@ -100,3 +100,21 @@ test.describe("Layer palette — count badge suppression", () => {
     expect(badgeCount).toBe(0);
   });
 });
+
+test.describe("MAR lens — panel headers", () => {
+  test("CoastalBrief, TidePanel and FisheryPanel render their PanelHeader eyebrows", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator(".map-host")).toBeVisible({ timeout: 20_000 });
+
+    // Switch to MAR lens
+    const marButton = page.locator(".lens").getByRole("button", { name: /^MAR$/i });
+    await marButton.click();
+    await expect(marButton).toHaveAttribute("aria-pressed", "true");
+
+    // Each panel's PanelHeader renders the title as an eyebrow element.
+    // Give panels time to mount (they're async data-dependent).
+    await expect(page.getByText(/SEA STATE/i).first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/TIDAL PREDICTION/i).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/FISHERY CONDITIONS/i).first()).toBeVisible({ timeout: 10_000 });
+  });
+});

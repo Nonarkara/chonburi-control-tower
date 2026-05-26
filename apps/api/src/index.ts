@@ -356,6 +356,7 @@ app.post("/api/chat", async (c) => {
   const geminiApiKey = c.env.GEMINI_API_KEY;
   const ollamaBaseUrl = c.env.OLLAMA_BASE_URL;
   if (!geminiApiKey && !ollamaBaseUrl) {
+    recordAdapterError("chat", "Missing GEMINI_API_KEY (and no OLLAMA_BASE_URL fallback) — chat disabled");
     return c.json({ error: "Chat service not configured" }, 503);
   }
 

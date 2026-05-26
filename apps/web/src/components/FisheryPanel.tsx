@@ -6,6 +6,9 @@
  * in season or in spawning protection period.
  */
 
+import type { FallbackTier } from "@chonburi/shared";
+import { PanelHeader } from "./PanelHeader";
+
 export interface MarineSnapshot {
   waveHeightM: number | null;
   windKmh: number | null;
@@ -25,6 +28,9 @@ interface Props {
   tide: TideSnapshot | null;
   /** Latest precipitation (mm) from weather/nowcast — indicates runoff risk */
   precipMm: number | null;
+  ageMinutes?: number;
+  fallbackTier?: FallbackTier;
+  source?: string;
 }
 
 interface FisheryZone {
@@ -92,18 +98,23 @@ function zoneStatus(zone: FisheryZone, marine: MarineSnapshot | null, tide: Tide
 const STATUS_COLOR = { go: "var(--good)", caution: "var(--warn)", hold: "var(--bad)" } as const;
 const STATUS_GLYPH = { go: "✓", caution: "⚠", hold: "✕" } as const;
 
-export function FisheryPanel({ marine, tide, precipMm }: Props) {
+export function FisheryPanel({ marine, tide, precipMm, ageMinutes, fallbackTier, source }: Props) {
   const now = new Date();
   const month = now.getMonth() + 1; // 1-12
 
   return (
     <div className="col" style={{ gap: 6 }}>
-      <div className="spread" style={{ alignItems: "center" }}>
-        <span className="eyebrow">FISHERY CONDITIONS // CHONBURI</span>
-        <span className="eyebrow mono" style={{ color: "var(--text-3)" }}>
-          {now.toLocaleString("th-TH", { month: "short", year: "2-digit" }).toUpperCase()}
-        </span>
-      </div>
+      <PanelHeader
+        title="FISHERY CONDITIONS // CHONBURI"
+        ageMinutes={ageMinutes}
+        fallbackTier={fallbackTier}
+        source={source ?? "open-meteo-marine"}
+        actions={
+          <span className="eyebrow mono" style={{ color: "var(--text-3)" }}>
+            {now.toLocaleString("th-TH", { month: "short", year: "2-digit" }).toUpperCase()}
+          </span>
+        }
+      />
 
       {/* Per-zone status */}
       {ZONES.map(zone => {

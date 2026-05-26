@@ -1181,12 +1181,17 @@ export default function App() {
             data={marine.data[0] ?? null}
             loading={marine.fallbackTier === "loading"}
             ageMinutes={marine.ageMinutes}
+            fallbackTier={marine.fallbackTier === "loading" ? undefined : marine.fallbackTier}
+            source="open-meteo-marine"
           />
         </div>
         <div className="left-section left-section-divided">
           <TidePanel
             data={tides.data[0] ?? null}
             loading={tides.fallbackTier === "loading"}
+            ageMinutes={tides.ageMinutes}
+            fallbackTier={tides.fallbackTier === "loading" ? undefined : tides.fallbackTier}
+            source="open-meteo-tides"
           />
         </div>
         <div className="left-section left-section-divided">
@@ -1194,6 +1199,9 @@ export default function App() {
             marine={marine.data[0] ?? null}
             tide={tides.data[0] ?? null}
             precipMm={precip.data[0]?.nowMm ?? null}
+            ageMinutes={marine.ageMinutes}
+            fallbackTier={marine.fallbackTier === "loading" ? undefined : marine.fallbackTier}
+            source="open-meteo-marine"
           />
         </div>
         <div className="left-section left-section-divided">
