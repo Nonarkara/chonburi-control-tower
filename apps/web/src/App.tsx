@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DeckGL from "@deck.gl/react";
-import type { Layer } from "@deck.gl/core";
+import type { Layer, ControllerProps } from "@deck.gl/core";
 import { Map as MapLibreMap, Source, Layer as MapLayer } from "react-map-gl/maplibre";
 import maplibregl from "maplibre-gl";
 import type { FeatureCollection, Geometry, LineString, Point, Polygon, MultiPolygon } from "geojson";
@@ -1279,14 +1279,13 @@ export default function App() {
           <DeckGL
             viewState={viewState}
             onViewStateChange={handleViewStateChange}
-            // Controller options — cast needed because DeckGL's TS types expose only
-            // ControllerOptions, but MapController also accepts minZoom/maxZoom/maxBounds
-            // from MapStateProps. All three enforce bounds *before* onViewStateChange fires,
+            // Controller options — minZoom/maxZoom live in MapStateProps which is not
+            // re-exported by @deck.gl/core, so we extend ControllerProps locally.
+            // All three constraints enforce bounds *before* onViewStateChange fires,
             // preventing the one-frame "flash to outer space" that a pure React clamp cannot.
             // scrollZoom.speed: default 0.01 → one fast trackpad swipe jumps 5+ levels;
             // 0.004 is ~2.5× slower, still comfortable but safe.
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            controller={{ minZoom: 13, maxZoom: 20, maxBounds: CHONBURI.outerBounds, scrollZoom: { speed: 0.004, smooth: false } } as any}
+            controller={{ minZoom: 13, maxZoom: 20, maxBounds: CHONBURI.outerBounds, scrollZoom: { speed: 0.004, smooth: false } } as ControllerProps & { minZoom?: number; maxZoom?: number }}
             layers={layers}
             getTooltip={tooltipForPickMemo}
             onClick={handleMapClick}
