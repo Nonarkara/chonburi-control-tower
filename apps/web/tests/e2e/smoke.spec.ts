@@ -175,6 +175,17 @@ test.describe("Source catalog — filter buttons", () => {
   });
 });
 
+test.describe("PART MODELLED chip on municipality ops panel", () => {
+  test("PmcuBrief renders its PART MODELLED chip with accessible label", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator(".map-host")).toBeVisible({ timeout: 20_000 });
+
+    const chip = page.getByLabel(/Partly modelled data/i);
+    await expect(chip).toBeVisible({ timeout: 15_000 });
+    await expect(chip).toHaveText(/PART MODELLED/);
+  });
+});
+
 test.describe("EO layer toggles", () => {
   test("clicking a satellite layer toggle flips its aria-pressed state", async ({ page }) => {
     await page.goto("/");
