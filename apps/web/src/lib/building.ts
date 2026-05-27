@@ -4,7 +4,41 @@
  * classifyBuilding() drives the color of every building in the 3D cityscape.
  * Getting it wrong silently shows the wrong color for hospitals, temples, etc.
  * and misleads operators who use the building colors for spatial awareness.
+ *
+ * hexToRgb() converts CSS hex colors to RGB tuples for deck.gl layers.
+ * heightColor() maps building height to a height-ramp color for unlabeled buildings.
  */
+
+/**
+ * Convert a CSS hex color string (with or without `#`) to an RGB tuple.
+ * Returns [200, 200, 200] (neutral grey) for invalid inputs.
+ */
+export function hexToRgb(hex: string): [number, number, number] {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return [200, 200, 200];
+  const n = parseInt(m[1], 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/**
+ * Map a building height (metres) to a deck.gl RGB fill color.
+ *
+ * The height ramp communicates urban density at a glance in 3D view:
+ *   ≥50 m  → sky-300   (high-rise, light blue)
+ *   ≥30 m  → sky-400   (mid-high)
+ *   ≥20 m  → sky-500   (mid-rise)
+ *   ≥12 m  → blue-500  (3–4 floors)
+ *   ≥7  m  → indigo    (2 floors)
+ *   <7  m  → warm clay (1 floor / unknown)
+ */
+export function heightColor(h: number): [number, number, number] {
+  if (h >= 50) return [125, 211, 252]; // sky-300  — high-rise
+  if (h >= 30) return [ 56, 189, 248]; // sky-400  — mid-high
+  if (h >= 20) return [ 14, 165, 233]; // sky-500  — mid-rise
+  if (h >= 12) return [ 59, 130, 246]; // blue-500 — 3–4 floors
+  if (h >=  7) return [ 99, 102, 241]; // indigo   — 2 floors
+  return             [148,  103,  89]; // warm clay — 1 floor / unknown
+}
 
 export interface BuildingProperties {
   id: string;

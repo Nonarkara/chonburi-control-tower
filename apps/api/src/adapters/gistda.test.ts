@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fetchGistdaPoi, fetchGistdaSolar, fetchGistdaLandUse } from "./gistda";
+import type { GistdaSolarBuilding, GistdaLandUse } from "./gistda";
 
 /**
  * GISTDA adapter contract tests.
@@ -129,5 +130,124 @@ describe("gistda adapter — fetchGistdaPoi happy path (isolated)", () => {
     expect(feed.meta.fallbackTier).toBe("unavailable");
     expect(feed.features).toHaveLength(0);
     vi.restoreAllMocks();
+  });
+});
+
+// ─── fetchGistdaSolar — happy-path (isolated) ─────────────────────────────────
+
+describe("gistda adapter — fetchGistdaSolar happy path (isolated)", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("parses solar building features to GistdaSolarBuilding shape", async () => {
+    vi.resetModules();
+    vi.spyOn(globalThis, "fetch").mockImplementation(() => Promise.resolve(new Response(JSON.stringify({
+      features: [{
+        attributes: {
+          OBJECTID: 42,
+          BL_HEIGHT: 8.5,
+          BLDG_Area: 200,
+          sun_irr: 155.3,
+          rooftype_th: "หลังคาแบน",
+          buildtype_th: "พาณิชย์",
+          smonth_th: "มกราคม",
+          smonth_num: 1,
+          lat: 13.361,
+          long: 100.984,
+        },
+        geometry: { x: 100.984, y: 13.361 },
+      }],
+    }), { status: 200 })));
+
+    const { fetchGistdaSolar: fresh } = await import("./gistda.js") as unknown as { fetchGistdaSolar: typeof fetchGistdaSolar };
+    const feed = await fresh(1);
+
+    expect(feed.meta.fallbackTier).toBe("live");
+    expect(feed.features).toHaveLength(1);
+    const b = feed.features[0] as GistdaSolarBuilding;
+    expect(b.id).toBe(42);
+    expect(b.height).toBeCloseTo(8.5);
+    expect(b.area).toBe(200);
+    expect(b.solarIrr).toBeCloseTo(155.3);
+    expect(b.roofType).toBe("หลังคาแบน");
+    expect(b.monthNum).toBe(1);
+    expect(b.lat).toBeCloseTo(13.361);
+    expect(b.lng).toBeCloseTo(100.984);
+  });
+
+  it("filters out buildings with zero solarIrr or zero coordinates", async () => {
+    vi.resetModules();
+    vi.spyOn(globalThis, "fetch").mockImplementation(() => Promise.resolve(new Response(JSON.stringify({
+      features: [
+        {
+          // Valid building
+          attributes: { OBJECTID: 1, BL_HEIGHT: 5, BLDG_Area: 100, sun_irr: 120, rooftype_th: "", buildtype_th: "", smonth_th: "", smonth_num: 6, lat: 13.36, long: 100.98 },
+          geometry: { x: 100.98, y: 13.36 },
+        },
+        {
+          // Zero solarIrr — should be filtered
+          attributes: { OBJECTID: 2, BL_HEIGHT: 5, BLDG_Area: 100, sun_irr: 0, rooftype_th: "", buildtype_th: "", smonth_th: "", smonth_num: 6, lat: 13.36, long: 100.98 },
+          geometry: { x: 100.98, y: 13.36 },
+        },
+      ],
+    }), { status: 200 })));
+
+    const { fetchGistdaSolar: fresh } = await import("./gistda.js") as unknown as { fetchGistdaSolar: typeof fetchGistdaSolar };
+    const feed = await fresh(6);
+    expect(feed.features).toHaveLength(1);
+  });
+});
+
+// ─── fetchGistdaLandUse — happy-path (isolated) ───────────────────────────────
+
+describe("gistda adapter — fetchGistdaLandUse happy path (isolated)", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("parses ArcGIS land-use features to GistdaLandUse shape", async () => {
+    vi.resetModules();
+    vi.spyOn(globalThis, "fetch").mockImplementation(() => Promise.resolve(new Response(JSON.stringify({
+      features: [{
+        attributes: {
+          OBJECTID: 7,
+          LU_CODE: "Y302",
+          LU_NAME: "ที่อยู่อาศัยหนาแน่นน้อย",
+          LU_NAME_EN: "Low Density Residential",
+          Shape_Area: 12500.5,
+        },
+        geometry: { x: 100.985, y: 13.362 },
+      }],
+    }), { status: 200 })));
+
+    const { fetchGistdaLandUse: fresh } = await import("./gistda.js") as unknown as { fetchGistdaLandUse: typeof fetchGistdaLandUse };
+    const feed = await fresh();
+
+    expect(feed.meta.fallbackTier).toBe("live");
+    expect(feed.features).toHaveLength(1);
+    const lu = feed.features[0] as GistdaLandUse;
+    expect(lu.id).toBe(7);
+    expect(lu.code).toBe("Y302");
+    expect(lu.name).toBe("ที่อยู่อาศัยหนาแน่นน้อย");
+    expect(lu.nameEn).toBe("Low Density Residential");
+    expect(lu.area).toBeCloseTo(12500.5);
+    expect(lu.lat).toBeCloseTo(13.362);
+    expect(lu.lng).toBeCloseTo(100.985);
+  });
+
+  it("filters out land-use records with empty name", async () => {
+    vi.resetModules();
+    vi.spyOn(globalThis, "fetch").mockImplementation(() => Promise.resolve(new Response(JSON.stringify({
+      features: [
+        { attributes: { OBJECTID: 1, LU_CODE: "Y101", LU_NAME: "ที่พักอาศัย", LU_NAME_EN: "Residential", Shape_Area: 5000 }, geometry: { x: 100.98, y: 13.36 } },
+        { attributes: { OBJECTID: 2, LU_CODE: "", LU_NAME: "", LU_NAME_EN: "", Shape_Area: 0 }, geometry: { x: 100.97, y: 13.35 } },
+      ],
+    }), { status: 200 })));
+
+    const { fetchGistdaLandUse: fresh } = await import("./gistda.js") as unknown as { fetchGistdaLandUse: typeof fetchGistdaLandUse };
+    const feed = await fresh();
+    expect(feed.features).toHaveLength(1);
+    expect(feed.features[0].name).toBe("ที่พักอาศัย");
   });
 });

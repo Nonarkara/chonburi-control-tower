@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { hourlyLoad } from "./pmcu";
+import { hourlyLoad, zoneOccupancy, type ParkingZone } from "./pmcu";
 
 /**
  * pmcu.ts model contract tests.
@@ -69,5 +69,54 @@ describe("hourlyLoad — weekend modifier", () => {
   it("weekend and weekday overnight are the same (no Gaussian contribution)", () => {
     // At 03:00 both weekends/weekdays should produce ≈ same overnight baseline
     expect(hourlyLoad(3, true)).toBeCloseTo(hourlyLoad(3, false), 5);
+  });
+});
+
+// ─── zoneOccupancy ───────────────────────────────────────────────────────────
+
+function zone(id: string): ParkingZone {
+  return { id, name: `Zone ${id}`, capacity: 300 };
+}
+
+describe("zoneOccupancy — output bounds", () => {
+  it("always returns a value in [0, 0.98]", () => {
+    for (let h = 0; h < 24; h++) {
+      for (const id of ["P1", "P2", "P3", "P4"]) {
+        const occ = zoneOccupancy(zone(id), h, false);
+        expect(occ).toBeGreaterThanOrEqual(0);
+        expect(occ).toBeLessThanOrEqual(0.98);
+      }
+    }
+  });
+});
+
+describe("zoneOccupancy — peak vs overnight", () => {
+  it("P1 daytime (10:00) has higher occupancy than overnight (03:00)", () => {
+    expect(zoneOccupancy(zone("P1"), 10, false)).toBeGreaterThan(
+      zoneOccupancy(zone("P1"), 3, false),
+    );
+  });
+
+  it("overnight (02:00) uses the low overnight floor (< 0.15)", () => {
+    // At 02:00 adjusted < 6, overnight = 0.05, Gaussians ~ 0 → base ≈ 0.05
+    expect(zoneOccupancy(zone("P1"), 2, false)).toBeLessThan(0.15);
+  });
+});
+
+describe("zoneOccupancy — weekend modifier", () => {
+  it("weekend occupancy is lower than weekday at peak hours", () => {
+    expect(zoneOccupancy(zone("P1"), 10, true)).toBeLessThan(
+      zoneOccupancy(zone("P1"), 10, false),
+    );
+  });
+});
+
+describe("zoneOccupancy — zone offset stagger", () => {
+  it("adjacent zones reach their peak at slightly different hours", () => {
+    // P1 offset = 0, P2 offset = 0.35 — peak shifts slightly
+    // At exactly the P1 morning peak time, P2 hasn't peaked yet or has shifted
+    const p1At10 = zoneOccupancy(zone("P1"), 9.5, false);
+    const p2At10 = zoneOccupancy(zone("P2"), 9.5 - 0.35, false); // back-shifted to P2 native peak
+    expect(p1At10).toBeCloseTo(p2At10, 1); // same peak magnitude, different time
   });
 });

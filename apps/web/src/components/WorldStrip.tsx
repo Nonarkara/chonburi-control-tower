@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCustomClocks, searchCities, type ClockSpec } from "../hooks/useCustomClocks";
 import type { PrecipNowcast } from "@chonburi/shared";
-import { windDirLabel, uvBand } from "../lib/worldStrip";
+import { windDirLabel, uvBand, pulseColor, aqiBand, rainBadge, hmFromIso, timeInTz } from "../lib/worldStrip";
 
 interface Props {
   hostAqi: number | null;
@@ -33,83 +33,15 @@ interface Props {
   precipNowcast: PrecipNowcast | null;
 }
 
-function timeInTz(tz: string, now: Date): { hms: string; hm: string; offset: string } {
-  const fmt = new Intl.DateTimeFormat("en-GB", {
-    timeZone: tz,
-    hour12: false,
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-  const parts = fmt.formatToParts(now);
-  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
-  const hms = `${get("hour")}:${get("minute")}:${get("second")}`;
-  const hm = `${get("hour")}:${get("minute")}`;
-  const offFmt = new Intl.DateTimeFormat("en", { timeZone: tz, timeZoneName: "shortOffset" });
-  const offset = offFmt.formatToParts(now).find((p) => p.type === "timeZoneName")?.value ?? "";
-  return { hms, hm, offset };
-}
 
 const fmtTemp = (t: number | null) => (t == null ? "—" : `${Math.round(t)}°`);
 const fmtPct = (p: number | null) => (p == null ? "—" : `${Math.round(p)}%`);
 const fmtInt = (n: number | null) => (n == null ? "—" : String(Math.round(n)));
 const fmtFix = (n: number | null, d = 1) => (n == null ? "—" : n.toFixed(d));
 
-function hmFromIso(iso: string | null, tz = "Asia/Bangkok"): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone: tz,
-    hour12: false,
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(d);
-}
-
-function pulseColor(n: number, warn: number, bad: number): string {
-  if (n >= bad) return "var(--bad)";
-  if (n >= warn) return "var(--warn)";
-  return "var(--text)";
-}
-
-function aqiBand(aqi: number | null): { label: string; color: string } {
-  if (aqi == null) return { label: "—", color: "var(--text-3)" };
-  if (aqi <= 50) return { label: "good", color: "var(--good)" };
-  if (aqi <= 100) return { label: "moderate", color: "var(--warn)" };
-  if (aqi <= 150) return { label: "unhealthy SG", color: "var(--bad)" };
-  if (aqi <= 200) return { label: "unhealthy", color: "var(--bad)" };
-  return { label: "hazardous", color: "var(--crit)" };
-}
-
 function dayLabel(iso: string, hostTz = "Asia/Bangkok"): string {
   const d = new Date(iso + "T00:00:00");
   return new Intl.DateTimeFormat("en-US", { timeZone: hostTz, weekday: "short" }).format(d).toUpperCase();
-}
-
-function rainBadge(p: PrecipNowcast | null): { label: string; sub: string; color: string } {
-  if (!p) return { label: "—", sub: "rain nowcast loading", color: "var(--text-3)" };
-  if (p.intensity === "dry") return { label: "DRY 2H", sub: `${p.total2hMm.toFixed(1)} mm forecast`, color: "var(--good)" };
-  const mins = p.minutesToSignificant;
-  if (p.intensity === "heavy") {
-    return {
-      label: mins != null ? `RAIN ${mins}m` : "RAIN NOW",
-      sub: `peak ${p.peakMm} mm · ${p.total2hMm.toFixed(1)} mm / 2h`,
-      color: "var(--bad)",
-    };
-  }
-  if (p.intensity === "moderate") {
-    return {
-      label: mins != null ? `RAIN ${mins}m` : "RAIN NOW",
-      sub: `peak ${p.peakMm} mm · ${p.total2hMm.toFixed(1)} mm / 2h`,
-      color: "var(--warn)",
-    };
-  }
-  return {
-    label: mins != null ? `DRIZZLE ${mins}m` : "DRIZZLE",
-    sub: `peak ${p.peakMm} mm · ${p.total2hMm.toFixed(1)} mm / 2h`,
-    color: "var(--data)",
-  };
 }
 
 export function WorldStrip({ hostAqi, hostPm25, hostWeather, hostPulse, precipNowcast }: Props) {

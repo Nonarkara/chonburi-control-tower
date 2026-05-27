@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fetchReservoirs, fetchDisasterStats, fetchFahfon, fetchDatagoPoints } from "./datago";
+import type { ReservoirStatus, DisasterStat, FahfonReading } from "./datago";
 
 /**
  * data.go.th adapter contract tests.
@@ -134,5 +135,192 @@ describe("fetchDatagoPoints — curated static feed", () => {
     expect(burapha!.category).toBe("school");
     // Burapha is at ~13.28°N — Bang Saen campus, inside bbox
     expect(burapha!.lat).toBeCloseTo(13.28, 0);
+  });
+});
+
+// ─── fetchReservoirs — happy-path isolated ────────────────────────────────────
+
+describe("fetchReservoirs — happy-path", () => {
+  // Use module reset + fresh import to bypass module-level cache
+  let fetchReservoirsIsolated: typeof fetchReservoirs;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    const mod = await import("./datago.js") as unknown as { fetchReservoirs: typeof fetchReservoirs };
+    fetchReservoirsIsolated = mod.fetchReservoirs;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("maps CKAN records to ReservoirStatus shape with 'live' tier", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(() => Promise.resolve(new Response(JSON.stringify({
+      result: {
+        records: [{
+          "Reservoir": "อ่างเก็บน้ำหนองค้อ",
+          "Sub-district/District": "หนองค้อ / เมืองชลบุรี",
+          "Current Water Volume (million cubic meters)": "12.5",
+          "Water Volume Yesterday": "12.3",
+          "Maximum Storage Capacity (million cubic meters)": "25.0",
+          "Remaining Water Supply (days)": "180",
+          "Current Reservoir Storage (% of Original Capacity)": "50",
+          "Yesterday's Rainfall (mm)": "3.2",
+        }],
+      },
+    }), { status: 200 })));
+
+    const feed = await fetchReservoirsIsolated("test-token");
+
+    expect(feed.meta.fallbackTier).toBe("live");
+    expect(feed.meta.source).toBe("datago-reservoirs");
+    expect(feed.features).toHaveLength(1);
+    const r = feed.features[0] as ReservoirStatus;
+    expect(r.name).toBe("อ่างเก็บน้ำหนองค้อ");
+    expect(r.currentVolMCM).toBeCloseTo(12.5);
+    expect(r.maxVolMCM).toBeCloseTo(25.0);
+    expect(r.capacityPct).toBeCloseTo(50);
+    expect(r.daysRemaining).toBe(180);
+    expect(r.rainfallYesterdayMm).toBeCloseTo(3.2);
+    expect(r.trend).toBe("rising"); // 12.5 > 12.3
+  });
+
+  it("computes 'falling' trend when volume is lower than yesterday", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(() => Promise.resolve(new Response(JSON.stringify({
+      result: {
+        records: [{
+          "Reservoir": "Test Reservoir",
+          "Sub-district/District": "Test",
+          "Current Water Volume (million cubic meters)": "10.0",
+          "Water Volume Yesterday": "10.5",
+          "Maximum Storage Capacity (million cubic meters)": "30.0",
+          "Remaining Water Supply (days)": "90",
+          "Current Reservoir Storage (% of Original Capacity)": "33",
+          "Yesterday's Rainfall (mm)": "0",
+        }],
+      },
+    }), { status: 200 })));
+
+    const feed = await fetchReservoirsIsolated("test-token");
+    expect(feed.features[0].trend).toBe("falling");
+  });
+
+  it("sorts features so reservoirs with fewest days remaining appear first", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(() => Promise.resolve(new Response(JSON.stringify({
+      result: {
+        records: [
+          { "Reservoir": "A", "Sub-district/District": "", "Current Water Volume (million cubic meters)": "5", "Water Volume Yesterday": "5", "Maximum Storage Capacity (million cubic meters)": "20", "Remaining Water Supply (days)": "200", "Current Reservoir Storage (% of Original Capacity)": "25", "Yesterday's Rainfall (mm)": "0" },
+          { "Reservoir": "B", "Sub-district/District": "", "Current Water Volume (million cubic meters)": "2", "Water Volume Yesterday": "2", "Maximum Storage Capacity (million cubic meters)": "10", "Remaining Water Supply (days)": "30",  "Current Reservoir Storage (% of Original Capacity)": "20", "Yesterday's Rainfall (mm)": "0" },
+        ],
+      },
+    }), { status: 200 })));
+
+    const feed = await fetchReservoirsIsolated("test-token");
+    expect(feed.features[0].name).toBe("B"); // 30 days → critical first
+    expect(feed.features[1].name).toBe("A"); // 200 days → second
+  });
+});
+
+// ─── fetchDisasterStats — happy-path isolated ─────────────────────────────────
+
+describe("fetchDisasterStats — happy-path", () => {
+  let fetchDisasterStatsIsolated: typeof fetchDisasterStats;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    const mod = await import("./datago.js") as unknown as { fetchDisasterStats: typeof fetchDisasterStats };
+    fetchDisasterStatsIsolated = mod.fetchDisasterStats;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("maps CKAN rows to DisasterStat shape with 'live' tier", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(() => Promise.resolve(new Response(JSON.stringify({
+      result: {
+        records: [
+          { "ประเภทภัย": "อัคคีภัย", "ปี": "2567", "สถิติสาธารณภัย": "42" },
+          { "ประเภทภัย": "อุทกภัย",  "ปี": "2567", "สถิติสาธารณภัย": "18" },
+        ],
+      },
+    }), { status: 200 })));
+
+    const feed = await fetchDisasterStatsIsolated("test-token");
+
+    expect(feed.meta.fallbackTier).toBe("live");
+    expect(feed.meta.source).toBe("datago-disasters");
+    expect(feed.features).toHaveLength(2);
+    const fire = feed.features[0] as DisasterStat;
+    expect(fire.type).toBe("อัคคีภัย");
+    expect(fire.year).toBe(2567);
+    expect(fire.count).toBe(42);
+  });
+});
+
+// ─── fetchFahfon — happy-path isolated ───────────────────────────────────────
+
+describe("fetchFahfon — happy-path", () => {
+  let fetchFahfonIsolated: typeof fetchFahfon;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    const mod = await import("./datago.js") as unknown as { fetchFahfon: typeof fetchFahfon };
+    fetchFahfonIsolated = mod.fetchFahfon;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("maps CKAN rows to FahfonReading shape with 'live' tier", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(() => Promise.resolve(new Response(JSON.stringify({
+      result: {
+        records: [{
+          "สถานีตรวจวัดอากาศ": "Bang Sarae Station",
+          "DATE": "2025-06-01",
+          "TEMP (C)": "30.5",
+          "CO2 (ppm)": "412",
+          "PM1 (มคก./ลบ.ม.)": "8",
+          "PM2.5 (มคก./ลบ.ม.)": "22",
+          "PM10 (มคก./ลบ.ม.)": "38",
+        }],
+      },
+    }), { status: 200 })));
+
+    const feed = await fetchFahfonIsolated("test-token");
+
+    expect(feed.meta.fallbackTier).toBe("live");
+    expect(feed.meta.source).toBe("datago-fahfon");
+    expect(feed.features).toHaveLength(1);
+    const r = feed.features[0] as FahfonReading;
+    expect(r.station).toBe("Bang Sarae Station");
+    expect(r.date).toBe("2025-06-01");
+    expect(r.tempC).toBeCloseTo(30.5);
+    expect(r.co2Ppm).toBe(412);
+    expect(r.pm25).toBe(22);
+    expect(r.pm10).toBe(38);
+  });
+
+  it("returns null for zero-value sensor readings (0 → null coercion)", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(() => Promise.resolve(new Response(JSON.stringify({
+      result: {
+        records: [{
+          "สถานีตรวจวัดอากาศ": "Test",
+          "DATE": "2025-06-01",
+          "TEMP (C)": "0",
+          "CO2 (ppm)": "0",
+          "PM1 (มคก./ลบ.ม.)": "0",
+          "PM2.5 (มคก./ลบ.ม.)": "0",
+          "PM10 (มคก./ลบ.ม.)": "0",
+        }],
+      },
+    }), { status: 200 })));
+
+    const feed = await fetchFahfonIsolated("test-token");
+    const r = feed.features[0] as FahfonReading;
+    // The adapter uses `Number(x) || null` — 0 is falsy → null
+    expect(r.tempC).toBeNull();
+    expect(r.pm25).toBeNull();
   });
 });

@@ -10,6 +10,8 @@ import {
   classifyBuilding,
   buildingHeightMeters,
   finitePositive,
+  hexToRgb,
+  heightColor,
   type BuildingProperties,
   type LandmarkKind,
 } from "../lib/building";
@@ -127,13 +129,6 @@ export function incidentLayer(id: string, data: IncidentFeature[]) {
     lineWidthMinPixels: 1,
     pickable: true,
   });
-}
-
-function hexToRgb(hex: string): [number, number, number] {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex);
-  if (!m) return [200, 200, 200];
-  const n = parseInt(m[1], 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
 export function shuttleRoutesLayer(collection: FeatureCollection<LineString, RouteProps>) {
@@ -288,16 +283,7 @@ const LANDMARK_COLOR: Record<NonNullable<LandmarkKind>, [number, number, number]
   tall:          [125, 211, 252],  // sky-300 — skyline height marker
 };
 
-// Height ramp for buildings that don't fit a named category.
-// More gradations so the cityscape reads as height-differentiated rather than flat.
-function heightColor(h: number): [number, number, number] {
-  if (h >= 50) return [125, 211, 252]; // sky-300  — high-rise
-  if (h >= 30) return [ 56, 189, 248]; // sky-400  — mid-high
-  if (h >= 20) return [ 14, 165, 233]; // sky-500  — mid-rise
-  if (h >= 12) return [ 59, 130, 246]; // blue-500 — 3–4 floors
-  if (h >=  7) return [ 99, 102, 241]; // indigo   — 2 floors
-  return             [148,  103,  89]; // warm clay — 1 floor / unknown
-}
+// Height ramp for buildings that don't fit a named category — imported from ../lib/building.
 
 /**
  * Render every municipality building as a filled, tappable 3D box.

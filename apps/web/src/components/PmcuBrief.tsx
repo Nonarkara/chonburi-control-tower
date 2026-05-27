@@ -3,7 +3,7 @@ import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson"
 import type { CuLandProperties } from "../map/layers";
 import type { IncidentFeature } from "@chonburi/shared";
 import { PanelHeader } from "./PanelHeader";
-import { hourlyLoad } from "../lib/pmcu";
+import { hourlyLoad, zoneOccupancy, type ParkingZone } from "../lib/pmcu";
 
 interface Props {
   hour: number;
@@ -27,11 +27,6 @@ const CORRIDORS: Corridor[] = [
 ];
 
 
-interface ParkingZone {
-  id: string;
-  name: string;
-  capacity: number;
-}
 const PARKING_ZONES: ParkingZone[] = [
   { id: "P1", name: "Municipal Hall · North",   capacity: 320 },
   { id: "P2", name: "Market District · East",   capacity: 480 },
@@ -39,16 +34,6 @@ const PARKING_ZONES: ParkingZone[] = [
   { id: "P4", name: "Hospital Complex · South", capacity: 410 },
 ];
 
-function zoneOccupancy(zone: ParkingZone, hour: number, isWeekend: boolean): number {
-  const offset = (zone.id.charCodeAt(1) - 49) * 0.35;
-  const adjusted = hour + offset;
-  const morning = Math.exp(-((adjusted - 9.5) ** 2) / 4);
-  const afternoon = Math.exp(-((adjusted - 14) ** 2) / 7);
-  const evening = Math.exp(-((adjusted - 18) ** 2) / 4);
-  const overnight = adjusted >= 22 || adjusted < 6 ? 0.05 : 0.2;
-  const base = overnight + Math.max(morning, afternoon, evening) * (isWeekend ? 0.45 : 0.92);
-  return Math.min(0.98, base);
-}
 
 interface FleetEntry {
   id: string;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { classifyBuilding, buildingHeightMeters, finitePositive } from "./building";
+import { classifyBuilding, buildingHeightMeters, finitePositive, hexToRgb, heightColor } from "./building";
 import type { BuildingProperties } from "./building";
 
 /**
@@ -310,5 +310,81 @@ describe("buildingHeightMeters", () => {
 
   it("unclassified building defaults to 10m", () => {
     expect(buildingHeightMeters(b())).toBe(10);
+  });
+});
+
+// ─── hexToRgb ─────────────────────────────────────────────────────────────────
+
+describe("hexToRgb", () => {
+  it("parses 6-digit hex with # prefix", () => {
+    expect(hexToRgb("#ff0000")).toEqual([255, 0, 0]);
+    expect(hexToRgb("#0000ff")).toEqual([0, 0, 255]);
+    expect(hexToRgb("#ffffff")).toEqual([255, 255, 255]);
+  });
+
+  it("parses 6-digit hex without # prefix", () => {
+    expect(hexToRgb("00ff00")).toEqual([0, 255, 0]);
+    expect(hexToRgb("123456")).toEqual([18, 52, 86]);
+  });
+
+  it("is case-insensitive", () => {
+    expect(hexToRgb("#FF8800")).toEqual(hexToRgb("#ff8800"));
+    expect(hexToRgb("AABBCC")).toEqual([170, 187, 204]);
+  });
+
+  it("returns neutral grey [200,200,200] for invalid inputs", () => {
+    expect(hexToRgb("")).toEqual([200, 200, 200]);
+    expect(hexToRgb("#fff")).toEqual([200, 200, 200]);       // 3-digit short form
+    expect(hexToRgb("#gggggg")).toEqual([200, 200, 200]);    // non-hex digits
+    expect(hexToRgb("not-a-color")).toEqual([200, 200, 200]);
+  });
+
+  it("known shuttle line color parses correctly", () => {
+    // #7c3aed = violet — used for shuttle route colour
+    expect(hexToRgb("#7c3aed")).toEqual([124, 58, 237]);
+  });
+});
+
+// ─── heightColor ──────────────────────────────────────────────────────────────
+
+describe("heightColor", () => {
+  it("≥50 m → sky-300 (high-rise)", () => {
+    expect(heightColor(50)).toEqual([125, 211, 252]);
+    expect(heightColor(100)).toEqual([125, 211, 252]);
+  });
+
+  it("≥30 m, <50 m → sky-400 (mid-high)", () => {
+    expect(heightColor(30)).toEqual([56, 189, 248]);
+    expect(heightColor(49)).toEqual([56, 189, 248]);
+  });
+
+  it("≥20 m, <30 m → sky-500 (mid-rise)", () => {
+    expect(heightColor(20)).toEqual([14, 165, 233]);
+    expect(heightColor(29)).toEqual([14, 165, 233]);
+  });
+
+  it("≥12 m, <20 m → blue-500 (3–4 floors)", () => {
+    expect(heightColor(12)).toEqual([59, 130, 246]);
+    expect(heightColor(19)).toEqual([59, 130, 246]);
+  });
+
+  it("≥7 m, <12 m → indigo (2 floors)", () => {
+    expect(heightColor(7)).toEqual([99, 102, 241]);
+    expect(heightColor(11)).toEqual([99, 102, 241]);
+  });
+
+  it("<7 m → warm clay (1 floor / unknown)", () => {
+    expect(heightColor(0)).toEqual([148, 103, 89]);
+    expect(heightColor(6)).toEqual([148, 103, 89]);
+    expect(heightColor(6.99)).toEqual([148, 103, 89]);
+  });
+
+  it("boundary values are assigned to the correct band", () => {
+    // 50 is high-rise, 49 is mid-high
+    expect(heightColor(50)[0]).toBe(125);
+    expect(heightColor(49)[0]).toBe(56);
+    // 7 is indigo, 6.99 is warm clay
+    expect(heightColor(7)[0]).toBe(99);
+    expect(heightColor(6.99)[0]).toBe(148);
   });
 });
