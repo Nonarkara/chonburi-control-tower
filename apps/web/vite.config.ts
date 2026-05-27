@@ -1,15 +1,8 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 
 export default defineConfig({
-  test: {
-    // Pure-function tests only — no browser, no DOM, no React rendering.
-    // E2E lives in tests/e2e/ (Playwright); this covers lib utilities.
-    environment: "node",
-    include: ["src/**/*.test.ts"],
-    exclude: ["node_modules", "dist", "tests/e2e"],
-  },
   plugins: [react()],
   resolve: {
     alias: {
