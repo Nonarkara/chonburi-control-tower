@@ -19,8 +19,9 @@ let isConnected = false;
 let messageCount = 0;
 let lastError: string | null = null;
 
-/** Parse a simple MQTT PUBLISH packet from raw bytes (MQTT v3.1.1). */
-function parseMqttPublish(data: DataView): { topic: string; payload: Uint8Array } | null {
+/** Parse a simple MQTT PUBLISH packet from raw bytes (MQTT v3.1.1).
+ * @internal Exported for unit tests. */
+export function parseMqttPublish(data: DataView): { topic: string; payload: Uint8Array } | null {
   // Very minimal parser for demo / lightweight use.
   // For production, replace with mqtt.js or mqtt/esm.
   const packetType = (data.getUint8(0) >> 4) & 0x0f;
@@ -55,7 +56,9 @@ export function getMqttStatus() {
   return { connected: isConnected, messageCount, lastError, brokerUrl: ws?.url ?? null };
 }
 
-function handlePayload(topic: string, payload: string) {
+/** Route a decoded MQTT payload to the twin-store.
+ * @internal Exported for unit tests. */
+export function handlePayload(topic: string, payload: string) {
   try {
     const data = JSON.parse(payload) as Record<string, unknown>;
     // Heuristic: FAHFON sensors send { station, tempC, co2Ppm, pm25, pm10, lat, lng }
