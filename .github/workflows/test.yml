@@ -41,6 +41,9 @@ jobs:
       - name: Unit tests (shared)
         run: pnpm --filter @chonburi/shared test
 
+      - name: Unit tests (web)
+        run: pnpm --filter @chonburi/web test
+
       - name: Unit tests (api)
         run: pnpm --filter @chonburi/api test
 
