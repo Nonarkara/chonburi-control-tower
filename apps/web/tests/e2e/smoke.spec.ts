@@ -209,6 +209,34 @@ test.describe("PART MODELLED chip on municipality ops panel", () => {
   });
 });
 
+test.describe("HourRail — weekday/weekend toggle", () => {
+  test("Weekday and Weekend buttons toggle aria-pressed state correctly", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator(".map-host")).toBeVisible({ timeout: 20_000 });
+
+    // HourRail is in the bottom bar — MODELLED chip confirms it's mounted
+    const modelled = page.getByLabel(/Modelled — not live sensor data/i);
+    await expect(modelled).toBeVisible({ timeout: 10_000 });
+
+    const weekdayBtn = page.getByRole("button", { name: /Show weekday traffic pattern/i });
+    const weekendBtn = page.getByRole("button", { name: /Show weekend traffic pattern/i });
+
+    // Default is weekday
+    await expect(weekdayBtn).toHaveAttribute("aria-pressed", "true");
+    await expect(weekendBtn).toHaveAttribute("aria-pressed", "false");
+
+    // Switch to weekend
+    await weekendBtn.click();
+    await expect(weekendBtn).toHaveAttribute("aria-pressed", "true");
+    await expect(weekdayBtn).toHaveAttribute("aria-pressed", "false");
+
+    // Switch back
+    await weekdayBtn.click();
+    await expect(weekdayBtn).toHaveAttribute("aria-pressed", "true");
+    await expect(weekendBtn).toHaveAttribute("aria-pressed", "false");
+  });
+});
+
 test.describe("EO layer toggles", () => {
   test("clicking a satellite layer toggle flips its aria-pressed state", async ({ page }) => {
     await page.goto("/");
@@ -228,5 +256,32 @@ test.describe("EO layer toggles", () => {
 
     // State must have flipped
     expect(newState).not.toBe(initialState);
+  });
+});
+
+test.describe("TopBar — theme toggle", () => {
+  test("dark/light theme toggle changes aria-label and body class", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator(".map-host")).toBeVisible({ timeout: 20_000 });
+
+    const themeBtn = page.getByRole("button", { name: /Switch to (light|dark) theme/i });
+    await expect(themeBtn).toBeVisible({ timeout: 5_000 });
+
+    // Theme is stored as data-theme on <html> ("dark" or "light")
+    const html = page.locator("html");
+    const initialTheme = await html.getAttribute("data-theme");
+    expect(["dark", "light"]).toContain(initialTheme);
+
+    // Click the toggle
+    await themeBtn.click();
+
+    // data-theme must have flipped
+    const newTheme = await html.getAttribute("data-theme");
+    expect(newTheme).not.toBe(initialTheme);
+    expect(["dark", "light"]).toContain(newTheme);
+
+    // Button label must now reference the other theme
+    const newLabel = await themeBtn.getAttribute("aria-label");
+    expect(newLabel).toContain(initialTheme!); // e.g. "Switch to dark theme" → initial was light
   });
 });
