@@ -6,6 +6,13 @@ import { BitmapLayer } from "@deck.gl/layers";
 import type { Feature, FeatureCollection, Polygon, MultiPolygon, LineString, Point } from "geojson";
 import type { IncidentFeature, CampusZoneProperties } from "@chonburi/shared";
 import type { HeatPoint } from "../sim/trafficSim";
+import {
+  classifyBuilding,
+  buildingHeightMeters,
+  finitePositive,
+  type BuildingProperties,
+  type LandmarkKind,
+} from "../lib/building";
 
 export interface CctvCamera {
   id: string;
@@ -253,154 +260,9 @@ export function cuLandsLayer(collection: FeatureCollection<Polygon | MultiPolygo
 }
 
 // ─── Campus building footprints (real OSM data) ──────────────────────────
-export interface BuildingProperties {
-  id: string;
-  name: string | null;
-  nameEn: string | null;
-  nameTh: string | null;
-  building: string;
-  levels: number | null;
-  height: number | null;
-  operator: string | null;
-  // OSM civic tags — present on landmark buildings
-  amenity?: string | null;
-  tourism?: string | null;
-  religion?: string | null;
-  "building:use"?: string | null;
-  office?: string | null;
-  healthcare?: string | null;
-  shop?: string | null;
-  // Microsoft Building Footprints marker
-  source?: string | null;
-}
-
-function finitePositive(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value) && value > 0) return value;
-  if (typeof value === "string") {
-    const parsed = Number.parseFloat(value.replace(/[^\d.]/g, ""));
-    if (Number.isFinite(parsed) && parsed > 0) return parsed;
-  }
-  return null;
-}
-
-function buildingHeightMeters(props: BuildingProperties): number {
-  const raw = props as BuildingProperties & {
-    "building:levels"?: number | string | null;
-    height?: number | string | null;
-  };
-  const height = finitePositive(raw.height);
-  if (height) return Math.max(height, 8);
-
-  const levels = finitePositive(props.levels) ?? finitePositive(raw["building:levels"]);
-  if (levels) return Math.max(levels * 4.2, 10);
-
-  // Landmark minimum heights — the polygon may be the compound not the spire;
-  // enforce a minimum that reads correctly in the 3D skyline.
-  const kind = classifyBuilding(props);
-  if (kind === "temple") return 28; // chedi/prang minimum
-  if (kind === "church")          return 20; // bell tower minimum
-  if (kind === "mosque")          return 22; // minaret minimum
-  if (kind === "hospital")        return 18; // multi-storey minimum
-  if (kind === "government")      return 15; // civic building minimum
-  if (kind === "university")      return 15;
-  if (kind === "hotel")           return 20; // hotels tend tall
-  return 10;
-}
-
-/**
- * Classify a building into a landmark category from its OSM tags.
- * Returns a semantic type string, or null for ordinary buildings.
- *
- * Category palette (amber = civic importance, then semantic data colours):
- *   hotel       → amber/gold     — tourism anchor, draws investment
- *   temple      → bright gold    — cultural backbone, mayor attends regularly
- *   government  → sky-400        — public institutions, mayor's own offices
- *   police      → cyan           — safety infrastructure
- *   fire        → orange         — emergency response
- *   hospital    → coral-red      — health anchor
- *   school      → violet         — education, community
- *   egat/power  → amber          — infrastructure, EGAT = Electricity Gen Auth Thailand
- *   tall (≥50m) → sky-300        — skyline marker, height gradient continues
- */
-export type LandmarkKind =
-  | "residential"                // houses, row-houses — warm terracotta
-  | "commercial" | "industrial"  // shops/retail, warehouses/factories
-  | "office"                     // office buildings — teal
-  | "hotel" | "temple" | "church" | "mosque"
-  | "government" | "police" | "fire" | "hospital" | "clinic"
-  | "school" | "university" | "power" | "tall"
-  | "ms-generic"                 // Microsoft Footprints — warm sand (untagged residential fabric)
-  | null;
-
-export function classifyBuilding(props: BuildingProperties): LandmarkKind {
-  const a  = (props.amenity    ?? "").toLowerCase();
-  const t  = (props.tourism    ?? "").toLowerCase();
-  const b  = (props.building   ?? "").toLowerCase();
-  const r  = (props.religion   ?? "").toLowerCase();
-  const op = (props.operator   ?? "").toLowerCase();
-  const hc = (props.healthcare ?? "").toLowerCase();
-  const of = (props.office     ?? "").toLowerCase();
-  const nm = ((props.name ?? "") + " " + (props.nameEn ?? "") + " " + (props.nameTh ?? "")).toLowerCase();
-  const src = (props.source ?? "").toLowerCase();
-
-  // Civic + landmark priority (highest specificity first)
-  if (a === "hospital"  || hc === "hospital") return "hospital";
-  if (a === "clinic"    || hc === "clinic" || hc === "doctor") return "clinic";
-  if (a === "police")   return "police";
-  if (a === "fire_station") return "fire";
-  if (a === "school" || a === "kindergarten") return "school";
-  if (a === "university" || a === "college") return "university";
-  if (a === "place_of_worship") {
-    if (r === "christian") return "church";
-    if (r === "muslim")    return "mosque";
-    return "temple";
-  }
-  if (a === "townhall" || of === "government" || a === "courthouse") return "government";
-  if (t === "hotel" || b === "hotel") return "hotel";
-  if (op.includes("egat") || op.includes("pea ") || op.includes("การไฟฟ้า")) return "power";
-  if (nm.includes("egat") || nm.includes("การไฟฟ้า")) return "power";
-  if (nm.includes("hotel") || nm.includes("โรงแรม")) return "hotel";
-  if (nm.includes("โรงพยาบาล") || nm.includes("hospital")) return "hospital";
-  if (nm.includes("วัด") || nm.includes("temple") || nm.includes("wat ")) return "temple";
-  if (nm.includes("สถานีตำรวจ") || nm.includes("police")) return "police";
-  // Compute height directly here to avoid recursion (buildingHeightMeters calls back into classifyBuilding)
-  const directHeight = finitePositive(props.height) ?? (finitePositive(props.levels) ? finitePositive(props.levels)! * 4.2 : 0);
-  if (directHeight >= 50) return "tall";
-
-  // Commercial / retail / F&B
-  if (
-    b === "commercial" || b === "retail" || b === "shop" || b === "supermarket" ||
-    b === "mall" || b === "kiosk" ||
-    a === "marketplace" || a === "supermarket" || a === "fuel" ||
-    a === "restaurant" || a === "cafe" || a === "fast_food" || a === "bar" || a === "food_court" ||
-    (props.shop as string | undefined)
-  ) return "commercial";
-
-  // Industrial / storage
-  if (
-    b === "industrial" || b === "warehouse" || b === "factory" ||
-    b === "storage_tank" || b === "storage"
-  ) return "industrial";
-
-  // Office
-  if (b === "office" || of === "company" || of === "ngo" || a === "bank" || a === "post_office")
-    return "office";
-
-  // Residential / household — every house, apartment, row-house
-  // Warm terracotta so households read as warm inhabited fabric vs blue civic.
-  if (
-    b === "house" || b === "detached" || b === "semidetached_house" ||
-    b === "terrace" || b === "row_house" || b === "bungalow" ||
-    b === "apartments" || b === "residential" || b === "dormitory" ||
-    b === "hut" || b === "cabin"
-  ) return "residential";
-
-  // Microsoft Global Building Footprints — untagged, assumed residential fabric
-  // Warm sand/stone so they read as the background city mass.
-  if (src === "ms-footprints") return "ms-generic";
-
-  return null;
-}
+// BuildingProperties, LandmarkKind, classifyBuilding, buildingHeightMeters,
+// and finitePositive are imported from ../lib/building (pure, unit-tested).
+export type { BuildingProperties, LandmarkKind };
 
 // Landmark fill colours — one decision per category, legible in dark 3D.
 // Reading guide: red=health, gold=culture, cyan=civic, violet=education,
