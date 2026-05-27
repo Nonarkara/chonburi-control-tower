@@ -67,7 +67,7 @@ interface AisMessage {
 }
 
 // AISStream ship type codes (subset)
-function shipType(code: number | undefined): string {
+export function shipType(code: number | undefined): string {
   if (code == null) return "unknown";
   if (code >= 60 && code <= 69) return "passenger";
   if (code >= 70 && code <= 79) return "cargo";
