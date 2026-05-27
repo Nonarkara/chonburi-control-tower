@@ -16,6 +16,7 @@ import type {
 import type { ReservoirStatus } from "./WaterPanel";
 import type { AdapterHealth } from "../hooks/useSystemHealth";
 import { PanelHeader } from "./PanelHeader";
+import { execAqiBand, execAqiColor, fmt1, fmtInt, avgCapacityPct } from "../lib/executive";
 
 interface Props {
   executive: ExecutiveSnapshot | null;
@@ -50,38 +51,6 @@ const STATUS_COLOR: Record<string, string> = {
   "completed": "var(--data)",
 };
 
-function aqiBand(aqi: number): string {
-  if (aqi <= 50)  return "GOOD";
-  if (aqi <= 100) return "MOD";
-  if (aqi <= 150) return "USG";
-  if (aqi <= 200) return "UNHEALTHY";
-  return "VERY UNHEALTHY";
-}
-
-function aqiColor(aqi: number): string {
-  if (aqi <= 50)  return "var(--good)";
-  if (aqi <= 100) return "var(--data)";
-  if (aqi <= 150) return "var(--warn)";
-  return "var(--bad)";
-}
-
-function fmt1(v: number | null | undefined): string {
-  if (v == null) return "—";
-  return v.toFixed(1);
-}
-
-function fmtInt(v: number | null | undefined): string {
-  if (v == null) return "—";
-  return Math.round(v).toLocaleString();
-}
-
-function avgCapacityPct(reservoirs: ReservoirStatus[]): number | null {
-  const vals = reservoirs
-    .map((r) => r.capacityPct)
-    .filter((v): v is number => v != null && Number.isFinite(v));
-  if (!vals.length) return null;
-  return vals.reduce((a, b) => a + b, 0) / vals.length;
-}
 
 export function ExecutiveBriefing({
   executive,
@@ -153,8 +122,8 @@ export function ExecutiveBriefing({
         <div className="marine-detail-grid" role="group" aria-label="City vital statistics">
           <div>
             <span className="mono eyebrow" style={{ color: "var(--text-3)" }}>AQI</span>
-            <span className="mono" style={{ color: aqi != null ? aqiColor(aqi) : "var(--text-2)" }}>
-              {fmtInt(aqi)}{aqi != null ? ` · ${aqiBand(aqi)}` : ""}
+            <span className="mono" style={{ color: aqi != null ? execAqiColor(aqi) : "var(--text-2)" }}>
+              {fmtInt(aqi)}{aqi != null ? ` · ${execAqiBand(aqi)}` : ""}
             </span>
           </div>
           <div>

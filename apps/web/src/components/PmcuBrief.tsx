@@ -3,6 +3,7 @@ import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson"
 import type { CuLandProperties } from "../map/layers";
 import type { IncidentFeature } from "@chonburi/shared";
 import { PanelHeader } from "./PanelHeader";
+import { hourlyLoad } from "../lib/pmcu";
 
 interface Props {
   hour: number;
@@ -25,13 +26,6 @@ const CORRIDORS: Corridor[] = [
   { id: "phanat",     name: "Pha Nat Road",     base: 0.42 },
 ];
 
-function hourlyLoad(hour: number, isWeekend: boolean): number {
-  const morningPeak = Math.exp(-((hour - 8) ** 2) / 1.8);
-  const eveningPeak = Math.exp(-((hour - 17.5) ** 2) / 2.4);
-  const overnight = hour >= 22 || hour < 5 ? 0.12 : 0.55;
-  const weekendFactor = isWeekend ? 0.55 : 1;
-  return Math.min(1.15, overnight + weekendFactor * 0.95 * Math.max(morningPeak, eveningPeak));
-}
 
 interface ParkingZone {
   id: string;
