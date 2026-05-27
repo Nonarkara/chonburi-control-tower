@@ -27,20 +27,23 @@ function databaseUrl(): string | undefined {
   return process.env.SUPABASE_DB_URL ?? process.env.SUPABASE_DATABASE_URL ?? process.env.DATABASE_URL;
 }
 
-function parsePositiveInt(raw: string | undefined, fallback: number): number {
+/** @internal Exported for testing. */
+export function parsePositiveInt(raw: string | undefined, fallback: number): number {
   if (!raw) return fallback;
   const n = Number(raw);
   return Number.isInteger(n) && n > 0 ? n : fallback;
 }
 
-function parseBool(raw: string | undefined): boolean | undefined {
+/** @internal Exported for testing. */
+export function parseBool(raw: string | undefined): boolean | undefined {
   if (raw == null) return undefined;
   if (/^(1|true|yes|on)$/i.test(raw)) return true;
   if (/^(0|false|no|off)$/i.test(raw)) return false;
   return undefined;
 }
 
-function dbUrlMeta(raw: string | undefined): {
+/** @internal Exported for testing. */
+export function dbUrlMeta(raw: string | undefined): {
   configured: boolean;
   host: string | null;
   port: string | null;
@@ -69,7 +72,8 @@ function dbUrlMeta(raw: string | undefined): {
   }
 }
 
-function shouldUseSsl(raw: string): boolean {
+/** @internal Exported for testing. */
+export function shouldUseSsl(raw: string): boolean {
   const explicit = parseBool(process.env.DATABASE_SSL ?? process.env.SUPABASE_DB_SSL);
   if (explicit != null) return explicit;
   const meta = dbUrlMeta(raw);
