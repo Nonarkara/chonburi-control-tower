@@ -1,62 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { SOURCE_CATALOG, type SourceCategory, type SourceEntry, type SourceStatus, type AdapterHealth } from "@chonburi/shared";
-
-const STATUS_COLOR: Record<SourceStatus, string> = {
-  live: "var(--good)",
-  ready: "var(--data)",
-  planned: "var(--warn)",
-  research: "var(--text-3)",
-  stub: "var(--text-3)",
-};
-
-const CATEGORY_LABEL: Record<SourceCategory, string> = {
-  mobility: "MOB",
-  incidents: "INC",
-  environment: "ENV",
-  imagery: "IMG",
-  vibes: "VIB",
-  infrastructure: "INF",
-  maritime: "MAR",
-  "open-data": "OPN",
-  campus: "LEG",
-};
-
-/**
- * Map an apiPath ending segment / pattern → adapter name used by /api/health/detailed.
- * Adapter names come from the second arg of `safeFeed(c, fn, "adapter-name")` in apps/api/src/index.ts.
- * Keep this in sync when new routes are added.
- */
-const API_PATH_TO_ADAPTER: Array<[RegExp, string]> = [
-  [/\/api\/incidents\/city-reports$/, "city-reports"],
-  [/\/api\/incidents\/itic$/, "itic"],
-  [/\/api\/news$/, "news"],
-  [/\/api\/weather$/, "weather"],
-  [/\/api\/precip-nowcast$/, "precip-nowcast"],
-  [/\/api\/air-quality$/, "air-quality"],
-  [/\/api\/air-quality\/trend$/, "air-quality-trend"],
-  [/\/api\/air-quality\/aqicn$/, "aqicn"],
-  [/\/api\/cctv\/longdo$/, "cctv"],
-  [/\/api\/trends$/, "trends"],
-  [/\/api\/datago\/datasets$/, "datago-datasets"],
-  [/\/api\/datago\/reservoirs$/, "reservoirs"],
-  [/\/api\/datago\/disasters$/, "disasters"],
-  [/\/api\/datago\/fahfon$/, "fahfon"],
-  [/\/api\/marine$/, "marine"],
-  [/\/api\/tides$/, "tides"],
-  [/\/api\/gistda\/poi$/, "gistda-poi"],
-  [/\/api\/gistda\/solar$/, "gistda-solar"],
-  [/\/api\/gistda\/landuse$/, "gistda-landuse"],
-  [/\/api\/nasa\/earth-readings$/, "nasa-power"],
-  [/\/api\/social\/facebook$/, "facebook"],
-  [/\/api\/markets$/, "markets"],
-  [/\/api\/maritime\/ais$/, "ais"],
-];
-
-function adapterNameFor(apiPath: string | undefined): string | null {
-  if (!apiPath) return null;
-  for (const [re, name] of API_PATH_TO_ADAPTER) if (re.test(apiPath)) return name;
-  return null;
-}
+import { SOURCE_CATALOG, type SourceEntry, type AdapterHealth } from "@chonburi/shared";
+import {
+  STATUS_COLOR, CATEGORY_LABEL, adapterNameFor,
+} from "../lib/sourceCatalog";
+// STATUS_COLOR, CATEGORY_LABEL, API_PATH_TO_ADAPTER, adapterNameFor
+// imported from ../lib/sourceCatalog (pure, unit-tested).
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "";
 
