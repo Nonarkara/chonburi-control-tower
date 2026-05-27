@@ -69,17 +69,21 @@ The raw GeoTIFFs (`raw/`) are **not** committed — `apps/web/public/data/alphae
 
 ## Extending to other AOIs
 
-To add a new AOI (e.g. Padawan Kuching, BMA), edit `AOIS` in `fetch_embeddings.py` with the bounding box, then run:
+This pipeline serves the whole substrate, not just Chonburi. Per the project memory the substrate has three deployments (Nakhon Si Thammarat, Chonburi, Chulalongkorn campus / CT-01) and each gets its own entry in the `AOIS` dict in `fetch_embeddings.py`. Chonburi and Chula are already wired up; NST is pending its bbox.
+
+To bake the Chula campus pair:
 
 ```bash
-python3 scripts/alphaearth/fetch_embeddings.py --aoi kuching --years 2023 2024
+python3 scripts/alphaearth/fetch_embeddings.py --aoi chula --years 2023 2024
 python3 scripts/alphaearth/compute_change.py \
-    --year-a apps/web/public/data/alphaearth/raw/alphaearth-kuching-2023.tif \
-    --year-b apps/web/public/data/alphaearth/raw/alphaearth-kuching-2024.tif \
-    --out apps/web/public/data/alphaearth/change-kuching-2023-2024.png
+    --year-a apps/web/public/data/alphaearth/raw/alphaearth-chula-2023.tif \
+    --year-b apps/web/public/data/alphaearth/raw/alphaearth-chula-2024.tif \
+    --out apps/web/public/data/alphaearth/change-chula-2023-2024.png
 ```
 
-For a custom bounding box without naming it, use `--bbox WEST SOUTH EAST NORTH` instead of `--aoi`.
+For a new AOI not yet in the dict (e.g. a one-off Padawan Kuching probe), use `--bbox WEST SOUTH EAST NORTH` instead of `--aoi`. Promote to the dict once it becomes a permanent deployment.
+
+The dashboard's manifest loader reads every `change-*.png` entry in the manifest, so a single deployment of the dashboard can serve multiple AOIs from the same `public/data/alphaearth/` directory — useful for the substrate's multi-tenant phase.
 
 ---
 

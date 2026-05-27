@@ -72,17 +72,22 @@ Pricing: **free** at research scale. Commercial use (revenue-generating product)
 
 ## 4. Fit across this user's dashboards
 
+**Substrate update (2026-05-27):** the `chonburi-control-tower` repo is now the substrate for three deployments — Nakhon Si Thammarat, Chonburi, and Chulalongkorn campus / CT-01. The fit table is updated to reflect actual customer set, not the original LOW-fit guess for Chula.
+
 | Dashboard                                                   | Fit       | Why                                                                                                    |
 |-------------------------------------------------------------|-----------|--------------------------------------------------------------------------------------------------------|
-| **Chonburi / BMA** (this repo)                              | **HIGH**  | Municipal change detection. Coastal reclamation, new estates, shrimp-pond expansion, port growth.      |
+| **Chonburi Town Municipality** (this substrate)             | **HIGH**  | Coastal reclamation, new estates, shrimp-pond expansion, port growth. Live: 2023→2024 baked.           |
+| **Chulalongkorn campus / CT-01** (this substrate)           | **HIGH-conditional** | Building-cluster utilisation change, vegetation/greenery delta for Net Zero 2040–2050, embodied-carbon proxy via built-area gain. 10 m floor is fine for quad/cluster scale — not for single lecture-hall occupancy (use AC / IoT for that). Bbox already in `AOIS` dict; ready to bake. |
+| **Nakhon Si Thammarat** (this substrate)                    | **HIGH**  | 4-year live deployment; AlphaEarth would add land-change context to the existing citizen-complaint stream. Pending bbox to enter `AOIS`.                          |
 | **Thailand smart-city index** (SCITI)                       | **HIGH**  | Per-city change-vector summary as a national metric. Cluster 163 cities by AlphaEarth signature.       |
 | **Thailand smart-city monitor**                             | **HIGH**  | Same as above, ongoing telemetry rather than ranking.                                                  |
 | **Padawan Kuching IOC**                                     | **HIGH**  | Greater Kuching is mostly low-density expansion zones — perfect AlphaEarth use case.                   |
 | **Conflict tracker (globalmonitor)**                        | **HIGH**  | Settlement / agricultural destruction detection in conflict zones is the textbook AlphaEarth task.     |
 | **2026 oil crisis dashboard**                               | MEDIUM    | Refinery / storage-tank tracking and land reorganisation around oil infrastructure. Not tanker AIS.    |
 | **Phuket smart bus**                                        | MEDIUM    | Population-density / built-up area inference as a route-planning layer. Not for the bus product core.  |
-| **Chula campus**                                            | LOW       | 10 m too coarse for intra-campus geometry. Building-level resolution is what matters here.             |
 | Day trading, NSP, Axiom, Daoism, Memory Palace, OpenClaw, TKC | NO       | Non-geospatial.                                                                                        |
+
+**Chula carbon angle** — distinct from generic land-change. A separate `scripts/alphaearth/compute_carbon.py` (not yet written) would read the same raw 64-band GeoTIFFs and emit a carbon-relevant delta layer: vegetation index loss (canopy / tree count) + built-area gain (embodied-carbon proxy). Same data, different vocabulary that maps to VR Manoj Lohatepanont's stated C-suite priorities. Scope when Chula deployment opens.
 
 ---
 

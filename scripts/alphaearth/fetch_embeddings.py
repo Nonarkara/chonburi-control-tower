@@ -35,12 +35,23 @@ except ImportError:
 
 EMBEDDING_DATASET = "GOOGLE/SATELLITE_EMBEDDING/V1/ANNUAL"
 
-# Named AOIs. Keep these in sync with the dashboards' default-view bounding boxes
-# so the rasters always align with what the user sees on the basemap.
+# Named AOIs — one entry per deployment on the substrate. Keep these aligned
+# with the dashboards' default-view bounding boxes so the rasters always
+# register against what the user sees on the basemap.
+#
+# Per substrate-three-deployments memory: this repo is the substrate for
+# Nakhon Si Thammarat (live, 4 yr) + Chonburi (current) + Chula CT-01
+# (initiated 2026-05-27). Add NST bbox here when that deployment spins up.
 AOIS: dict[str, tuple[float, float, float, float]] = {
-    # west, south, east, north — matches CHONBURI.outerBounds in
-    # packages/shared/src/campus.ts
+    # west, south, east, north
+    # Chonburi Town Municipality — matches CHONBURI.outerBounds in
+    # packages/shared/src/campus.ts. ~4.4 × 4.2 km.
     "chonburi": (100.965, 13.342, 101.005, 13.380),
+    # Chulalongkorn University academic zone — derived from
+    # apps/web/public/geo/chula-campus.geojson with a ~500 m buffer for
+    # surrounding context. ~2.5 × 2.3 km. Relevant for VR Manoj
+    # Lohatepanont's energy / AC / Net Zero 2040–2050 monitoring brief.
+    "chula": (100.520, 13.728, 100.543, 13.749),
 }
 
 
