@@ -271,8 +271,8 @@ describe("hydrateBuildingsFromGeoJSON", () => {
     const { hydrateBuildingsFromGeoJSON } = await import("./twinStore.js");
     const fc = {
       features: [
-        { id: "f1", properties: {}, geometry: null },
-        { id: "f2", properties: {}, geometry: null },
+        { id: "f1", properties: {}, geometry: undefined },
+        { id: "f2", properties: {}, geometry: undefined },
       ],
     };
     const count = hydrateBuildingsFromGeoJSON(fc);
@@ -307,7 +307,7 @@ describe("hydrateBuildingsFromGeoJSON", () => {
       features: [{
         id: "ignored",
         properties: { id: "prop-id-wins" },
-        geometry: null,
+        geometry: undefined,
       }],
     };
     hydrateBuildingsFromGeoJSON(fc);
@@ -321,7 +321,7 @@ describe("hydrateBuildingsFromGeoJSON", () => {
       features: [{
         id: "feat-id-used",
         properties: {},
-        geometry: null,
+        geometry: undefined,
       }],
     };
     hydrateBuildingsFromGeoJSON(fc);
@@ -335,7 +335,7 @@ describe("hydrateBuildingsFromGeoJSON", () => {
       features: [{
         id: "hi-rise",
         properties: { "building:levels": 10 },
-        geometry: null,
+        geometry: undefined,
       }],
     };
     hydrateBuildingsFromGeoJSON(fc);
@@ -346,7 +346,7 @@ describe("hydrateBuildingsFromGeoJSON", () => {
   it("defaults to 1 level when building:levels is absent", async () => {
     const { hydrateBuildingsFromGeoJSON, findTwinObjects } = await import("./twinStore.js");
     const fc = {
-      features: [{ id: "flat", properties: {}, geometry: null }],
+      features: [{ id: "flat", properties: {}, geometry: undefined }],
     };
     hydrateBuildingsFromGeoJSON(fc);
     const objs = await findTwinObjects({});
