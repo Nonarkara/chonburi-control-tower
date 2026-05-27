@@ -1,38 +1,12 @@
 import { useMemo } from "react";
 import type { MarketSnapshot } from "@chonburi/shared";
+import { fmtValue, fmtPct, arrow, tickColor } from "../lib/markets";
 
 interface Props {
   snapshot: MarketSnapshot | null;
   loading: boolean;
 }
 
-function fmtValue(v: number | null, group: string): string {
-  if (v == null) return "—";
-  if (group === "forex") return v >= 100 ? v.toFixed(2) : v.toFixed(4);
-  if (group === "macro") return v.toFixed(2);
-  if (v >= 1000) return v.toLocaleString("en-US", { maximumFractionDigits: 0 });
-  return v.toFixed(2);
-}
-
-function fmtPct(p: number | null): string {
-  if (p == null) return "";
-  const sign = p > 0 ? "+" : "";
-  return `${sign}${p.toFixed(2)}%`;
-}
-
-function arrow(p: number | null): string {
-  if (p == null) return "·";
-  if (p > 0.05) return "▲";
-  if (p < -0.05) return "▼";
-  return "·";
-}
-
-function color(p: number | null): string {
-  if (p == null) return "var(--text-3)";
-  if (p > 0.05) return "var(--good)";
-  if (p < -0.05) return "var(--bad)";
-  return "var(--text-2)";
-}
 
 /**
  * Brokerage-floor scrolling ticker for global markets.
@@ -91,7 +65,7 @@ export function MarketsTicker({ snapshot, loading }: Props) {
                 <span className="markets-ticker-value mono">{fmtValue(t.value, t.group)}</span>
                 <span
                   className="markets-ticker-delta mono"
-                  style={{ color: color(t.changePct) }}
+                  style={{ color: tickColor(t.changePct) }}
                 >
                   {arrow(t.changePct)} {fmtPct(t.changePct)}
                 </span>

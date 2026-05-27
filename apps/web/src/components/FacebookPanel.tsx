@@ -22,6 +22,7 @@ interface FbPost {
 
 import { PanelHeader } from "./PanelHeader";
 import type { FallbackTier } from "@chonburi/shared";
+import { ago } from "../lib/time";
 
 interface Props {
   posts: FbPost[];
@@ -33,17 +34,6 @@ interface Props {
 const PAGE_URL = "https://www.facebook.com/mueangchonburi";
 const PAGE_USERNAME = "mueangchonburi";
 
-function ago(iso: string): string {
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return "—";
-  const ms = Date.now() - t;
-  const m = Math.round(ms / 60000);
-  if (m < 1) return "NOW";
-  if (m < 60) return `${m}M`;
-  const h = Math.round(m / 60);
-  if (h < 24) return `${h}H`;
-  return `${Math.round(h / 24)}D`;
-}
 
 export function FacebookPanel({ posts, loading, ageMinutes, fallbackTier }: Props) {
   const embedSrc = `https://www.facebook.com/plugins/page.php?` +
