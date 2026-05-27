@@ -141,7 +141,7 @@ describe("handlePayload — FAHFON sensor", () => {
 
   it("calls hydrateSensorFromFahfon when payload has a station field", async () => {
     const { handlePayload } = await import("./mqttBridge.js");
-    const ts = await import("../lib/twinStore.js") as { hydrateSensorFromFahfon: ReturnType<typeof vi.fn> };
+    const ts = await import("../lib/twinStore.js") as unknown as { hydrateSensorFromFahfon: ReturnType<typeof vi.fn> };
     const payload = JSON.stringify({ station: "S01", lat: 13.36, lng: 100.98, pm25: 15.2, tempC: 31 });
     handlePayload("chonburi/sensors/fahfon", payload);
     expect(ts.hydrateSensorFromFahfon).toHaveBeenCalledOnce();
@@ -153,7 +153,7 @@ describe("handlePayload — FAHFON sensor", () => {
 
   it("passes undefined for optional numeric fields absent in the payload", async () => {
     const { handlePayload } = await import("./mqttBridge.js");
-    const ts = await import("../lib/twinStore.js") as { hydrateSensorFromFahfon: ReturnType<typeof vi.fn> };
+    const ts = await import("../lib/twinStore.js") as unknown as { hydrateSensorFromFahfon: ReturnType<typeof vi.fn> };
     handlePayload("t", JSON.stringify({ station: "S02" }));
     const arg = ts.hydrateSensorFromFahfon.mock.calls[0][0];
     expect(arg.pm25).toBeUndefined();
@@ -162,7 +162,7 @@ describe("handlePayload — FAHFON sensor", () => {
 
   it("does NOT call writeTwinState when the station field is present", async () => {
     const { handlePayload } = await import("./mqttBridge.js");
-    const ts = await import("../lib/twinStore.js") as { writeTwinState: ReturnType<typeof vi.fn> };
+    const ts = await import("../lib/twinStore.js") as unknown as { writeTwinState: ReturnType<typeof vi.fn> };
     handlePayload("t", JSON.stringify({ station: "S03", pm25: 10 }));
     expect(ts.writeTwinState).not.toHaveBeenCalled();
   });
@@ -178,7 +178,7 @@ describe("handlePayload — /twin/state topic routing", () => {
 
   it("calls writeTwinState when topic matches /twin/state/<objectId>/<metric>", async () => {
     const { handlePayload } = await import("./mqttBridge.js");
-    const ts = await import("../lib/twinStore.js") as { writeTwinState: ReturnType<typeof vi.fn> };
+    const ts = await import("../lib/twinStore.js") as unknown as { writeTwinState: ReturnType<typeof vi.fn> };
     handlePayload("/twin/state/building-42/temperature", JSON.stringify({ value: 25.5 }));
     expect(ts.writeTwinState).toHaveBeenCalledOnce();
     const call = ts.writeTwinState.mock.calls[0][0];
@@ -190,14 +190,14 @@ describe("handlePayload — /twin/state topic routing", () => {
 
   it("does not call writeTwinState when value is NaN", async () => {
     const { handlePayload } = await import("./mqttBridge.js");
-    const ts = await import("../lib/twinStore.js") as { writeTwinState: ReturnType<typeof vi.fn> };
+    const ts = await import("../lib/twinStore.js") as unknown as { writeTwinState: ReturnType<typeof vi.fn> };
     handlePayload("/twin/state/obj-1/metric", JSON.stringify({ value: "not-a-number" }));
     expect(ts.writeTwinState).not.toHaveBeenCalled();
   });
 
   it("does not call writeTwinState when topic does not match the pattern", async () => {
     const { handlePayload } = await import("./mqttBridge.js");
-    const ts = await import("../lib/twinStore.js") as { writeTwinState: ReturnType<typeof vi.fn> };
+    const ts = await import("../lib/twinStore.js") as unknown as { writeTwinState: ReturnType<typeof vi.fn> };
     handlePayload("arbitrary/topic", JSON.stringify({ value: 99 }));
     expect(ts.writeTwinState).not.toHaveBeenCalled();
   });
