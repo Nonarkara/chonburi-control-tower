@@ -8,6 +8,7 @@
  */
 
 import { PanelHeader } from './PanelHeader';
+import { alertLevel } from '../lib/water';
 
 export interface ReservoirStatus {
   name: string;
@@ -24,14 +25,6 @@ interface Props {
   data: ReservoirStatus[];
   loading: boolean;
   ageMinutes?: number;
-}
-
-function alertLevel(days: number | null): "critical" | "low" | "watch" | "ok" {
-  if (days == null) return "ok";
-  if (days < 10)   return "critical";
-  if (days < 30)   return "low";
-  if (days < 120)  return "watch";
-  return "ok";
 }
 
 const LEVEL_COLOR = {

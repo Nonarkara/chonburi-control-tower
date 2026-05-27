@@ -10,15 +10,10 @@
  *   Welfare     — ผู้สูงอายุ + ผู้พิการ (Bang Sarae sample)
  */
 
+import { fmtN } from "../lib/provincial";
+
 const MONTH_TH = ["", "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
   "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-
-function fmtN(n: number | null | undefined, decimals = 0): string {
-  if (n == null || Number.isNaN(n)) return "—";
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
-  if (n >= 1_000) return (n / 1_000).toFixed(0) + "K";
-  return n.toFixed(decimals);
-}
 
 interface Kpi {
   label: string;

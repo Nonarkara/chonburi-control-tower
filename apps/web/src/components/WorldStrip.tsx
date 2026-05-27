@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCustomClocks, searchCities, type ClockSpec } from "../hooks/useCustomClocks";
 import type { PrecipNowcast } from "@chonburi/shared";
+import { windDirLabel, uvBand } from "../lib/worldStrip";
 
 interface Props {
   hostAqi: number | null;
@@ -53,21 +54,6 @@ const fmtTemp = (t: number | null) => (t == null ? "—" : `${Math.round(t)}°`)
 const fmtPct = (p: number | null) => (p == null ? "—" : `${Math.round(p)}%`);
 const fmtInt = (n: number | null) => (n == null ? "—" : String(Math.round(n)));
 const fmtFix = (n: number | null, d = 1) => (n == null ? "—" : n.toFixed(d));
-
-function windDirLabel(deg: number | null): string {
-  if (deg == null) return "—";
-  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-  return dirs[Math.round(deg / 45) % 8];
-}
-
-function uvBand(uv: number | null): { label: string; color: string } {
-  if (uv == null) return { label: "—", color: "var(--text-3)" };
-  if (uv < 3)  return { label: "low",       color: "var(--good)" };
-  if (uv < 6)  return { label: "moderate",  color: "var(--warn)" };
-  if (uv < 8)  return { label: "high",      color: "var(--bad)" };
-  if (uv < 11) return { label: "very high", color: "var(--bad)" };
-  return { label: "extreme", color: "var(--crit)" };
-}
 
 function hmFromIso(iso: string | null, tz = "Asia/Bangkok"): string {
   if (!iso) return "—";

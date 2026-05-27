@@ -1,24 +1,8 @@
 import type { IntelligenceItem } from "@chonburi/shared";
 import { safeUrl } from "../lib/safeUrl";
 import { PanelHeader } from './PanelHeader';
-
-function ago(iso: string): string {
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return "—";
-  const ms = Date.now() - t;
-  const m = Math.round(ms / 60000);
-  if (m < 1) return "NOW";
-  if (m < 60) return `${m}M`;
-  const h = Math.round(m / 60);
-  if (h < 24) return `${h}H`;
-  return `${Math.round(h / 24)}D`;
-}
-
-function scoreColor(score: number): string {
-  if (score >= 1000) return "var(--bad)";
-  if (score >= 500)  return "var(--warn)";
-  return "var(--text-3)";
-}
+import { ago } from "../lib/time";
+import { scoreColor } from "../lib/newsDesk";
 
 // Mayor's Action tag legend — 2-char code → short label, colour, glyph
 // Colours use CSS token variables defined in tokens.css.

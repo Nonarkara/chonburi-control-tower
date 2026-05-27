@@ -14,13 +14,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { LayerId } from "../map/presets";
 import { PanelHeader } from "./PanelHeader";
-
-interface ForecastPoint {
-  time: string;
-  p50: number;
-  p10: number | null;
-  p90: number | null;
-}
+import { formatAge, peakLabel } from "../lib/predictive";
+import type { ForecastPoint } from "../lib/predictive";
 
 export interface ForecastMetric {
   metric: string;
@@ -129,18 +124,6 @@ function Sparkline({ points, alertThreshold }: { points: ForecastPoint[]; alertT
   );
 }
 
-function formatAge(iso: string | null): string {
-  if (!iso) return "";
-  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
-  if (mins < 60) return `${mins}m ago`;
-  return `${Math.round(mins / 60)}h ago`;
-}
-
-function peakLabel(points: ForecastPoint[], unit: string): string {
-  if (!points.length) return "—";
-  const peak = Math.max(...points.map((p) => p.p50));
-  return `${peak.toFixed(1)}${unit ? " " + unit : ""} peak`;
-}
 
 export function PredictivePanel({ apiBase, onMetricClick, onAlert, onForecastsLoaded, ageMinutes, fallbackTier }: Props) {
   const [data, setData] = useState<PredictionsResponse | null>(null);

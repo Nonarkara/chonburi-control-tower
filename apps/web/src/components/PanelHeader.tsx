@@ -1,5 +1,6 @@
 import { fmtAge, tierLabel } from '@chonburi/shared';
 import type { FallbackTier } from '@chonburi/shared';
+import { ageClass } from '../lib/panelHeader';
 
 interface PanelHeaderProps {
   /** Section title — rendered as eyebrow */
@@ -12,16 +13,6 @@ interface PanelHeaderProps {
   source?: string;
   /** Extra content on the right side (e.g. a refresh button) */
   actions?: React.ReactNode;
-}
-
-function ageClass(minutes?: number | null, tier?: FallbackTier): string {
-  if (tier === 'unavailable') return 'data-age--crit';
-  if (tier === 'scenario') return 'data-age--warn';
-  if (minutes == null) return '';
-  if (minutes < 5) return 'data-age--fresh';
-  if (minutes < 30) return '';
-  if (minutes < 120) return 'data-age--warn';
-  return 'data-age--stale';
 }
 
 /**

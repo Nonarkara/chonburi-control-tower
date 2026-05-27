@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { safeUrl } from "../lib/safeUrl";
+import { friendlyError } from "../lib/chat";
 
 interface ChatMessage {
   role: "user" | "model";
@@ -118,16 +119,6 @@ function renderMarkdownLite(src: string): React.ReactNode {
   });
   flushBullets();
   return blocks;
-}
-
-/** Translate HTTP status + raw server error message into a user-friendly string. */
-function friendlyError(status: number, raw?: string): string {
-  if (status === 503) return "Chat is not available — the AI service isn't configured yet. Ask your administrator to set a Gemini API key.";
-  if (status === 429) return "The AI assistant has hit its usage limit for today — try again tomorrow.";
-  if (status === 400 && raw?.toLowerCase().includes("long")) return "Your message is too long — please shorten it and try again.";
-  if (status === 400 && raw?.toLowerCase().includes("turns")) return "This conversation is too long. Clear it and start fresh.";
-  if (status >= 500) return "The AI service returned an error — try again in a moment.";
-  return raw ?? `Request failed (${status})`;
 }
 
 export function ChatBox({ apiBase }: Props) {

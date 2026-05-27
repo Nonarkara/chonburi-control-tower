@@ -1,29 +1,10 @@
 import type { DevicePresence } from "../hooks/useDevicePresence";
+import { fmtCoord, fmtAccuracy, networkLabel } from "../lib/device";
 
 interface Props {
   presence: DevicePresence;
   onRequest: () => void;
   onClear: () => void;
-}
-
-function fmtCoord(v: number | null, digits = 5) {
-  return v == null ? "—" : v.toFixed(digits);
-}
-
-function fmtAccuracy(m: number | null) {
-  if (m == null) return "—";
-  if (m < 1) return "< 1 m";
-  return `±${Math.round(m)} m`;
-}
-
-function networkLabel(net: DevicePresence["network"]): string {
-  if (net.type === "wifi") return "Wi-Fi";
-  if (net.type === "ethernet") return "Ethernet";
-  if (net.type === "cellular" || net.effective) {
-    return net.effective ? `Cellular · ${net.effective.toUpperCase()}` : "Cellular";
-  }
-  if (net.type === "none") return "Offline";
-  return net.effective ? net.effective.toUpperCase() : "Unknown";
 }
 
 /**

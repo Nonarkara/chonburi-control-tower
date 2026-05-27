@@ -1,3 +1,5 @@
+import { maxAqiNext8h, fmtHour } from "../lib/aqi";
+
 interface TrendPoint {
   at: string;
   aqi: number | null;
@@ -29,15 +31,6 @@ const BAND: Record<
   "very-unhealthy":{ color: "var(--aqi-very-unhealthy)", label: "VERY UNHEALTHY",  advice: "Avoid outdoor exertion. N95 masks outdoors." },
   hazardous:       { color: "var(--aqi-hazardous)",      label: "HAZARDOUS",       advice: "Stay indoors. Run filtration. Cancel outdoor events." },
 };
-
-function fmtHour(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getHours().toString().padStart(2, "0")}h`;
-}
-
-function maxAqiNext8h(trend: AqiTrend): number {
-  return trend.next8h.reduce((m, p) => Math.max(m, p.aqi ?? m), trend.current.aqi ?? 0);
-}
 
 export function AqiBadge({ trend, loading }: Props) {
   if (loading || !trend || trend.current.aqi == null || trend.category == null) {
