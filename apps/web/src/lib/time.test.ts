@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { ago } from "./time";
+import { ago, formatDate } from "./time";
 
 /**
  * time.ts contract tests — verifies the unified `ago()` relative-time
@@ -106,5 +106,40 @@ describe("ago — days", () => {
   it("returns '7d' for one week ago", () => {
     const iso = new Date(BASE_MS - 7 * 24 * 3600_000).toISOString();
     expect(ago(iso)).toBe("7d");
+  });
+});
+
+// ─── formatDate ───────────────────────────────────────────────────────────────
+
+describe("formatDate", () => {
+  it("formats a known date as uppercase 'DD MON YYYY'", () => {
+    // 2025-01-15 in en-GB: "15 Jan 2025" → uppercased "15 JAN 2025"
+    const d = new Date("2025-01-15T12:00:00Z");
+    const result = formatDate(d);
+    expect(result).toMatch(/15/);
+    expect(result).toMatch(/JAN/);
+    expect(result).toMatch(/2025/);
+    expect(result).toBe(result.toUpperCase());
+  });
+
+  it("formats a June date correctly", () => {
+    const d = new Date("2025-06-01T00:00:00Z");
+    const result = formatDate(d);
+    expect(result).toMatch(/JUN/);
+    expect(result).toMatch(/2025/);
+  });
+
+  it("always returns an uppercase string", () => {
+    // Run across a few months to check the toUpperCase contract holds
+    const dates = [
+      new Date("2025-03-15"),
+      new Date("2025-08-20"),
+      new Date("2025-12-31"),
+    ];
+    for (const d of dates) {
+      const result = formatDate(d);
+      expect(result).toBe(result.toUpperCase());
+      expect(result.length).toBeGreaterThan(6);
+    }
   });
 });

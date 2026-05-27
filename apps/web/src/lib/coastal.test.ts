@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { compass, fmt, aqiColor, aqiBand } from "./coastal";
+import { compass, fmt, aqiColor, aqiBand, beaufortColor, surgeColor, safeColor } from "./coastal";
 
 /**
  * coastal.ts display-helper contract tests.
@@ -128,5 +128,65 @@ describe("aqiBand", () => {
   it("returns HAZARDOUS for AQI > 200", () => {
     expect(aqiBand(201)).toBe("HAZARDOUS");
     expect(aqiBand(500)).toBe("HAZARDOUS");
+  });
+});
+
+// ─── beaufortColor ────────────────────────────────────────────────────────────
+
+describe("beaufortColor", () => {
+  it("Beaufort ≥8 → bad (gale conditions)", () => {
+    expect(beaufortColor(8)).toBe("var(--bad)");
+    expect(beaufortColor(12)).toBe("var(--bad)");
+  });
+
+  it("Beaufort 6–7 → warn (strong breeze)", () => {
+    expect(beaufortColor(6)).toBe("var(--warn)");
+    expect(beaufortColor(7)).toBe("var(--warn)");
+  });
+
+  it("Beaufort 4–5 → accent (moderate breeze)", () => {
+    expect(beaufortColor(4)).toBe("var(--accent)");
+    expect(beaufortColor(5)).toBe("var(--accent)");
+  });
+
+  it("Beaufort 0–3 → good (calm to gentle)", () => {
+    expect(beaufortColor(0)).toBe("var(--good)");
+    expect(beaufortColor(3)).toBe("var(--good)");
+  });
+
+  it("boundary: 7 is warn, 8 is bad", () => {
+    expect(beaufortColor(7)).toBe("var(--warn)");
+    expect(beaufortColor(8)).toBe("var(--bad)");
+  });
+});
+
+// ─── surgeColor ───────────────────────────────────────────────────────────────
+
+describe("surgeColor", () => {
+  it("≥2 m surge → bad", () => {
+    expect(surgeColor(2)).toBe("var(--bad)");
+    expect(surgeColor(3.5)).toBe("var(--bad)");
+  });
+
+  it("1.2 m to <2 m → warn", () => {
+    expect(surgeColor(1.2)).toBe("var(--warn)");
+    expect(surgeColor(1.9)).toBe("var(--warn)");
+  });
+
+  it("<1.2 m → good", () => {
+    expect(surgeColor(0)).toBe("var(--good)");
+    expect(surgeColor(1.19)).toBe("var(--good)");
+  });
+});
+
+// ─── safeColor ────────────────────────────────────────────────────────────────
+
+describe("safeColor", () => {
+  it("true → good", () => {
+    expect(safeColor(true)).toBe("var(--good)");
+  });
+
+  it("false → bad", () => {
+    expect(safeColor(false)).toBe("var(--bad)");
   });
 });

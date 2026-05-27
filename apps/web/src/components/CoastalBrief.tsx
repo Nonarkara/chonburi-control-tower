@@ -9,7 +9,7 @@
 import { useMemo } from "react";
 import type { FallbackTier } from "@chonburi/shared";
 import { PanelHeader } from "./PanelHeader";
-import { compass, fmt } from "../lib/coastal";
+import { compass, fmt, beaufortColor, surgeColor, safeColor } from "../lib/coastal";
 
 export interface MarineSnapshot {
   observedAt: string;
@@ -49,10 +49,6 @@ const BEAUFORT_LABEL = [
 ];
 
 
-function safeColor(safe: boolean): string {
-  return safe ? "var(--good)" : "var(--bad)";
-}
-
 export function CoastalBrief({ data, loading, ageMinutes, fallbackTier, source }: Props) {
   if (loading && !data) {
     return (
@@ -67,10 +63,10 @@ export function CoastalBrief({ data, loading, ageMinutes, fallbackTier, source }
 
   const bf = data.beaufort ?? 0;
   const bfLabel = BEAUFORT_LABEL[Math.min(bf, 12)];
-  const bfColor = bf >= 8 ? "var(--bad)" : bf >= 6 ? "var(--warn)" : bf >= 4 ? "var(--accent)" : "var(--good)";
+  const bfColor = beaufortColor(bf);
 
   const surgePeak = data.surgePeakNext24hM ?? 0;
-  const surgeColor = surgePeak >= 2 ? "var(--bad)" : surgePeak >= 1.2 ? "var(--warn)" : "var(--good)";
+  const surgeColorValue = surgeColor(surgePeak);
   const sstColor = data.thermalStress ? "var(--warn)" : "var(--data)";
 
   // Sparkline: wave height next 24h
@@ -158,7 +154,7 @@ export function CoastalBrief({ data, loading, ageMinutes, fallbackTier, source }
         </div>
         <div>
           <div className="eyebrow">SURGE PEAK 24H</div>
-          <div className="mono" style={{ color: surgeColor }}>{fmt(surgePeak, 2, "m")}</div>
+          <div className="mono" style={{ color: surgeColorValue }}>{fmt(surgePeak, 2, "m")}</div>
         </div>
       </div>
 

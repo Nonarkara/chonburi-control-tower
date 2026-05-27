@@ -14,6 +14,14 @@
  * @returns "now" (< 1 min), "Nm" (minutes), "Nh" (hours), "Nd" (days),
  *          or "—" for invalid/null input.
  */
+/**
+ * Format a Date as a short uppercase date string: "15 JAN 2025".
+ * Used in the TopBar clock display.
+ */
+export function formatDate(d: Date): string {
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
+}
+
 export function ago(iso: string | null | undefined): string {
   if (!iso) return "—";
   const t = new Date(iso).getTime();

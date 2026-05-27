@@ -48,3 +48,31 @@ export function aqiBand(aqi: number): string {
   if (aqi <= 200) return "UNHEALTHY";
   return "HAZARDOUS";
 }
+
+/**
+ * Map a Beaufort number to a CSS colour token.
+ *   ≥8 → bad (gale), ≥6 → warn (strong breeze), ≥4 → accent (moderate), else good.
+ */
+export function beaufortColor(bf: number): string {
+  if (bf >= 8) return "var(--bad)";
+  if (bf >= 6) return "var(--warn)";
+  if (bf >= 4) return "var(--accent)";
+  return "var(--good)";
+}
+
+/**
+ * Map a storm-surge peak height (metres) to a CSS colour token.
+ *   ≥2 m → bad (major surge), ≥1.2 m → warn (moderate), else good.
+ */
+export function surgeColor(surgePeakM: number): string {
+  if (surgePeakM >= 2) return "var(--bad)";
+  if (surgePeakM >= 1.2) return "var(--warn)";
+  return "var(--good)";
+}
+
+/**
+ * Return a CSS colour token for a boolean safe/unsafe state.
+ */
+export function safeColor(safe: boolean): string {
+  return safe ? "var(--good)" : "var(--bad)";
+}

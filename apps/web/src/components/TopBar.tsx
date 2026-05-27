@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { AcademicSnapshot, FallbackTier } from "@chonburi/shared";
 import { useTheme } from "../hooks/useTheme";
+import { formatDate } from "../lib/time";
 
 interface FeedHealth {
   label: string;
@@ -22,9 +23,6 @@ interface Props {
   systemStatus?: "healthy" | "degraded" | "down" | "unknown";
 }
 
-function formatDate(d: Date): string {
-  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
-}
 
 const TEMPO_COLOR: Record<AcademicSnapshot["tempo"], string> = {
   low: "var(--text-3)",
