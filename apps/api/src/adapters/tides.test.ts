@@ -87,4 +87,39 @@ describe("tides adapter — harmonic prediction", () => {
 
     expect(["spring", "neap", "rising", "falling"]).toContain(snap.springNeap);
   });
+
+  it("chartDatumNote is a non-empty string", async () => {
+    const feed = await fetchTides();
+    expect(typeof feed.features[0].chartDatumNote).toBe("string");
+    expect(feed.features[0].chartDatumNote.length).toBeGreaterThan(0);
+  });
+
+  it("springTide is a boolean", async () => {
+    const feed = await fetchTides();
+    expect(typeof feed.features[0].springTide).toBe("boolean");
+  });
+
+  it("observedAt is a valid ISO timestamp string within 10 seconds of now", async () => {
+    const before = Date.now();
+    const feed = await fetchTides();
+    const after = Date.now();
+    const observedMs = new Date(feed.features[0].observedAt).getTime();
+    expect(observedMs).toBeGreaterThanOrEqual(before - 1000);
+    expect(observedMs).toBeLessThanOrEqual(after + 1000);
+  });
+
+  it("prev12h and next24h timestamps are in ascending order", async () => {
+    const feed = await fetchTides();
+    const snap = feed.features[0];
+
+    const prevMs = snap.prev12h.map((p) => new Date(p.at).getTime());
+    for (let i = 1; i < prevMs.length; i++) {
+      expect(prevMs[i]).toBeGreaterThan(prevMs[i - 1]);
+    }
+
+    const nextMs = snap.next24h.map((p) => new Date(p.at).getTime());
+    for (let i = 1; i < nextMs.length; i++) {
+      expect(nextMs[i]).toBeGreaterThan(nextMs[i - 1]);
+    }
+  });
 });
