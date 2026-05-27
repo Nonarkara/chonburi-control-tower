@@ -9,20 +9,13 @@
 import type { NasaEarthReadings } from "@chonburi/shared";
 import type { ForecastMetric } from "./PredictivePanel";
 import { METRIC_LABEL } from "./PredictivePanel";
+import { aqiBand } from "../lib/coastal";
 
 interface Props {
   nasaReadings: NasaEarthReadings | null;
   avgSolarIrrKWh: number | null;
   forecastAlerts: Set<string>;
   forecasts: ForecastMetric[];
-}
-
-function aqiBand(aqi: number): string {
-  if (aqi <= 50) return "GOOD";
-  if (aqi <= 100) return "MODERATE";
-  if (aqi <= 150) return "UNHEALTHY·SG";
-  if (aqi <= 200) return "UNHEALTHY";
-  return "HAZARDOUS";
 }
 
 export function SituationDigest({ nasaReadings, avgSolarIrrKWh, forecastAlerts, forecasts }: Props) {
