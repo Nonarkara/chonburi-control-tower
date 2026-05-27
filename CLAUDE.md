@@ -25,7 +25,7 @@ The codebase has a test foundation — please keep it green.
 
 ```bash
 pnpm --filter @chonburi/shared test     # 24 unit tests (locale, fmtAge, tierLabel, SOURCE_CATALOG invariants)
-pnpm --filter @chonburi/web test        # 138 unit tests (safeUrl XSS prevention, apiBase URL resolution, trafficSim model contract, searchCities geocoding, presets satelliteFreshness + LENSES/ALL_LAYERS/COMPUTED_LAYERS invariants, PARTNER_CITIES data contract, fishery zoneStatus + ZONES contract, tide fmtCountdown + moonEmoji)
+pnpm --filter @chonburi/web test        # 158 unit tests (safeUrl XSS prevention, apiBase URL resolution, trafficSim model contract, searchCities geocoding, presets satelliteFreshness + LENSES/ALL_LAYERS/COMPUTED_LAYERS invariants, PARTNER_CITIES data contract, fishery zoneStatus + ZONES contract, tide fmtCountdown + moonEmoji, coastal compass + fmt + aqiColor + aqiBand)
 pnpm --filter @chonburi/api test        # 327 unit tests (health state machine, cache dedup, bbox, common fetch utils, newsArchive dedup+filter+digest, persistence hydrate+interval, twinStore in-memory CRUD+relations+state+hydrate, twinDb URL-parsing+SSL config, adapter contracts: weather, tides, marine, datago, nasa-power, air-quality, aqicn, AIS, GISTDA, markets, facebook, chat, chatContext, news, executive, cityReporter, iTIC, precipNowcast, cctv, portOps, waterQuality, viabus, trends, mqttBridge packet-parser+payload-routing, twin API routes CRUD+validation)
 pnpm --filter @chonburi/web test:e2e    # 15 Playwright smoke tests (boot, lens, modal, MODELLED chips, count badges, MAR/EAR/EXEC panels, catalog filter, layer toggle, PmcuBrief, ChatBox, HourRail weekday/weekend, theme toggle)
 ```

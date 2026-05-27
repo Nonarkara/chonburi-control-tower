@@ -1,5 +1,6 @@
 import type { AirQualityPoint, IncidentFeature, WeatherSnapshot } from "@chonburi/shared";
 import { PanelHeader } from './PanelHeader';
+import { aqiColor, aqiBand } from "../lib/coastal";
 
 interface Props {
   cityReports: IncidentFeature[];
@@ -9,20 +10,6 @@ interface Props {
   ageMinutes?: number;
 }
 
-function aqiColor(aqi: number): string {
-  if (aqi <= 50) return "var(--good)";
-  if (aqi <= 100) return "var(--warn)";
-  if (aqi <= 150) return "var(--bad)";
-  return "var(--crit)";
-}
-
-function aqiBand(aqi: number): string {
-  if (aqi <= 50) return "GOOD";
-  if (aqi <= 100) return "MODERATE";
-  if (aqi <= 150) return "UNHEALTHY·SG";
-  if (aqi <= 200) return "UNHEALTHY";
-  return "HAZARDOUS";
-}
 
 export function KpiStrip({ cityReports, iticEvents, airQuality, weather, ageMinutes }: Props) {
   const openReports = cityReports.filter((r) => r.status !== "resolved").length;

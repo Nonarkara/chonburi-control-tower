@@ -9,6 +9,7 @@
 import { useMemo } from "react";
 import type { FallbackTier } from "@chonburi/shared";
 import { PanelHeader } from "./PanelHeader";
+import { compass, fmt } from "../lib/coastal";
 
 export interface MarineSnapshot {
   observedAt: string;
@@ -47,15 +48,6 @@ const BEAUFORT_LABEL = [
   "Storm","Violent storm","Hurricane",
 ];
 
-const COMPASS_DIRS = ["N","NE","E","SE","S","SW","W","NW"];
-function compass(deg: number | null): string {
-  if (deg == null) return "—";
-  return COMPASS_DIRS[Math.round(deg / 45) % 8];
-}
-function fmt(n: number | null, digits = 1, unit = ""): string {
-  if (n == null || Number.isNaN(n)) return "—";
-  return `${n.toFixed(digits)}${unit}`;
-}
 
 function safeColor(safe: boolean): string {
   return safe ? "var(--good)" : "var(--bad)";
