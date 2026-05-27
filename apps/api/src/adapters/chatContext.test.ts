@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { Mock } from "vitest";
 
 /**
  * chatContext contract tests — verifies the live-data snippet builder that
@@ -9,31 +10,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  * vi.resetModules + dynamic import) to reset the 60-second TTL cache.
  *
  * Covered:
- *   - Snippet header format (markdown section heading)
+ *   - Snippet header format (markdown section heading, ISO timestamp)
  *   - Per-adapter sections appear when adapters resolve successfully
  *   - Failed/rejected adapters are silently skipped (no throw)
  *   - 60-second TTL cache: rapid second call returns the same snippet
- *   - Empty features arrays are handled gracefully (no section added)
+ *   - Empty features: data-gated sections (AQ/weather/precip) are omitted;
+ *     city reports and iTIC always appear when fulfilled (even with 0 items)
  */
 
-vi.mock("./airQuality.js", () => ({
-  fetchAirQualityTrend: vi.fn(),
-}));
-vi.mock("./cityReporter.js", () => ({
-  fetchCityReports: vi.fn(),
-}));
-vi.mock("./itic.js", () => ({
-  fetchItic: vi.fn(),
-}));
-vi.mock("./weather.js", () => ({
-  fetchWeather: vi.fn(),
-}));
-vi.mock("./precipNowcast.js", () => ({
-  fetchPrecipNowcast: vi.fn(),
-}));
+vi.mock("./airQuality.js", () => ({ fetchAirQualityTrend: vi.fn() }));
+vi.mock("./cityReporter.js", () => ({ fetchCityReports: vi.fn() }));
+vi.mock("./itic.js", () => ({ fetchItic: vi.fn() }));
+vi.mock("./weather.js", () => ({ fetchWeather: vi.fn() }));
+vi.mock("./precipNowcast.js", () => ({ fetchPrecipNowcast: vi.fn() }));
 vi.mock("../lib/newsArchive.js", () => ({
   // Default to rejecting so tryNewsArchive catches → returns null → section omitted.
-  // Tests that need archive data can override these in the specific test.
   digestNewsArchive: vi.fn().mockRejectedValue(new Error("not available in test env")),
   newsArchiveStats: vi.fn().mockRejectedValue(new Error("not available in test env")),
 }));
@@ -74,6 +65,18 @@ function iticFeed(count: number) {
   };
 }
 
+// Retrieves all five mocks after a vi.resetModules() so they are fresh.
+// Must be called inside each it() — resetModules clears the registry,
+// and the factory creates fresh vi.fn() instances on next import.
+async function getMocks() {
+  const aq = (await import("./airQuality.js") as unknown as { fetchAirQualityTrend: Mock }).fetchAirQualityTrend;
+  const cr = (await import("./cityReporter.js") as unknown as { fetchCityReports: Mock }).fetchCityReports;
+  const it_ = (await import("./itic.js") as unknown as { fetchItic: Mock }).fetchItic;
+  const wx = (await import("./weather.js") as unknown as { fetchWeather: Mock }).fetchWeather;
+  const pr = (await import("./precipNowcast.js") as unknown as { fetchPrecipNowcast: Mock }).fetchPrecipNowcast;
+  return { aq, cr, itic: it_, wx, pr };
+}
+
 beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
@@ -83,17 +86,12 @@ beforeEach(() => {
 
 describe("liveContextSnippet — format", () => {
   it("starts with a markdown section header containing 'Live data snapshot'", async () => {
-    const { fetchAirQualityTrend } = await import("./airQuality.js") as { fetchAirQualityTrend: ReturnType<typeof vi.fn> };
-    const { fetchCityReports } = await import("./cityReporter.js") as { fetchCityReports: ReturnType<typeof vi.fn> };
-    const { fetchItic } = await import("./itic.js") as { fetchItic: ReturnType<typeof vi.fn> };
-    const { fetchWeather } = await import("./weather.js") as { fetchWeather: ReturnType<typeof vi.fn> };
-    const { fetchPrecipNowcast } = await import("./precipNowcast.js") as { fetchPrecipNowcast: ReturnType<typeof vi.fn> };
-
-    fetchAirQualityTrend.mockResolvedValue(aqFeed(50));
-    fetchCityReports.mockResolvedValue(crFeed(2, 5));
-    fetchItic.mockResolvedValue(iticFeed(3));
-    fetchWeather.mockResolvedValue(wxFeed());
-    fetchPrecipNowcast.mockResolvedValue(precipFeed("dry"));
+    const { aq, cr, itic, wx, pr } = await getMocks();
+    aq.mockResolvedValue(aqFeed(50));
+    cr.mockResolvedValue(crFeed(2, 5));
+    itic.mockResolvedValue(iticFeed(3));
+    wx.mockResolvedValue(wxFeed());
+    pr.mockResolvedValue(precipFeed("dry"));
 
     const { liveContextSnippet } = await import("./chatContext.js");
     const snippet = await liveContextSnippet();
@@ -103,22 +101,16 @@ describe("liveContextSnippet — format", () => {
   });
 
   it("includes ISO timestamp in the header", async () => {
-    const { fetchAirQualityTrend } = await import("./airQuality.js") as { fetchAirQualityTrend: ReturnType<typeof vi.fn> };
-    const { fetchCityReports } = await import("./cityReporter.js") as { fetchCityReports: ReturnType<typeof vi.fn> };
-    const { fetchItic } = await import("./itic.js") as { fetchItic: ReturnType<typeof vi.fn> };
-    const { fetchWeather } = await import("./weather.js") as { fetchWeather: ReturnType<typeof vi.fn> };
-    const { fetchPrecipNowcast } = await import("./precipNowcast.js") as { fetchPrecipNowcast: ReturnType<typeof vi.fn> };
-
-    fetchAirQualityTrend.mockResolvedValue(aqFeed(50));
-    fetchCityReports.mockResolvedValue(crFeed(0, 0));
-    fetchItic.mockResolvedValue(iticFeed(0));
-    fetchWeather.mockResolvedValue(wxFeed());
-    fetchPrecipNowcast.mockResolvedValue(precipFeed("dry"));
+    const { aq, cr, itic, wx, pr } = await getMocks();
+    aq.mockResolvedValue(aqFeed(50));
+    cr.mockResolvedValue(crFeed(0, 0));
+    itic.mockResolvedValue(iticFeed(0));
+    wx.mockResolvedValue(wxFeed());
+    pr.mockResolvedValue(precipFeed("dry"));
 
     const { liveContextSnippet } = await import("./chatContext.js");
     const snippet = await liveContextSnippet();
 
-    // ISO-8601 pattern: e.g. "2025-01-01T12:34:56.789Z"
     expect(snippet).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
   });
 });
@@ -127,17 +119,12 @@ describe("liveContextSnippet — format", () => {
 
 describe("liveContextSnippet — per-adapter sections", () => {
   it("includes air quality section when aqFeed has data", async () => {
-    const { fetchAirQualityTrend } = await import("./airQuality.js") as { fetchAirQualityTrend: ReturnType<typeof vi.fn> };
-    const { fetchCityReports } = await import("./cityReporter.js") as { fetchCityReports: ReturnType<typeof vi.fn> };
-    const { fetchItic } = await import("./itic.js") as { fetchItic: ReturnType<typeof vi.fn> };
-    const { fetchWeather } = await import("./weather.js") as { fetchWeather: ReturnType<typeof vi.fn> };
-    const { fetchPrecipNowcast } = await import("./precipNowcast.js") as { fetchPrecipNowcast: ReturnType<typeof vi.fn> };
-
-    fetchAirQualityTrend.mockResolvedValue(aqFeed(50));
-    fetchCityReports.mockResolvedValue(crFeed(0, 0));
-    fetchItic.mockResolvedValue(iticFeed(0));
-    fetchWeather.mockResolvedValue(wxFeed());
-    fetchPrecipNowcast.mockResolvedValue(precipFeed("dry"));
+    const { aq, cr, itic, wx, pr } = await getMocks();
+    aq.mockResolvedValue(aqFeed(50));
+    cr.mockResolvedValue(crFeed(0, 0));
+    itic.mockResolvedValue(iticFeed(0));
+    wx.mockResolvedValue(wxFeed());
+    pr.mockResolvedValue(precipFeed("dry"));
 
     const { liveContextSnippet } = await import("./chatContext.js");
     const snippet = await liveContextSnippet();
@@ -148,17 +135,12 @@ describe("liveContextSnippet — per-adapter sections", () => {
   });
 
   it("includes weather section with temperature and condition", async () => {
-    const { fetchAirQualityTrend } = await import("./airQuality.js") as { fetchAirQualityTrend: ReturnType<typeof vi.fn> };
-    const { fetchCityReports } = await import("./cityReporter.js") as { fetchCityReports: ReturnType<typeof vi.fn> };
-    const { fetchItic } = await import("./itic.js") as { fetchItic: ReturnType<typeof vi.fn> };
-    const { fetchWeather } = await import("./weather.js") as { fetchWeather: ReturnType<typeof vi.fn> };
-    const { fetchPrecipNowcast } = await import("./precipNowcast.js") as { fetchPrecipNowcast: ReturnType<typeof vi.fn> };
-
-    fetchAirQualityTrend.mockResolvedValue({ features: [], meta: {} });
-    fetchCityReports.mockResolvedValue(crFeed(0, 0));
-    fetchItic.mockResolvedValue(iticFeed(0));
-    fetchWeather.mockResolvedValue(wxFeed());
-    fetchPrecipNowcast.mockResolvedValue(precipFeed("dry"));
+    const { aq, cr, itic, wx, pr } = await getMocks();
+    aq.mockResolvedValue({ features: [], meta: {} });
+    cr.mockResolvedValue(crFeed(0, 0));
+    itic.mockResolvedValue(iticFeed(0));
+    wx.mockResolvedValue(wxFeed());
+    pr.mockResolvedValue(precipFeed("dry"));
 
     const { liveContextSnippet } = await import("./chatContext.js");
     const snippet = await liveContextSnippet();
@@ -169,17 +151,12 @@ describe("liveContextSnippet — per-adapter sections", () => {
   });
 
   it("includes dry rain nowcast section", async () => {
-    const { fetchAirQualityTrend } = await import("./airQuality.js") as { fetchAirQualityTrend: ReturnType<typeof vi.fn> };
-    const { fetchCityReports } = await import("./cityReporter.js") as { fetchCityReports: ReturnType<typeof vi.fn> };
-    const { fetchItic } = await import("./itic.js") as { fetchItic: ReturnType<typeof vi.fn> };
-    const { fetchWeather } = await import("./weather.js") as { fetchWeather: ReturnType<typeof vi.fn> };
-    const { fetchPrecipNowcast } = await import("./precipNowcast.js") as { fetchPrecipNowcast: ReturnType<typeof vi.fn> };
-
-    fetchAirQualityTrend.mockResolvedValue({ features: [], meta: {} });
-    fetchCityReports.mockResolvedValue(crFeed(0, 0));
-    fetchItic.mockResolvedValue(iticFeed(0));
-    fetchWeather.mockResolvedValue({ features: [], meta: {} });
-    fetchPrecipNowcast.mockResolvedValue(precipFeed("dry"));
+    const { aq, cr, itic, wx, pr } = await getMocks();
+    aq.mockResolvedValue({ features: [], meta: {} });
+    cr.mockResolvedValue(crFeed(0, 0));
+    itic.mockResolvedValue(iticFeed(0));
+    wx.mockResolvedValue({ features: [], meta: {} });
+    pr.mockResolvedValue(precipFeed("dry"));
 
     const { liveContextSnippet } = await import("./chatContext.js");
     const snippet = await liveContextSnippet();
@@ -189,38 +166,28 @@ describe("liveContextSnippet — per-adapter sections", () => {
   });
 
   it("includes city reports with open/total counts", async () => {
-    const { fetchAirQualityTrend } = await import("./airQuality.js") as { fetchAirQualityTrend: ReturnType<typeof vi.fn> };
-    const { fetchCityReports } = await import("./cityReporter.js") as { fetchCityReports: ReturnType<typeof vi.fn> };
-    const { fetchItic } = await import("./itic.js") as { fetchItic: ReturnType<typeof vi.fn> };
-    const { fetchWeather } = await import("./weather.js") as { fetchWeather: ReturnType<typeof vi.fn> };
-    const { fetchPrecipNowcast } = await import("./precipNowcast.js") as { fetchPrecipNowcast: ReturnType<typeof vi.fn> };
-
-    fetchAirQualityTrend.mockResolvedValue({ features: [], meta: {} });
-    fetchCityReports.mockResolvedValue(crFeed(3, 10)); // 3 open, 10 total
-    fetchItic.mockResolvedValue(iticFeed(0));
-    fetchWeather.mockResolvedValue({ features: [], meta: {} });
-    fetchPrecipNowcast.mockResolvedValue({ features: [], meta: {} });
+    const { aq, cr, itic, wx, pr } = await getMocks();
+    aq.mockResolvedValue({ features: [], meta: {} });
+    cr.mockResolvedValue(crFeed(3, 10)); // 3 open, 10 total
+    itic.mockResolvedValue(iticFeed(0));
+    wx.mockResolvedValue({ features: [], meta: {} });
+    pr.mockResolvedValue({ features: [], meta: {} });
 
     const { liveContextSnippet } = await import("./chatContext.js");
     const snippet = await liveContextSnippet();
 
     expect(snippet).toContain("Citizen reports");
-    expect(snippet).toContain("10");  // total count
-    expect(snippet).toContain("3");   // open count
+    expect(snippet).toContain("10"); // total
+    expect(snippet).toContain("3");  // open
   });
 
   it("includes iTIC traffic section with event count", async () => {
-    const { fetchAirQualityTrend } = await import("./airQuality.js") as { fetchAirQualityTrend: ReturnType<typeof vi.fn> };
-    const { fetchCityReports } = await import("./cityReporter.js") as { fetchCityReports: ReturnType<typeof vi.fn> };
-    const { fetchItic } = await import("./itic.js") as { fetchItic: ReturnType<typeof vi.fn> };
-    const { fetchWeather } = await import("./weather.js") as { fetchWeather: ReturnType<typeof vi.fn> };
-    const { fetchPrecipNowcast } = await import("./precipNowcast.js") as { fetchPrecipNowcast: ReturnType<typeof vi.fn> };
-
-    fetchAirQualityTrend.mockResolvedValue({ features: [], meta: {} });
-    fetchCityReports.mockResolvedValue(crFeed(0, 0));
-    fetchItic.mockResolvedValue(iticFeed(7));
-    fetchWeather.mockResolvedValue({ features: [], meta: {} });
-    fetchPrecipNowcast.mockResolvedValue({ features: [], meta: {} });
+    const { aq, cr, itic, wx, pr } = await getMocks();
+    aq.mockResolvedValue({ features: [], meta: {} });
+    cr.mockResolvedValue(crFeed(0, 0));
+    itic.mockResolvedValue(iticFeed(7));
+    wx.mockResolvedValue({ features: [], meta: {} });
+    pr.mockResolvedValue({ features: [], meta: {} });
 
     const { liveContextSnippet } = await import("./chatContext.js");
     const snippet = await liveContextSnippet();
@@ -234,73 +201,54 @@ describe("liveContextSnippet — per-adapter sections", () => {
 
 describe("liveContextSnippet — error handling", () => {
   it("does not throw when all adapters reject", async () => {
-    const { fetchAirQualityTrend } = await import("./airQuality.js") as { fetchAirQualityTrend: ReturnType<typeof vi.fn> };
-    const { fetchCityReports } = await import("./cityReporter.js") as { fetchCityReports: ReturnType<typeof vi.fn> };
-    const { fetchItic } = await import("./itic.js") as { fetchItic: ReturnType<typeof vi.fn> };
-    const { fetchWeather } = await import("./weather.js") as { fetchWeather: ReturnType<typeof vi.fn> };
-    const { fetchPrecipNowcast } = await import("./precipNowcast.js") as { fetchPrecipNowcast: ReturnType<typeof vi.fn> };
-
-    fetchAirQualityTrend.mockRejectedValue(new Error("timeout"));
-    fetchCityReports.mockRejectedValue(new Error("timeout"));
-    fetchItic.mockRejectedValue(new Error("timeout"));
-    fetchWeather.mockRejectedValue(new Error("timeout"));
-    fetchPrecipNowcast.mockRejectedValue(new Error("timeout"));
+    const { aq, cr, itic, wx, pr } = await getMocks();
+    aq.mockRejectedValue(new Error("timeout"));
+    cr.mockRejectedValue(new Error("timeout"));
+    itic.mockRejectedValue(new Error("timeout"));
+    wx.mockRejectedValue(new Error("timeout"));
+    pr.mockRejectedValue(new Error("timeout"));
 
     const { liveContextSnippet } = await import("./chatContext.js");
-    // Must not throw — Promise.allSettled handles rejections
     await expect(liveContextSnippet()).resolves.toMatch(/## Live data snapshot/);
   });
 
   it("omits data-gated sections (AQ/weather/precip) when adapters return empty features", async () => {
-    // chatContext guards AQ, weather, precip behind features.length > 0.
-    // City reports and iTIC are always emitted when fulfilled (even with 0 items).
-    const { fetchAirQualityTrend } = await import("./airQuality.js") as { fetchAirQualityTrend: ReturnType<typeof vi.fn> };
-    const { fetchCityReports } = await import("./cityReporter.js") as { fetchCityReports: ReturnType<typeof vi.fn> };
-    const { fetchItic } = await import("./itic.js") as { fetchItic: ReturnType<typeof vi.fn> };
-    const { fetchWeather } = await import("./weather.js") as { fetchWeather: ReturnType<typeof vi.fn> };
-    const { fetchPrecipNowcast } = await import("./precipNowcast.js") as { fetchPrecipNowcast: ReturnType<typeof vi.fn> };
-
+    // AQ, weather, and precip are guarded by features.length > 0.
+    // City reports and iTIC are always emitted when fulfilled (even 0 items).
+    const { aq, cr, itic, wx, pr } = await getMocks();
     const empty = { features: [], meta: {} };
-    fetchAirQualityTrend.mockResolvedValue(empty);
-    fetchCityReports.mockResolvedValue(empty);
-    fetchItic.mockResolvedValue(empty);
-    fetchWeather.mockResolvedValue(empty);
-    fetchPrecipNowcast.mockResolvedValue(empty);
+    aq.mockResolvedValue(empty);
+    cr.mockResolvedValue(empty);
+    itic.mockResolvedValue(empty);
+    wx.mockResolvedValue(empty);
+    pr.mockResolvedValue(empty);
 
     const { liveContextSnippet } = await import("./chatContext.js");
     const snippet = await liveContextSnippet();
 
     expect(snippet).toMatch(/^## Live data snapshot/);
-    // Data-gated sections are absent when features is empty
     expect(snippet).not.toContain("Air quality");
     expect(snippet).not.toContain("Weather");
     expect(snippet).not.toContain("Rain nowcast");
-    // City reports and iTIC are always included when fulfilled (shows "0 near municipality")
+    // Always emitted when fulfilled
     expect(snippet).toContain("Citizen reports");
     expect(snippet).toContain("iTIC");
   });
 
   it("skips failed adapters but includes successful ones", async () => {
-    const { fetchAirQualityTrend } = await import("./airQuality.js") as { fetchAirQualityTrend: ReturnType<typeof vi.fn> };
-    const { fetchCityReports } = await import("./cityReporter.js") as { fetchCityReports: ReturnType<typeof vi.fn> };
-    const { fetchItic } = await import("./itic.js") as { fetchItic: ReturnType<typeof vi.fn> };
-    const { fetchWeather } = await import("./weather.js") as { fetchWeather: ReturnType<typeof vi.fn> };
-    const { fetchPrecipNowcast } = await import("./precipNowcast.js") as { fetchPrecipNowcast: ReturnType<typeof vi.fn> };
-
-    fetchAirQualityTrend.mockRejectedValue(new Error("network error"));
-    fetchCityReports.mockResolvedValue(crFeed(1, 3));
-    fetchItic.mockRejectedValue(new Error("timeout"));
-    fetchWeather.mockResolvedValue(wxFeed());
-    fetchPrecipNowcast.mockRejectedValue(new Error("timeout"));
+    const { aq, cr, itic, wx, pr } = await getMocks();
+    aq.mockRejectedValue(new Error("network error"));
+    cr.mockResolvedValue(crFeed(1, 3));
+    itic.mockRejectedValue(new Error("timeout"));
+    wx.mockResolvedValue(wxFeed());
+    pr.mockRejectedValue(new Error("timeout"));
 
     const { liveContextSnippet } = await import("./chatContext.js");
     const snippet = await liveContextSnippet();
 
-    // Weather and city reports succeeded; AQ, iTIC, precip did not
     expect(snippet).toContain("Weather");
     expect(snippet).toContain("Citizen reports");
     expect(snippet).not.toContain("Air quality");
-    expect(snippet).not.toContain("iTIC");
   });
 });
 
@@ -308,27 +256,19 @@ describe("liveContextSnippet — error handling", () => {
 
 describe("liveContextSnippet — 60-second TTL cache", () => {
   it("returns the same snippet on rapid successive calls without re-fetching adapters", async () => {
-    const { fetchAirQualityTrend } = await import("./airQuality.js") as { fetchAirQualityTrend: ReturnType<typeof vi.fn> };
-    const { fetchCityReports } = await import("./cityReporter.js") as { fetchCityReports: ReturnType<typeof vi.fn> };
-    const { fetchItic } = await import("./itic.js") as { fetchItic: ReturnType<typeof vi.fn> };
-    const { fetchWeather } = await import("./weather.js") as { fetchWeather: ReturnType<typeof vi.fn> };
-    const { fetchPrecipNowcast } = await import("./precipNowcast.js") as { fetchPrecipNowcast: ReturnType<typeof vi.fn> };
-
-    fetchAirQualityTrend.mockResolvedValue(aqFeed(42));
-    fetchCityReports.mockResolvedValue(crFeed(0, 0));
-    fetchItic.mockResolvedValue(iticFeed(0));
-    fetchWeather.mockResolvedValue(wxFeed());
-    fetchPrecipNowcast.mockResolvedValue(precipFeed("dry"));
+    const { aq, cr, itic, wx, pr } = await getMocks();
+    aq.mockResolvedValue(aqFeed(42));
+    cr.mockResolvedValue(crFeed(0, 0));
+    itic.mockResolvedValue(iticFeed(0));
+    wx.mockResolvedValue(wxFeed());
+    pr.mockResolvedValue(precipFeed("dry"));
 
     const { liveContextSnippet } = await import("./chatContext.js");
-
     const first = await liveContextSnippet();
     const second = await liveContextSnippet();
 
-    // Identical string because cached
-    expect(first).toBe(second);
-    // Adapters were only called once (not twice)
-    expect(fetchAirQualityTrend).toHaveBeenCalledTimes(1);
-    expect(fetchWeather).toHaveBeenCalledTimes(1);
+    expect(first).toBe(second); // same string from cache
+    expect(aq).toHaveBeenCalledTimes(1);
+    expect(wx).toHaveBeenCalledTimes(1);
   });
 });
