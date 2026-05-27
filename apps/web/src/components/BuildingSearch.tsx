@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
 import type { BuildingProperties } from "../map/layers";
+import { centroid } from "../lib/geo";
 
 interface Hit {
   feature: Feature<Polygon | MultiPolygon, BuildingProperties>;
@@ -14,19 +15,7 @@ interface Props {
   onSelect: (centroid: [number, number], building: BuildingProperties) => void;
 }
 
-function centroid(geom: Polygon | MultiPolygon): [number, number] {
-  const ring =
-    geom.type === "Polygon"
-      ? geom.coordinates[0]
-      : geom.coordinates[0][0]; // first ring of first polygon for MultiPolygon
-  let sx = 0;
-  let sy = 0;
-  for (const [x, y] of ring) {
-    sx += x;
-    sy += y;
-  }
-  return [sx / ring.length, sy / ring.length];
-}
+// centroid() imported from ../lib/geo (pure, unit-tested).
 
 const LISTBOX_ID = "building-search-results";
 
