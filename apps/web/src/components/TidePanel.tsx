@@ -9,6 +9,7 @@
 
 import type { FallbackTier } from "@chonburi/shared";
 import { PanelHeader } from "./PanelHeader";
+import { fmtCountdown, moonEmoji } from "../lib/tide";
 
 export interface TideExtreme {
   at: string;
@@ -40,24 +41,6 @@ interface Props {
   source?: string;
 }
 
-function fmtCountdown(hours: number): string {
-  if (hours < 0) return "—";
-  const h = Math.floor(hours);
-  const m = Math.round((hours - h) * 60);
-  if (h === 0) return `${m}m`;
-  return `${h}h ${m}m`;
-}
-
-function moonEmoji(phase: number): string {
-  if (phase < 0.04 || phase > 0.96) return "🌑";
-  if (phase < 0.21) return "🌒";
-  if (phase < 0.29) return "🌓";
-  if (phase < 0.46) return "🌔";
-  if (phase < 0.54) return "🌕";
-  if (phase < 0.71) return "🌖";
-  if (phase < 0.79) return "🌗";
-  return "🌘";
-}
 
 const SPRING_NEAP_COLOR: Record<string, string> = {
   spring:  "var(--bad)",    // high tidal range — coastal flood risk
