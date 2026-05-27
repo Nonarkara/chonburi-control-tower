@@ -25,7 +25,7 @@ The codebase has a test foundation — please keep it green.
 
 ```bash
 pnpm --filter @chonburi/shared test     # 24 unit tests (locale, fmtAge, tierLabel, SOURCE_CATALOG invariants)
-pnpm --filter @chonburi/web test        # 23 unit tests (safeUrl XSS prevention, apiBase URL resolution)
+pnpm --filter @chonburi/web test        # 36 unit tests (safeUrl XSS prevention, apiBase URL resolution, trafficSim model contract)
 pnpm --filter @chonburi/api test        # 160 unit tests (health state machine, cache dedup, bbox, common fetch utils, adapter contracts: weather, tides, marine, datago, nasa-power, air-quality, aqicn, AIS, GISTDA, markets, facebook, chat, news, executive, cityReporter, iTIC, precipNowcast, cctv, portOps, waterQuality)
 pnpm --filter @chonburi/web test:e2e    # 15 Playwright smoke tests (boot, lens, modal, MODELLED chips, count badges, MAR/EAR/EXEC panels, catalog filter, layer toggle, PmcuBrief, ChatBox, HourRail weekday/weekend, theme toggle)
 ```
