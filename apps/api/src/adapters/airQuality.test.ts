@@ -80,3 +80,105 @@ describe("airQualityTrend adapter", () => {
     expect(feed.features).toHaveLength(0);
   });
 });
+
+// ─── Happy-path response parsing (isolated via resetModules) ─────────────────
+
+describe("airQuality adapter — happy-path parsing (isolated)", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const GOOD_CURRENT = {
+    time: "2026-05-01T09:00",
+    us_aqi: 55,
+    pm2_5: 14.2,
+    pm10: 22.1,
+  };
+
+  it("maps Open-Meteo current block to AirQualityPoint", async () => {
+    vi.resetModules();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ current: GOOD_CURRENT }), { status: 200 }),
+    );
+    const { fetchAirQuality: fresh } = await import("./airQuality.js") as unknown as {
+      fetchAirQuality: typeof fetchAirQuality;
+    };
+
+    const feed = await fresh();
+
+    expect(feed.meta.fallbackTier).toBe("live");
+    expect(feed.meta.source).toBe("open-meteo-air-quality");
+    expect(feed.features).toHaveLength(1);
+
+    const pt = feed.features[0];
+    expect(pt.aqi).toBe(55);
+    expect(pt.pm25).toBeCloseTo(14.2);
+    expect(pt.category).toBe("moderate"); // 51–100 = moderate
+    expect(pt.observedAt).toBe("2026-05-01T09:00");
+    expect(pt.station).toMatch(/Chonburi/);
+    // Coordinates should be Chonburi city (~13.3, 100.9)
+    expect(pt.lat).toBeGreaterThan(13.0);
+    expect(pt.lng).toBeGreaterThan(100.0);
+    vi.restoreAllMocks();
+  });
+
+  it("classifies AQI 45 as 'good'", async () => {
+    vi.resetModules();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ current: { ...GOOD_CURRENT, us_aqi: 45 } }), { status: 200 }),
+    );
+    const { fetchAirQuality: fresh } = await import("./airQuality.js") as unknown as {
+      fetchAirQuality: typeof fetchAirQuality;
+    };
+
+    const feed = await fresh();
+    expect(feed.features[0].category).toBe("good");
+    vi.restoreAllMocks();
+  });
+});
+
+describe("airQualityTrend adapter — happy-path parsing (isolated)", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const TREND_PAYLOAD = {
+    current: { time: "2026-05-01T09:00", us_aqi: 55, pm2_5: 14.2 },
+    hourly: {
+      time: [
+        "2026-05-01T09:00", "2026-05-01T10:00", "2026-05-01T11:00",
+        "2026-05-01T12:00", "2026-05-01T13:00", "2026-05-01T14:00",
+        "2026-05-01T15:00", "2026-05-01T16:00",
+      ],
+      us_aqi: [55, 60, 58, 65, 70, 68, 62, 55],
+      pm2_5:  [14.2, 15.1, 14.8, 16.3, 17.5, 17.0, 15.5, 14.0],
+    },
+  };
+
+  it("maps current + 8-hour forecast into AirQualityTrend shape", async () => {
+    vi.resetModules();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(TREND_PAYLOAD), { status: 200 }),
+    );
+    const { fetchAirQualityTrend: fresh } = await import("./airQuality.js") as unknown as {
+      fetchAirQualityTrend: typeof fetchAirQualityTrend;
+    };
+
+    const feed = await fresh();
+
+    expect(feed.meta.fallbackTier).toBe("live");
+    expect(feed.features).toHaveLength(1);
+
+    const trend = feed.features[0];
+    expect(trend.current.aqi).toBe(55);
+    expect(trend.current.pm25).toBeCloseTo(14.2);
+    expect(trend.current.observedAt).toBe("2026-05-01T09:00");
+    expect(trend.next8h).toHaveLength(8);
+    // First forecast point
+    expect(trend.next8h[0].at).toBe("2026-05-01T09:00");
+    expect(trend.next8h[0].aqi).toBe(55);
+    // Category for AQI 55 = "moderate"
+    expect(trend.category).toBe("moderate");
+    vi.restoreAllMocks();
+  });
+});

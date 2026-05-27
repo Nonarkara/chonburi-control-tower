@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fetchNasaEarth } from "./nasa-power";
+import type { NasaEarthReadings } from "@chonburi/shared";
 
 /**
  * NASA POWER adapter contract tests.
@@ -61,5 +62,106 @@ describe("nasa-power adapter", () => {
     expect(clean(-989)).toBe(-989); // just above threshold — not filtered
     expect(clean(30.2)).toBe(30.2);
     expect(clean(0)).toBe(0);
+  });
+});
+
+// ─── Happy-path response parsing (isolated via resetModules) ─────────────────
+
+describe("nasa-power adapter — happy-path parsing (isolated)", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // Realistic MERRA-2 data for Chonburi, early May
+  const TODAY = "20260501";
+  const PREV  = "20260430";
+
+  const GOOD_RESPONSE = {
+    properties: {
+      parameter: {
+        T2M:               { [PREV]: 29.4, [TODAY]: 30.1 },
+        PRECTOTCORR:       { [PREV]: 12.3, [TODAY]:  5.0 },
+        ALLSKY_SFC_SW_DWN: { [PREV]: 18.4, [TODAY]: 16.2 },
+        ALLSKY_KT:         { [PREV]:  0.52, [TODAY]:  0.48 },
+      },
+    },
+  };
+
+  it("maps MERRA-2 parameters to NasaEarthReadings shape", async () => {
+    vi.resetModules();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(GOOD_RESPONSE), { status: 200 }),
+    );
+    const { fetchNasaEarth: fresh } = await import("./nasa-power.js") as unknown as {
+      fetchNasaEarth: typeof fetchNasaEarth;
+    };
+
+    const feed = await fresh();
+
+    expect(feed.meta.fallbackTier).toBe("live");
+    expect(feed.meta.source).toBe("nasa-power-merra2");
+    expect(feed.features).toHaveLength(1);
+
+    const r: NasaEarthReadings = feed.features[0];
+    // Most-recent non-null value — TODAY is 20260501 (sorts later)
+    expect(r.tempC).toBeCloseTo(30.1, 1);
+    expect(r.precipMmDay).toBeCloseTo(5.0, 1);
+    // Solar: 16.2 MJ/m² → 16.2 / 3.6 = 4.5 kWh/m² (rounded to 1 dp)
+    expect(r.solarKWhm2).toBeCloseTo(4.5, 0);
+    expect(r.clearnessIndex).toBeCloseTo(0.48, 2);
+    // dataDate should be the date key of the latest non-null T2M value
+    expect(r.dataDate).toBe(TODAY);
+    vi.restoreAllMocks();
+  });
+
+  it("returns 'live' tier when any parameter has data", async () => {
+    vi.resetModules();
+    // Only T2M populated — other params are all fill values
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({
+        properties: {
+          parameter: {
+            T2M: { "20260501": 28.0 },
+            PRECTOTCORR: { "20260501": -999 },
+            ALLSKY_SFC_SW_DWN: {},
+            ALLSKY_KT: {},
+          },
+        },
+      }), { status: 200 }),
+    );
+    const { fetchNasaEarth: fresh } = await import("./nasa-power.js") as unknown as {
+      fetchNasaEarth: typeof fetchNasaEarth;
+    };
+
+    const feed = await fresh();
+    expect(feed.meta.fallbackTier).toBe("live");
+    expect(feed.features[0].tempC).toBeCloseTo(28.0, 1);
+    expect(feed.features[0].precipMmDay).toBeNull(); // fill value filtered
+    expect(feed.features[0].solarKWhm2).toBeNull();  // no data
+    vi.restoreAllMocks();
+  });
+
+  it("picks most-recent non-null entry when latest date has fill value", async () => {
+    vi.resetModules();
+    // TODAY is a fill value → should fall back to PREV
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({
+        properties: {
+          parameter: {
+            T2M: { [TODAY]: -999, [PREV]: 27.5 },
+            PRECTOTCORR: {},
+            ALLSKY_SFC_SW_DWN: {},
+            ALLSKY_KT: {},
+          },
+        },
+      }), { status: 200 }),
+    );
+    const { fetchNasaEarth: fresh } = await import("./nasa-power.js") as unknown as {
+      fetchNasaEarth: typeof fetchNasaEarth;
+    };
+
+    const feed = await fresh();
+    expect(feed.features[0].tempC).toBeCloseTo(27.5, 1);
+    vi.restoreAllMocks();
   });
 });
