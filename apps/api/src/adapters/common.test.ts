@@ -97,6 +97,31 @@ describe("fetchJsonOrNull", () => {
 
     expect(capturedHeaders?.get("accept")).toBe("text/csv");
   });
+
+  it("returns null when response body is malformed JSON (res.json() throws)", async () => {
+    // Response with 200 OK but invalid JSON body — res.json() will throw
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("not-valid-json{{{", { status: 200 }),
+    );
+    const result = await fetchJsonOrNull("https://example.com/api");
+    expect(result).toBeNull();
+  });
+
+  it("adds user-agent header in Node.js environment (navigator is undefined)", async () => {
+    let capturedHeaders: Headers | undefined;
+    vi.spyOn(globalThis, "fetch").mockImplementation((_url, init) => {
+      capturedHeaders = new Headers(init?.headers);
+      return Promise.resolve(new Response(JSON.stringify({}), { status: 200 }));
+    });
+
+    await fetchJsonOrNull("https://example.com/api");
+
+    // In Node.js test environment, navigator is undefined → user-agent is added
+    if (typeof navigator === "undefined") {
+      expect(capturedHeaders?.get("user-agent")).toMatch(/ChulaControlTower|chula/i);
+    }
+    // In Workers environment, user-agent is suppressed — test is a no-op there
+  });
 });
 
 describe("fetchTextOrNull", () => {
@@ -132,5 +157,27 @@ describe("fetchTextOrNull", () => {
     );
     const result = await fetchTextOrNull("https://example.com/page");
     expect(result).toBe("");
+  });
+
+  it("returns null on abort (timeout) — AbortError caught by catch block", async () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(
+      Object.assign(new Error("Aborted"), { name: "AbortError" }),
+    );
+    const result = await fetchTextOrNull("https://example.com/page");
+    expect(result).toBeNull();
+  });
+
+  it("does not add accept header (fetchTextOrNull uses plain text — no accept override needed)", async () => {
+    let capturedHeaders: Headers | undefined;
+    vi.spyOn(globalThis, "fetch").mockImplementation((_url, init) => {
+      capturedHeaders = new Headers(init?.headers);
+      return Promise.resolve(new Response("data", { status: 200 }));
+    });
+
+    await fetchTextOrNull("https://example.com/page");
+
+    // fetchTextOrNull does NOT add accept: application/json (unlike fetchJsonOrNull)
+    // The accept header should be absent unless set via init
+    expect(capturedHeaders?.get("accept")).toBeNull();
   });
 });

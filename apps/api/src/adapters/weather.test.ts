@@ -91,4 +91,74 @@ describe("weather adapter — happy-path parsing (isolated)", () => {
     expect(feed.features[0].condition).toBe("—");
     vi.restoreAllMocks();
   });
+
+  it("falls back to apparent_temperature when feelsLikeC is absent", async () => {
+    vi.resetModules();
+    const noFeelsLike = { ...GOOD_CURRENT, apparent_temperature: undefined };
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ current: noFeelsLike }), { status: 200 }),
+    );
+    const { fetchWeather: fresh } = await import("./weather.js") as unknown as { fetchWeather: typeof import("./weather").fetchWeather };
+
+    const feed = await fresh();
+    // feelsLikeC falls back to tempC (temperature_2m)
+    expect(feed.features[0].feelsLikeC).toBeCloseTo(GOOD_CURRENT.temperature_2m);
+    vi.restoreAllMocks();
+  });
+
+  it("returns scenario tier when upstream returns 500", async () => {
+    vi.resetModules();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(null, { status: 500 }),
+    );
+    const { fetchWeather: fresh } = await import("./weather.js") as unknown as { fetchWeather: typeof import("./weather").fetchWeather };
+
+    const feed = await fresh();
+    expect(feed.meta.fallbackTier).toBe("scenario");
+    expect(feed.features).toHaveLength(0);
+    vi.restoreAllMocks();
+  });
+});
+
+// ─── Weather code lookup table (isolated per code) ───────────────────────────
+
+describe("weather adapter — WEATHER_CODE lookup (isolated)", () => {
+  type FetchWeather = typeof import("./weather").fetchWeather;
+
+  const BASE_CURRENT = {
+    time: "2026-01-01T08:00",
+    temperature_2m: 28.5,
+    apparent_temperature: 32.0,
+    relative_humidity_2m: 75,
+    wind_speed_10m: 15.2,
+    precipitation: 0,
+  };
+
+  it.each<[number, string]>([
+    [0,  "Clear"],
+    [1,  "Mainly clear"],
+    [3,  "Overcast"],
+    [45, "Foggy"],
+    [48, "Rime fog"],
+    [51, "Light drizzle"],
+    [55, "Heavy drizzle"],
+    [61, "Light rain"],
+    [63, "Rain"],
+    [65, "Heavy rain"],
+    [80, "Showers"],
+    [95, "Thunderstorm"],
+  ])("weather_code %i → '%s'", async (code, expected) => {
+    vi.resetModules();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({ current: { ...BASE_CURRENT, weather_code: code } }),
+        { status: 200 },
+      ),
+    );
+    const { fetchWeather: fresh } = await import("./weather.js") as unknown as { fetchWeather: FetchWeather };
+
+    const feed = await fresh();
+    expect(feed.features[0].condition).toBe(expected);
+    vi.restoreAllMocks();
+  });
 });

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { fetchTides } from "./tides";
 
 /**
@@ -121,5 +121,99 @@ describe("tides adapter — harmonic prediction", () => {
     for (let i = 1; i < nextMs.length; i++) {
       expect(nextMs[i]).toBeGreaterThan(nextMs[i - 1]);
     }
+  });
+});
+
+// ─── Moon phase names (isolated via fake timers) ──────────────────────────────
+//
+// Known new moon: 2024-01-11T11:57:00Z
+// Lunar month: 29.530588853 days = 2,551,442,889 ms
+// Phase offsets below are each tested with a unique system-time to bypass cache.
+
+describe("tides adapter — moonPhaseName (isolated)", () => {
+  type FetchTides = typeof import("./tides").fetchTides;
+
+  const KNOWN_NEW_MOON_MS = Date.UTC(2024, 0, 11, 11, 57, 0);
+  const LUNAR_MONTH_MS = 29.530588853 * 24 * 60 * 60 * 1000;
+
+  function tAtPhase(phase: number): number {
+    return Math.round(KNOWN_NEW_MOON_MS + phase * LUNAR_MONTH_MS);
+  }
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it.each<[number, string]>([
+    [0.01,  "New Moon"],         // phase < 0.04
+    [0.98,  "New Moon"],         // phase > 0.96
+    [0.12,  "Waxing Crescent"],  // 0.04–0.21
+    [0.25,  "First Quarter"],    // 0.21–0.29
+    [0.37,  "Waxing Gibbous"],   // 0.29–0.46
+    [0.50,  "Full Moon"],        // 0.46–0.54
+    [0.62,  "Waning Gibbous"],   // 0.54–0.71
+    [0.75,  "Last Quarter"],     // 0.71–0.79
+    [0.87,  "Waning Crescent"],  // 0.79–0.96
+  ])("phase %f → %s", async (phase, expectedName) => {
+    vi.resetModules();
+    vi.useFakeTimers();
+    vi.setSystemTime(tAtPhase(phase));
+
+    const { fetchTides: fresh } = await import("./tides.js") as unknown as { fetchTides: FetchTides };
+    const feed = await fresh();
+
+    expect(feed.features[0].moonPhaseName).toBe(expectedName);
+  });
+});
+
+// ─── Spring/neap labels (isolated via fake timers) ────────────────────────────
+
+describe("tides adapter — springNeapLabel (isolated)", () => {
+  type FetchTides = typeof import("./tides").fetchTides;
+
+  const KNOWN_NEW_MOON_MS = Date.UTC(2024, 0, 11, 11, 57, 0);
+  const LUNAR_MONTH_MS = 29.530588853 * 24 * 60 * 60 * 1000;
+
+  function tAtPhase(phase: number): number {
+    return Math.round(KNOWN_NEW_MOON_MS + phase * LUNAR_MONTH_MS);
+  }
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it("new moon phase (0) → spring", async () => {
+    // distFromSyzygy = min(0, 0.5-0) = 0 < 0.05 → spring
+    vi.resetModules();
+    vi.useFakeTimers();
+    vi.setSystemTime(tAtPhase(0.02));
+    const { fetchTides: fresh } = await import("./tides.js") as unknown as { fetchTides: FetchTides };
+    const feed = await fresh();
+    expect(feed.features[0].springNeap).toBe("spring");
+    expect(feed.features[0].springTide).toBe(true);
+  });
+
+  it("full moon phase (0.5) → spring", async () => {
+    // distFromSyzygy = min(0.5, 0.5-0.5) = 0 < 0.05 → spring
+    vi.resetModules();
+    vi.useFakeTimers();
+    vi.setSystemTime(tAtPhase(0.50));
+    const { fetchTides: fresh } = await import("./tides.js") as unknown as { fetchTides: FetchTides };
+    const feed = await fresh();
+    expect(feed.features[0].springNeap).toBe("spring");
+    expect(feed.features[0].springTide).toBe(true);
+  });
+
+  it("quarter moon phase (0.25) → neap", async () => {
+    // distFromSyzygy = min(0.25, 0.25) = 0.25 ≥ 0.12 → neap
+    vi.resetModules();
+    vi.useFakeTimers();
+    vi.setSystemTime(tAtPhase(0.25));
+    const { fetchTides: fresh } = await import("./tides.js") as unknown as { fetchTides: FetchTides };
+    const feed = await fresh();
+    expect(feed.features[0].springNeap).toBe("neap");
+    expect(feed.features[0].springTide).toBe(false);
   });
 });

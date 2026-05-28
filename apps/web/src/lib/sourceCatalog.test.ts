@@ -77,6 +77,14 @@ describe("adapterNameFor — known routes", () => {
   it("maps cctv path correctly", () => {
     expect(adapterNameFor("/api/cctv/longdo")).toBe("cctv");
   });
+
+  it("maps precip-nowcast path correctly", () => {
+    expect(adapterNameFor("/api/precip-nowcast")).toBe("precip-nowcast");
+  });
+
+  it("maps trends path correctly", () => {
+    expect(adapterNameFor("/api/trends")).toBe("trends");
+  });
 });
 
 describe("adapterNameFor — non-matching paths", () => {

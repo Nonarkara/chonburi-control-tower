@@ -355,6 +355,146 @@ describe("hydrateBuildingsFromGeoJSON", () => {
   });
 });
 
+// ─── getRelatedObjects ────────────────────────────────────────────────────
+
+describe("getRelatedObjects", () => {
+  it("returns outbound and inbound relations with direction tag", async () => {
+    const { upsertTwinObject, addTwinRelation, getRelatedObjects } = await import("./twinStore.js");
+    await upsertTwinObject(makeObj("hub"));
+    await upsertTwinObject(makeObj("spoke1"));
+    await upsertTwinObject(makeObj("spoke2"));
+
+    // hub → spoke1 (out from hub's perspective)
+    await addTwinRelation(makeRel("r-out", "hub", "adjacent_to", "spoke1"));
+    // spoke2 → hub (in from hub's perspective)
+    await addTwinRelation(makeRel("r-in", "spoke2", "adjacent_to", "hub"));
+
+    const related = await getRelatedObjects("hub");
+
+    const out = related.find((r) => r.direction === "out");
+    const inn = related.find((r) => r.direction === "in");
+
+    expect(out).toBeDefined();
+    expect(out!.object.id).toBe("spoke1");
+    expect(out!.relation.id).toBe("r-out");
+
+    expect(inn).toBeDefined();
+    expect(inn!.object.id).toBe("spoke2");
+    expect(inn!.relation.id).toBe("r-in");
+  });
+
+  it("returns empty array when no relations exist for the object", async () => {
+    const { upsertTwinObject, getRelatedObjects } = await import("./twinStore.js");
+    await upsertTwinObject(makeObj("island"));
+    const related = await getRelatedObjects("island");
+    expect(related).toHaveLength(0);
+  });
+
+  it("omits a relation whose target object has been deleted", async () => {
+    const { upsertTwinObject, addTwinRelation, deleteTwinObject, getRelatedObjects } = await import("./twinStore.js");
+    await upsertTwinObject(makeObj("a"));
+    await upsertTwinObject(makeObj("b"));
+    await addTwinRelation(makeRel("r1", "a", "adjacent_to", "b"));
+
+    // Delete b — the relation still exists but target object is gone
+    await deleteTwinObject("b");
+
+    const related = await getRelatedObjects("a");
+    // b was deleted → no object to resolve → not included
+    expect(related.find((r) => r.object.id === "b")).toBeUndefined();
+  });
+});
+
+// ─── getStateMetricsForObject ─────────────────────────────────────────────
+
+describe("getStateMetricsForObject", () => {
+  it("returns distinct metric names for an object's state series", async () => {
+    const { upsertTwinObject, writeTwinState, getStateMetricsForObject } = await import("./twinStore.js");
+    await upsertTwinObject(makeObj("sensor-a"));
+    await writeTwinState(makeState("sensor-a", "tempC", 25, "2025-01-01T10:00:00Z"));
+    await writeTwinState(makeState("sensor-a", "pm25",  12, "2025-01-01T10:01:00Z"));
+    await writeTwinState(makeState("sensor-a", "tempC", 26, "2025-01-01T10:02:00Z")); // duplicate metric
+
+    const metrics = await getStateMetricsForObject("sensor-a");
+    expect(metrics).toHaveLength(2);
+    expect(metrics).toContain("tempC");
+    expect(metrics).toContain("pm25");
+  });
+
+  it("returns empty array for object with no state points", async () => {
+    const { upsertTwinObject, getStateMetricsForObject } = await import("./twinStore.js");
+    await upsertTwinObject(makeObj("no-state"));
+    const metrics = await getStateMetricsForObject("no-state");
+    expect(metrics).toHaveLength(0);
+  });
+});
+
+// ─── hydrateSensorFromFahfon ──────────────────────────────────────────────
+
+describe("hydrateSensorFromFahfon", () => {
+  it("creates a sensor TwinObject and returns it", async () => {
+    const { hydrateSensorFromFahfon, getTwinObject } = await import("./twinStore.js");
+    const obj = hydrateSensorFromFahfon({
+      station: "BangSaen01",
+      lat: 13.278,
+      lng: 100.921,
+      tempC: 31.5,
+      pm25: 18,
+    });
+
+    expect(obj.kind).toBe("sensor");
+    expect(obj.id).toBe("sensor-fahfon-BangSaen01");
+    expect(obj.name).toContain("BangSaen01");
+    expect(obj.lat).toBeCloseTo(13.278);
+    expect(obj.lng).toBeCloseTo(100.921);
+
+    // Object is persisted in memory
+    const retrieved = await getTwinObject("sensor-fahfon-BangSaen01");
+    expect(retrieved).toBeDefined();
+  });
+
+  it("writes numeric fields as state series points", async () => {
+    const { hydrateSensorFromFahfon, getTwinState } = await import("./twinStore.js");
+    hydrateSensorFromFahfon({
+      station: "Station-X",
+      tempC: 29.0,
+      co2Ppm: 415,
+      pm25: 22,
+      pm10: 35,
+    });
+
+    const id = "sensor-fahfon-Station-X";
+    const state = await getTwinState({ objectId: id });
+    const metrics = state.map((s) => s.metric);
+    expect(metrics).toContain("tempC");
+    expect(metrics).toContain("co2Ppm");
+    expect(metrics).toContain("pm25");
+    expect(metrics).toContain("pm10");
+
+    const temp = state.find((s) => s.metric === "tempC");
+    expect(temp?.value).toBe(29.0);
+  });
+
+  it("omits undefined fields from state series", async () => {
+    const { hydrateSensorFromFahfon, getTwinState } = await import("./twinStore.js");
+    hydrateSensorFromFahfon({ station: "Sparse", tempC: 30 });
+
+    const state = await getTwinState({ objectId: "sensor-fahfon-Sparse" });
+    const metrics = state.map((s) => s.metric);
+    expect(metrics).toContain("tempC");
+    expect(metrics).not.toContain("co2Ppm");
+    expect(metrics).not.toContain("pm25");
+    expect(metrics).not.toContain("pm10");
+  });
+
+  it("uses default lat/lng when coords are absent", async () => {
+    const { hydrateSensorFromFahfon } = await import("./twinStore.js");
+    const obj = hydrateSensorFromFahfon({ station: "NoCoords" });
+    expect(obj.lat).toBe(13.36);
+    expect(obj.lng).toBe(100.98);
+  });
+});
+
 // ─── twinSnapshot ─────────────────────────────────────────────────────────
 
 describe("twinSnapshot (in-memory)", () => {

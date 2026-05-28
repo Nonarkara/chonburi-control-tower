@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fetchReservoirs, fetchDisasterStats, fetchFahfon, fetchDatagoPoints } from "./datago";
-import type { ReservoirStatus, DisasterStat, FahfonReading } from "./datago";
+import type { ReservoirStatus, DisasterStat, FahfonReading, RoadSafetySnapshot } from "./datago";
 
 /**
  * data.go.th adapter contract tests.
@@ -322,5 +322,117 @@ describe("fetchFahfon — happy-path", () => {
     // The adapter uses `Number(x) || null` — 0 is falsy → null
     expect(r.tempC).toBeNull();
     expect(r.pm25).toBeNull();
+  });
+});
+
+// ─── fetchRoadSafety ──────────────────────────────────────────────────────────
+
+describe("fetchRoadSafety — missing-token contract", () => {
+  it("returns 'unavailable' with token note when token is absent", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 401 }));
+    // Use fresh isolated import to bypass cache from other tests
+    vi.resetModules();
+    const { fetchRoadSafety } = await import("./datago.js") as unknown as { fetchRoadSafety: (t: string) => Promise<{ meta: { fallbackTier: string; note?: string }; features: unknown[] }> };
+    const feed = await fetchRoadSafety("");
+    expect(feed.meta.fallbackTier).toBe("unavailable");
+    expect(feed.meta.note).toMatch(/DATA_GO_TH_TOKEN/);
+    expect(feed.features).toHaveLength(0);
+    vi.restoreAllMocks();
+  });
+});
+
+describe("fetchRoadSafety — happy-path (isolated)", () => {
+  let fetchRoadSafetyIsolated: (token: string) => Promise<{ features: RoadSafetySnapshot[]; meta: { fallbackTier: string; source: string } }>;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    const mod = await import("./datago.js") as unknown as {
+      fetchRoadSafety: (t: string) => Promise<{ features: RoadSafetySnapshot[]; meta: { fallbackTier: string; source: string } }>;
+    };
+    fetchRoadSafetyIsolated = mod.fetchRoadSafety;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function makeMonthly(year: number, month: number, deaths: number, injured: number): Record<string, unknown> {
+    return { "ปี": String(year), "เดือน": String(month), "เสียชีวิต(คน)": String(deaths), "บาดเจ็บ(คน)": String(injured) };
+  }
+
+  it("maps CKAN monthly rows to RoadSafetySnapshot with 'live' tier", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({
+        result: {
+          records: [
+            makeMonthly(2567, 1, 5, 20),
+            makeMonthly(2567, 2, 3, 15),
+          ],
+        },
+      }), { status: 200 })),
+    );
+
+    const feed = await fetchRoadSafetyIsolated("test-token");
+
+    expect(feed.meta.fallbackTier).toBe("live");
+    expect(feed.meta.source).toBe("datago-road-safety");
+    expect(feed.features).toHaveLength(1);
+
+    const snap = feed.features[0] as RoadSafetySnapshot;
+    expect(snap.year).toBe(2567);
+    expect(snap.totalDeaths).toBe(8);    // 5 + 3
+    expect(snap.totalInjured).toBe(35);  // 20 + 15
+    expect(snap.monthly).toHaveLength(12);
+    // Month 1 populated
+    expect(snap.monthly[0]).toEqual({ month: 1, deaths: 5, injured: 20 });
+    // Month 3 not in data → zeros
+    expect(snap.monthly[2]).toEqual({ month: 3, deaths: 0, injured: 0 });
+  });
+
+  it("computes prevYearDeaths and prevYearInjured from previous year rows", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({
+        result: {
+          records: [
+            makeMonthly(2567, 1, 5, 20),
+            makeMonthly(2566, 1, 7, 30),
+            makeMonthly(2566, 2, 4, 10),
+          ],
+        },
+      }), { status: 200 })),
+    );
+
+    const feed = await fetchRoadSafetyIsolated("test-token");
+    const snap = feed.features[0] as RoadSafetySnapshot;
+    expect(snap.year).toBe(2567);
+    expect(snap.prevYearDeaths).toBe(11);   // 7 + 4
+    expect(snap.prevYearInjured).toBe(40);  // 30 + 10
+  });
+
+  it("returns 'unavailable' when monthly rows come back empty (no token)", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ result: { records: [] } }), { status: 200 }),
+    );
+
+    const feed = await fetchRoadSafetyIsolated("test-token");
+    expect(feed.meta.fallbackTier).toBe("unavailable");
+    expect(feed.features).toHaveLength(0);
+  });
+
+  it("handles comma-formatted Thai numbers (parseThaiNum via sumField)", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({
+        result: {
+          records: [
+            { "ปี": "2567", "เดือน": "1", "เสียชีวิต(คน)": "1,234", "บาดเจ็บ(คน)": "5,678" },
+          ],
+        },
+      }), { status: 200 })),
+    );
+
+    const feed = await fetchRoadSafetyIsolated("test-token");
+    const snap = feed.features[0] as RoadSafetySnapshot;
+    expect(snap.totalDeaths).toBe(1234);
+    expect(snap.totalInjured).toBe(5678);
   });
 });

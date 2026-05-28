@@ -164,4 +164,51 @@ describe("nasa-power adapter — happy-path parsing (isolated)", () => {
     expect(feed.features[0].tempC).toBeCloseTo(27.5, 1);
     vi.restoreAllMocks();
   });
+
+  it("dataDate returns 'unknown' when all T2M and PRECTOTCORR values are fill values", async () => {
+    vi.resetModules();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({
+        properties: {
+          parameter: {
+            T2M: { [TODAY]: -999, [PREV]: -999 },
+            PRECTOTCORR: { [TODAY]: -999 },
+            ALLSKY_SFC_SW_DWN: {},
+            ALLSKY_KT: {},
+          },
+        },
+      }), { status: 200 }),
+    );
+    const { fetchNasaEarth: fresh } = await import("./nasa-power.js") as unknown as {
+      fetchNasaEarth: typeof fetchNasaEarth;
+    };
+
+    const feed = await fresh();
+    expect(feed.features[0].dataDate).toBe("unknown");
+    expect(feed.features[0].tempC).toBeNull();
+    vi.restoreAllMocks();
+  });
+
+  it("yyyymmdd: request URL contains date in YYYYMMDD format 4 days before now", async () => {
+    vi.resetModules();
+    vi.useFakeTimers();
+    // Set a fixed date so the URL's start date is deterministic
+    vi.setSystemTime(new Date("2026-06-15T00:00:00Z"));
+    let capturedUrl = "";
+    vi.spyOn(globalThis, "fetch").mockImplementation((url) => {
+      capturedUrl = String(url);
+      return Promise.resolve(new Response(JSON.stringify({ properties: {} }), { status: 200 }));
+    });
+
+    const { fetchNasaEarth: fresh } = await import("./nasa-power.js") as unknown as {
+      fetchNasaEarth: typeof fetchNasaEarth;
+    };
+    await fresh();
+
+    // d4 = June 11, d3 = June 12
+    expect(capturedUrl).toContain("start=20260611");
+    expect(capturedUrl).toContain("end=20260612");
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
 });

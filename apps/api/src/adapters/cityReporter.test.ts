@@ -135,4 +135,247 @@ describe("city reporter adapter — bbox filtering (isolated)", () => {
     expect(feed.features.some((f) => f.id === "traffy-ORG-001")).toBe(true);
     vi.restoreAllMocks();
   });
+
+  it("falls back to coords array when lat/lng fields are absent", async () => {
+    vi.resetModules();
+    // Traffy sometimes sends coords as [lng, lat] stringified array instead of lat/lng fields
+    const coordsReport = {
+      ticket_id: "COORDS-001",
+      type: "ถนน",
+      state: "new",
+      coords: ["100.9648", "13.3611"],  // [lng, lat] as strings
+      address: "ชลบุรี",
+      org: "เทศบาลเมืองชลบุรี",
+      timestamp: new Date().toISOString(),
+    };
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ results: [coordsReport] }), { status: 200 }),
+      ),
+    );
+
+    const { fetchCityReports: fresh } = await import("./cityReporter");
+    const feed = await fresh();
+
+    const feature = feed.features.find((f) => f.id === "traffy-COORDS-001");
+    expect(feature).toBeDefined();
+    expect(feature!.lng).toBeCloseTo(100.9648, 3);
+    expect(feature!.lat).toBeCloseTo(13.3611, 3);
+    vi.restoreAllMocks();
+  });
+
+  it("skips reports where both lat/lng and coords are absent or zero", async () => {
+    vi.resetModules();
+    const noCoords = makeReport({ latitude: 0, longitude: 0, ticket_id: "ZERO-001" });
+    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ results: [noCoords] }), { status: 200 }),
+      ),
+    );
+
+    const { fetchCityReports: fresh } = await import("./cityReporter");
+    const feed = await fresh();
+    expect(feed.features.some((f) => f.id === "traffy-ZERO-001")).toBe(false);
+    vi.restoreAllMocks();
+  });
+});
+
+// ─── mapCategory — all branches (isolated) ───────────────────────────────────
+
+describe("city reporter adapter — mapCategory (isolated)", () => {
+  type FetchCityReports = typeof import("./cityReporter").fetchCityReports;
+
+  async function categoryFor(type: string | string[]): Promise<string> {
+    vi.resetModules();
+    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ results: [makeReport({ type })] }), { status: 200 }),
+      ),
+    );
+    const { fetchCityReports: fresh } = await import("./cityReporter") as unknown as { fetchCityReports: FetchCityReports };
+    const feed = await fresh();
+    vi.restoreAllMocks();
+    return feed.features[0]?.category ?? "";
+  }
+
+  it("ถนน → construction", async () => {
+    expect(await categoryFor("ถนน")).toBe("construction");
+  });
+
+  it("road → construction", async () => {
+    expect(await categoryFor("road damage")).toBe("construction");
+  });
+
+  it("น้ำท่วม → flooding", async () => {
+    expect(await categoryFor("น้ำท่วม")).toBe("flooding");
+  });
+
+  it("flood → flooding", async () => {
+    expect(await categoryFor("flood risk")).toBe("flooding");
+  });
+
+  it("ขยะ → waste", async () => {
+    expect(await categoryFor("ขยะ")).toBe("waste");
+  });
+
+  it("trash → waste", async () => {
+    expect(await categoryFor("trash collection")).toBe("waste");
+  });
+
+  it("ไฟ → lighting", async () => {
+    // "ไฟฟ้า" contains "ไฟ" but NOT "ถนน" (which would match construction first)
+    expect(await categoryFor("ไฟฟ้า")).toBe("lighting");
+  });
+
+  it("light → lighting", async () => {
+    expect(await categoryFor("street light broken")).toBe("lighting");
+  });
+
+  it("ทางเท้า → sidewalk", async () => {
+    expect(await categoryFor("ทางเท้า")).toBe("sidewalk");
+  });
+
+  it("ระบาย → drainage", async () => {
+    expect(await categoryFor("ระบายน้ำ")).toBe("drainage");
+  });
+
+  it("drain → drainage", async () => {
+    expect(await categoryFor("drain blocked")).toBe("drainage");
+  });
+
+  it("ต้นไม้ → trees", async () => {
+    expect(await categoryFor("ต้นไม้ล้ม")).toBe("trees");
+  });
+
+  it("tree → trees", async () => {
+    expect(await categoryFor("fallen tree")).toBe("trees");
+  });
+
+  it("จราจร → traffic-congestion", async () => {
+    expect(await categoryFor("จราจร")).toBe("traffic-congestion");
+  });
+
+  it("traffic → traffic-congestion", async () => {
+    expect(await categoryFor("traffic jam")).toBe("traffic-congestion");
+  });
+
+  it("unknown type → other", async () => {
+    expect(await categoryFor("something unknown")).toBe("other");
+  });
+
+  it("array type — joins and matches first keyword", async () => {
+    expect(await categoryFor(["ถนน", "ชำรุด"])).toBe("construction");
+  });
+});
+
+// ─── mapStatus — all branches (isolated) ─────────────────────────────────────
+
+describe("city reporter adapter — mapStatus (isolated)", () => {
+  type FetchCityReports = typeof import("./cityReporter").fetchCityReports;
+
+  async function statusFor(state: string): Promise<string> {
+    vi.resetModules();
+    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ results: [makeReport({ state })] }), { status: 200 }),
+      ),
+    );
+    const { fetchCityReports: fresh } = await import("./cityReporter") as unknown as { fetchCityReports: FetchCityReports };
+    const feed = await fresh();
+    vi.restoreAllMocks();
+    return feed.features[0]?.status ?? "";
+  }
+
+  it("no state → received", async () => {
+    vi.resetModules();
+    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ results: [makeReport({ state: undefined })] }), { status: 200 }),
+      ),
+    );
+    const { fetchCityReports: fresh } = await import("./cityReporter") as unknown as { fetchCityReports: FetchCityReports };
+    const feed = await fresh();
+    vi.restoreAllMocks();
+    expect(feed.features[0]?.status).toBe("received");
+  });
+
+  it("'new' → received (no keyword match)", async () => {
+    expect(await statusFor("new")).toBe("received");
+  });
+
+  it("'เสร็จ' → resolved (Thai complete keyword)", async () => {
+    expect(await statusFor("เสร็จแล้ว")).toBe("resolved");
+  });
+
+  it("'resolved' → resolved", async () => {
+    expect(await statusFor("resolved")).toBe("resolved");
+  });
+
+  it("'finish' → resolved", async () => {
+    expect(await statusFor("finish")).toBe("resolved");
+  });
+
+  it("'ดำเนิน' → in-progress (Thai in-progress keyword)", async () => {
+    expect(await statusFor("กำลังดำเนินการ")).toBe("in-progress");
+  });
+
+  it("'in-progress' → in-progress", async () => {
+    expect(await statusFor("in-progress")).toBe("in-progress");
+  });
+
+  it("'active' → in-progress", async () => {
+    expect(await statusFor("active")).toBe("in-progress");
+  });
+
+  it("'assigned' → assigned", async () => {
+    expect(await statusFor("assigned")).toBe("assigned");
+  });
+});
+
+// ─── inferSeverity — all branches (isolated) ─────────────────────────────────
+
+describe("city reporter adapter — inferSeverity (isolated)", () => {
+  type FetchCityReports = typeof import("./cityReporter").fetchCityReports;
+
+  async function severityFor(type: string, description: string): Promise<string> {
+    vi.resetModules();
+    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ results: [makeReport({ type, description })] }), { status: 200 }),
+      ),
+    );
+    const { fetchCityReports: fresh } = await import("./cityReporter") as unknown as { fetchCityReports: FetchCityReports };
+    const feed = await fresh();
+    vi.restoreAllMocks();
+    return feed.features[0]?.severity ?? "";
+  }
+
+  it("flooding category → high severity", async () => {
+    expect(await severityFor("น้ำท่วม", "flooding area")).toBe("high");
+  });
+
+  it("'urgent' in description → high", async () => {
+    expect(await severityFor("ถนน", "urgent repair needed")).toBe("high");
+  });
+
+  it("'ด่วน' in description → high", async () => {
+    expect(await severityFor("ถนน", "ซ่อมด่วน")).toBe("high");
+  });
+
+  it("traffic-congestion category → medium", async () => {
+    expect(await severityFor("traffic jam", "heavy traffic")).toBe("medium");
+  });
+
+  it("drainage category → medium", async () => {
+    expect(await severityFor("drain blocked", "clogged drain")).toBe("medium");
+  });
+
+  it("construction category without urgency → low", async () => {
+    expect(await severityFor("ถนน", "Road pothole reported")).toBe("low");
+  });
+
+  it("other category → low", async () => {
+    expect(await severityFor("something else", "minor issue")).toBe("low");
+  });
 });

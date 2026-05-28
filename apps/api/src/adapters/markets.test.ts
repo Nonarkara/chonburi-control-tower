@@ -162,4 +162,74 @@ describe("markets adapter — happy-path parsing (isolated)", () => {
     expect(feed.features[0].ticks).toHaveLength(0);
     vi.restoreAllMocks();
   });
+
+  it("sets changePct=null when FRED returns only one observation (no previous)", async () => {
+    vi.resetModules();
+    // Only one observation → no previous → changePct cannot be computed
+    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({
+        observations: [{ date: "2026-05-01", value: "0.028" }],
+      }), { status: 200 })),
+    );
+    const { fetchMarkets: fresh } = await import("./markets.js") as unknown as {
+      fetchMarkets: typeof fetchMarkets;
+    };
+
+    const feed = await fresh({ FRED_API_KEY: "fake-key" });
+    const snap: MarketSnapshot = feed.features[0];
+    const thbUsd = snap.ticks.find((t) => t.symbol === "DEXTHUS");
+    expect(thbUsd).toBeDefined();
+    expect(thbUsd!.value).toBeCloseTo(0.028, 4);
+    expect(thbUsd!.changePct).toBeNull(); // no previous obs → cannot compute
+    vi.restoreAllMocks();
+  });
+
+  it("produces null THB cross-rates when DEXTHUS is unavailable", async () => {
+    vi.resetModules();
+    // Only non-DEXTHUS series return data (e.g. DEXJPUS) — THB/USD is missing
+    vi.spyOn(globalThis, "fetch").mockImplementation((url) => {
+      const urlStr = String(url);
+      // DEXTHUS returns "." so it produces a null tick
+      const value = urlStr.includes("DEXTHUS") ? "." : "0.0067";
+      return Promise.resolve(new Response(JSON.stringify({
+        observations: [{ date: "2026-05-01", value }, { date: "2026-04-30", value }],
+      }), { status: 200 }));
+    });
+    const { fetchMarkets: fresh } = await import("./markets.js") as unknown as {
+      fetchMarkets: typeof fetchMarkets;
+    };
+
+    const feed = await fresh({ FRED_API_KEY: "fake-key" });
+    const snap: MarketSnapshot = feed.features[0];
+    // All THB cross-rates must be null when the base USD rate is unknown
+    for (const r of snap.thb) {
+      expect(r.rate).toBeNull();
+    }
+    vi.restoreAllMocks();
+  });
+
+  it("only-FMP path: returns index ticks when only FMP_API_KEY is set", async () => {
+    vi.resetModules();
+    // FMP stable quote response
+    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify([
+        { symbol: "^GSPC", price: 5300, changePercentage: 0.42 },
+      ]), { status: 200 })),
+    );
+    const { fetchMarkets: fresh } = await import("./markets.js") as unknown as {
+      fetchMarkets: typeof fetchMarkets;
+    };
+
+    const feed = await fresh({ FMP_API_KEY: "fake-fmp-key" });
+    expect(feed.meta.fallbackTier).toBe("live");
+    const snap: MarketSnapshot = feed.features[0];
+    const sp500 = snap.ticks.find((t) => t.group === "index");
+    expect(sp500).toBeDefined();
+    expect(sp500!.value).toBeCloseTo(5300, 0);
+    expect(sp500!.changePct).toBeCloseTo(0.42, 2);
+    // No FRED series → no forex ticks
+    const forexTicks = snap.ticks.filter((t) => t.group === "forex");
+    expect(forexTicks).toHaveLength(0);
+    vi.restoreAllMocks();
+  });
 });

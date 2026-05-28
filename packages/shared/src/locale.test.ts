@@ -11,10 +11,20 @@ describe("translate", () => {
     expect(translate("zh", text)).toBe("你好");
   });
 
-  it("returns English as fallback when locale field is missing", () => {
+  it("returns empty string (not fallback) when locale field is empty string", () => {
+    // ?? only short-circuits on null/undefined — empty string passes through
     const incomplete = { en: "Hello", th: "", zh: "" } as TrilingualText;
     expect(translate("th", incomplete)).toBe("");
     expect(translate("en", incomplete)).toBe("Hello");
+  });
+
+  it("falls back to English when locale field is null/undefined at runtime", () => {
+    // Runtime callers without TypeScript types may pass null/undefined fields
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const partial = { en: "Fallback", th: null, zh: undefined } as any as TrilingualText;
+    expect(translate("th", partial)).toBe("Fallback");
+    expect(translate("zh", partial)).toBe("Fallback");
+    expect(translate("en", partial)).toBe("Fallback");
   });
 });
 
@@ -45,6 +55,26 @@ describe("fmtAge", () => {
   it("formats days for >= 1440 minutes", () => {
     expect(fmtAge(1440)).toBe("1d");
     expect(fmtAge(2880)).toBe("2d");
+  });
+
+  it("float near sub-minute boundary: 0.999 → LIVE, 1.0 → '1m'", () => {
+    expect(fmtAge(0.999)).toBe("LIVE");
+    expect(fmtAge(1.0)).toBe("1m");
+  });
+
+  it("float rounding: 59.9 rounds to '60m' (still < 60 branch, Math.round)", () => {
+    // 59.9 < 60, so we're in the minutes branch: Math.round(59.9) = 60
+    expect(fmtAge(59.9)).toBe("60m");
+  });
+
+  it("float rounding: 1.4 → '1m', 1.6 → '2m'", () => {
+    expect(fmtAge(1.4)).toBe("1m");
+    expect(fmtAge(1.6)).toBe("2m");
+  });
+
+  it("very large value (1 year) renders as days", () => {
+    const oneYearMinutes = 365 * 1440;
+    expect(fmtAge(oneYearMinutes)).toBe("365d");
   });
 });
 

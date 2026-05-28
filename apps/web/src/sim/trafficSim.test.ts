@@ -150,3 +150,92 @@ describe("PEAK_HOURS constant", () => {
     expect(PEAK_HOURS.has(12)).toBe(false);
   });
 });
+
+describe("buildTrafficSamples — OSM highway type mapping (full table)", () => {
+  it("motorway → arterial", () => {
+    const roads = makeRoads([{ highway: "motorway", coords: [[100.98, 13.36], [100.99, 13.37]] }]);
+    expect(buildTrafficSamples(roads, 8).every((s) => s.roadClass === "arterial")).toBe(true);
+  });
+
+  it("trunk → arterial", () => {
+    const roads = makeRoads([{ highway: "trunk", coords: [[100.98, 13.36], [100.99, 13.37]] }]);
+    expect(buildTrafficSamples(roads, 8).every((s) => s.roadClass === "arterial")).toBe(true);
+  });
+
+  it("tertiary → collector", () => {
+    const roads = makeRoads([{ highway: "tertiary", coords: [[100.98, 13.36], [100.99, 13.37]] }]);
+    expect(buildTrafficSamples(roads, 8).every((s) => s.roadClass === "collector")).toBe(true);
+  });
+
+  it("service → campus-internal", () => {
+    const roads = makeRoads([{ highway: "service", coords: [[100.98, 13.36], [100.99, 13.37]] }]);
+    expect(buildTrafficSamples(roads, 8).every((s) => s.roadClass === "campus-internal")).toBe(true);
+  });
+
+  it("unclassified → local", () => {
+    const roads = makeRoads([{ highway: "unclassified", coords: [[100.98, 13.36], [100.99, 13.37]] }]);
+    expect(buildTrafficSamples(roads, 8).every((s) => s.roadClass === "local")).toBe(true);
+  });
+
+  it("living_street → local", () => {
+    const roads = makeRoads([{ highway: "living_street", coords: [[100.98, 13.36], [100.99, 13.37]] }]);
+    expect(buildTrafficSamples(roads, 8).every((s) => s.roadClass === "local")).toBe(true);
+  });
+
+  it("unknown highway type → local (fallback)", () => {
+    const roads = makeRoads([{ highway: "footway", coords: [[100.98, 13.36], [100.99, 13.37]] }]);
+    expect(buildTrafficSamples(roads, 8).every((s) => s.roadClass === "local")).toBe(true);
+  });
+
+  it("missing highway tag → local", () => {
+    const roads = makeRoads([{ coords: [[100.98, 13.36], [100.99, 13.37]] }]);
+    expect(buildTrafficSamples(roads, 8).every((s) => s.roadClass === "local")).toBe(true);
+  });
+
+  it("Soi Chula residential road → campus-internal", () => {
+    // classifyOsm: name matches /Soi Chula/i + highway=residential → campus-internal
+    const roads = makeRoads([{
+      highway: "residential",
+      name: "Soi Chulalongkorn",
+      coords: [[100.98, 13.36], [100.99, 13.37]],
+    }]);
+    expect(buildTrafficSamples(roads, 8).every((s) => s.roadClass === "campus-internal")).toBe(true);
+  });
+});
+
+describe("buildTrafficSamples — overnight floor and campus class-hour boost", () => {
+  it("overnight weights (hour=2) are lower than peak morning (hour=8)", () => {
+    const overnight = buildTrafficSamples(SIMPLE_ROAD, 2);
+    const peak = buildTrafficSamples(SIMPLE_ROAD, 8);
+    const avgOvernight = overnight.reduce((s, p) => s + p.weight, 0) / overnight.length;
+    const avgPeak = peak.reduce((s, p) => s + p.weight, 0) / peak.length;
+    expect(avgOvernight).toBeLessThan(avgPeak);
+  });
+
+  it("late night weights (hour=23) are lower than evening peak (hour=18)", () => {
+    const lateNight = buildTrafficSamples(SIMPLE_ROAD, 23);
+    const evening = buildTrafficSamples(SIMPLE_ROAD, 18);
+    const avgLate = lateNight.reduce((s, p) => s + p.weight, 0) / lateNight.length;
+    const avgEvening = evening.reduce((s, p) => s + p.weight, 0) / evening.length;
+    expect(avgLate).toBeLessThan(avgEvening);
+  });
+
+  it("campus-internal road class has higher weight at class hour (9:00) than overnight (3:00)", () => {
+    const campusRoad = makeRoads([{ highway: "service", coords: [[100.98, 13.36], [100.99, 13.37]] }]);
+    const classHour = buildTrafficSamples(campusRoad, 9);
+    const overnight = buildTrafficSamples(campusRoad, 3);
+    const avgClass = classHour.reduce((s, p) => s + p.weight, 0) / classHour.length;
+    const avgOvernight = overnight.reduce((s, p) => s + p.weight, 0) / overnight.length;
+    expect(avgClass).toBeGreaterThan(avgOvernight);
+  });
+
+  it("campus-internal base weight (0.15) is lower than arterial (0.55) at same hour", () => {
+    const campus = makeRoads([{ highway: "service", coords: [[100.98, 13.36], [100.99, 13.37]] }]);
+    const arterial = makeRoads([{ highway: "primary", coords: [[100.98, 13.36], [100.99, 13.37]] }]);
+    const campusSamples = buildTrafficSamples(campus, 3);
+    const arterialSamples = buildTrafficSamples(arterial, 3);
+    const avgCampus = campusSamples.reduce((s, p) => s + p.weight, 0) / campusSamples.length;
+    const avgArterial = arterialSamples.reduce((s, p) => s + p.weight, 0) / arterialSamples.length;
+    expect(avgCampus).toBeLessThan(avgArterial);
+  });
+});

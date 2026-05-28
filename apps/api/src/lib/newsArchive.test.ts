@@ -356,3 +356,71 @@ describe("digestNewsArchive — aggregation", () => {
     }
   });
 });
+
+// ─── newsArchiveStats ─────────────────────────────────────────────────────
+
+describe("newsArchiveStats", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+  });
+
+  it("returns fileBytes from stat, oldest/newest seenAt, and distinct source count", async () => {
+    const { stat } = await import("node:fs/promises") as unknown as { stat: ReturnType<typeof vi.fn> };
+    const { readFile: rf } = await import("node:fs/promises") as unknown as { readFile: ReturnType<typeof vi.fn> };
+    const { existsSync: es } = await import("node:fs") as unknown as { existsSync: ReturnType<typeof vi.fn> };
+
+    (stat as ReturnType<typeof vi.fn>).mockResolvedValue({ size: 4096 });
+    (es as ReturnType<typeof vi.fn>).mockReturnValue(true);
+
+    const recs = [
+      { sourceUrl: "https://a.com/1", title: "A1", source: "source-a", firstSeenAt: "2026-05-25T10:00:00Z", language: "en", score: 50, tags: [] },
+      { sourceUrl: "https://a.com/2", title: "A2", source: "source-a", firstSeenAt: "2026-05-27T10:00:00Z", language: "en", score: 60, tags: [] },
+      { sourceUrl: "https://b.com/1", title: "B1", source: "source-b", firstSeenAt: "2026-05-26T10:00:00Z", language: "th", score: 40, tags: [] },
+    ];
+    (rf as ReturnType<typeof vi.fn>).mockResolvedValue(makeJSONL(recs));
+
+    const { newsArchiveStats } = await import("./newsArchive.js");
+    const stats = await newsArchiveStats();
+
+    expect(stats.fileBytes).toBe(4096);
+    expect(stats.oldestSeenAt).toBe("2026-05-25T10:00:00Z");
+    expect(stats.newestSeenAt).toBe("2026-05-27T10:00:00Z");
+    expect(stats.distinctSources).toBe(2); // source-a and source-b
+  });
+
+  it("returns null for oldest/newest and 0 for fileBytes when archive does not exist", async () => {
+    const { existsSync: es } = await import("node:fs") as unknown as { existsSync: ReturnType<typeof vi.fn> };
+    (es as ReturnType<typeof vi.fn>).mockReturnValue(false);
+
+    const { newsArchiveStats } = await import("./newsArchive.js");
+    const stats = await newsArchiveStats();
+
+    expect(stats.fileBytes).toBe(0);
+    expect(stats.oldestSeenAt).toBeNull();
+    expect(stats.newestSeenAt).toBeNull();
+    expect(stats.distinctSources).toBe(0);
+  });
+
+  it("skips malformed JSON lines when computing stats", async () => {
+    const { stat } = await import("node:fs/promises") as unknown as { stat: ReturnType<typeof vi.fn> };
+    const { readFile: rf } = await import("node:fs/promises") as unknown as { readFile: ReturnType<typeof vi.fn> };
+    const { existsSync: es } = await import("node:fs") as unknown as { existsSync: ReturnType<typeof vi.fn> };
+
+    (stat as ReturnType<typeof vi.fn>).mockResolvedValue({ size: 100 });
+    (es as ReturnType<typeof vi.fn>).mockReturnValue(true);
+    (rf as ReturnType<typeof vi.fn>).mockResolvedValue(
+      [
+        JSON.stringify({ sourceUrl: "https://ok.com", title: "OK", source: "good", firstSeenAt: "2026-05-27T08:00:00Z", language: "en", score: 50, tags: [] }),
+        "NOT VALID JSON {{{",
+        "",
+      ].join("\n"),
+    );
+
+    const { newsArchiveStats } = await import("./newsArchive.js");
+    const stats = await newsArchiveStats();
+
+    expect(stats.distinctSources).toBe(1);
+    expect(stats.oldestSeenAt).toBe("2026-05-27T08:00:00Z");
+  });
+});

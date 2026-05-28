@@ -122,6 +122,107 @@ describe("iTIC adapter — type classification (isolated)", () => {
     expect(item!.category).toBe("construction");
     vi.restoreAllMocks();
   });
+
+  it("classifies type=2 (closure) as construction", async () => {
+    vi.resetModules();
+    const evt = makeEvent({ eid: "CLO-001", type: "2", severity: "1" });
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({ events: [evt] }), { status: 200 })),
+    );
+
+    const { fetchItic: fresh } = await import("./itic");
+    const feed = await fresh();
+
+    const item = feed.features.find((f) => f.id === "itic-CLO-001");
+    expect(item!.category).toBe("construction");
+    vi.restoreAllMocks();
+  });
+
+  it("classifies any other type as traffic-congestion", async () => {
+    vi.resetModules();
+    const evt = makeEvent({ eid: "TRF-001", type: "5", severity: "1" });
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({ events: [evt] }), { status: 200 })),
+    );
+
+    const { fetchItic: fresh } = await import("./itic");
+    const feed = await fresh();
+
+    const item = feed.features.find((f) => f.id === "itic-TRF-001");
+    expect(item!.category).toBe("traffic-congestion");
+    expect(item!.severity).toBe("low"); // severity code 1 → low (no accident boost for non-accident)
+    vi.restoreAllMocks();
+  });
+
+  it("severity code ≥ 3 → high", async () => {
+    vi.resetModules();
+    const evt = makeEvent({ eid: "SEV-001", type: "5", severity: "3" });
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({ events: [evt] }), { status: 200 })),
+    );
+
+    const { fetchItic: fresh } = await import("./itic");
+    const feed = await fresh();
+
+    const item = feed.features.find((f) => f.id === "itic-SEV-001");
+    expect(item!.severity).toBe("high");
+    vi.restoreAllMocks();
+  });
+
+  it("severity code 2 → medium (non-accident)", async () => {
+    vi.resetModules();
+    const evt = makeEvent({ eid: "MED-001", type: "5", severity: "2" });
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({ events: [evt] }), { status: 200 })),
+    );
+
+    const { fetchItic: fresh } = await import("./itic");
+    const feed = await fresh();
+
+    const item = feed.features.find((f) => f.id === "itic-MED-001");
+    expect(item!.severity).toBe("medium");
+    vi.restoreAllMocks();
+  });
+
+  it("accepts raw array payload format (no events envelope)", async () => {
+    vi.resetModules();
+    // Some Longdo responses are bare arrays, not {events: [...]}
+    const evt = makeEvent({ eid: "RAW-001" });
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify([evt]), { status: 200 })),
+    );
+
+    const { fetchItic: fresh } = await import("./itic");
+    const feed = await fresh();
+
+    expect(feed.features.some((f) => f.id === "itic-RAW-001")).toBe(true);
+    vi.restoreAllMocks();
+  });
+
+  it("parses Thai timestamp (parseThaiTs) into ISO 8601", async () => {
+    vi.resetModules();
+    const evt = makeEvent({ eid: "TS-001", start: "2026-01-15 14:30:00" });
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({ events: [evt] }), { status: 200 })),
+    );
+
+    const { fetchItic: fresh } = await import("./itic");
+    const feed = await fresh();
+
+    const item = feed.features.find((f) => f.id === "itic-TS-001");
+    expect(item).toBeDefined();
+    // Should parse to an ISO string (Thai timezone UTC+7)
+    expect(item!.reportedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+    // 14:30 Thai = 07:30 UTC
+    expect(item!.reportedAt).toContain("07:30:00");
+    vi.restoreAllMocks();
+  });
 });
 
 describe("iTIC adapter — bbox filtering (isolated)", () => {

@@ -117,4 +117,48 @@ describe("facebook adapter — happy-path parsing (isolated)", () => {
     expect(feed.features[0].message).toContain("shared a photo");
     vi.restoreAllMocks();
   });
+
+  it("uses singular 'env var' in note when only PAGE_ID is missing", async () => {
+    vi.resetModules();
+    const { fetchFacebookPosts: fresh } = await import("./facebook.js") as unknown as {
+      fetchFacebookPosts: typeof fetchFacebookPosts;
+    };
+
+    const feed = await fresh({ FACEBOOK_PAGE_TOKEN: "tok" });
+    expect(feed.meta.fallbackTier).toBe("unavailable");
+    expect(feed.meta.note).toMatch(/FACEBOOK_PAGE_ID/);
+    expect(feed.meta.note).not.toMatch(/\+/);    // no "+" → singular
+    expect(feed.meta.note).toMatch(/env var[^s]/); // "env var " not "env vars"
+    vi.restoreAllMocks();
+  });
+
+  it("uses singular 'env var' in note when only PAGE_TOKEN is missing", async () => {
+    vi.resetModules();
+    const { fetchFacebookPosts: fresh } = await import("./facebook.js") as unknown as {
+      fetchFacebookPosts: typeof fetchFacebookPosts;
+    };
+
+    const feed = await fresh({ FACEBOOK_PAGE_ID: "111" });
+    expect(feed.meta.fallbackTier).toBe("unavailable");
+    expect(feed.meta.note).toMatch(/FACEBOOK_PAGE_TOKEN/);
+    expect(feed.meta.note).not.toMatch(/\+/);
+    expect(feed.meta.note).toMatch(/env var[^s]/);
+    vi.restoreAllMocks();
+  });
+
+  it("falls back to unavailable when Graph API returns HTTP 500", async () => {
+    vi.resetModules();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(null, { status: 500 }),
+    );
+    const { fetchFacebookPosts: fresh } = await import("./facebook.js") as unknown as {
+      fetchFacebookPosts: typeof fetchFacebookPosts;
+    };
+
+    const feed = await fresh({ FACEBOOK_PAGE_ID: "111", FACEBOOK_PAGE_TOKEN: "tok" });
+    // fetchJsonOrNull returns null on 500 → payload is null → posts=[]
+    expect(feed.meta.fallbackTier).toBe("unavailable");
+    expect(feed.features).toHaveLength(0);
+    vi.restoreAllMocks();
+  });
 });

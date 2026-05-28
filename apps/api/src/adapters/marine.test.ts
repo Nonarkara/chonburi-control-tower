@@ -210,3 +210,55 @@ describe("marine adapter — happy-path parsing (isolated)", () => {
     vi.restoreAllMocks();
   });
 });
+
+// ─── beaufortFromKmh — Beaufort scale (isolated) ─────────────────────────────
+
+describe("marine adapter — beaufortFromKmh (isolated)", () => {
+  type FetchMarine = typeof import("./marine").fetchMarine;
+
+  function makeCurrentResponse(windKmh: number) {
+    return {
+      current: {
+        time: "2026-01-01T08:00",
+        wave_height: 0.5,
+        wave_direction: 90,
+        wave_period: 5,
+        wind_speed_10m: windKmh,
+        wind_gusts_10m: windKmh * 1.2,
+        wind_direction_10m: 45,
+        sea_surface_temperature: 28,
+        swell_wave_height: 0.3,
+        swell_wave_direction: 90,
+        swell_wave_period: 8,
+        ocean_current_velocity: 0.1,
+        ocean_current_direction: 180,
+      },
+    };
+  }
+
+  it.each<[number, number]>([
+    [0,   0],   // calm — < 1 km/h
+    [3,   1],   // light air — 1–5 km/h
+    [8,   2],   // light breeze — 6–11 km/h
+    [15,  3],   // gentle breeze — 12–19 km/h
+    [24,  4],   // moderate breeze — 20–28 km/h
+    [34,  5],   // fresh breeze — 29–38 km/h
+    [44,  6],   // strong breeze — 39–49 km/h
+    [56,  7],   // near gale — 50–61 km/h
+    [68,  8],   // gale — 62–74 km/h
+    [82,  9],   // strong gale — 75–88 km/h
+    [96,  10],  // storm — 89–102 km/h
+    [110, 11],  // violent storm — 103–117 km/h
+    [120, 12],  // hurricane — ≥ 118 km/h
+  ])("wind %d km/h → Beaufort %d", async (windKmh, expectedBeaufort) => {
+    vi.resetModules();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(makeCurrentResponse(windKmh)), { status: 200 }),
+    );
+    const { fetchMarine: fresh } = await import("./marine.js") as unknown as { fetchMarine: FetchMarine };
+
+    const feed = await fresh();
+    expect(feed.features[0].beaufort).toBe(expectedBeaufort);
+    vi.restoreAllMocks();
+  });
+});

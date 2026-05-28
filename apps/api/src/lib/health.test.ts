@@ -84,6 +84,38 @@ describe("health: recordAdapterError → circuit breaker", () => {
     expect(getAdapterHealth(name).status).toBe("healthy");
     expect(getAdapterHealth(name).consecutiveFailures).toBe(0);
   });
+
+  it("remains degraded at exactly 4 consecutive failures (between thresholds)", () => {
+    const name = nextName("four-fails");
+    for (let i = 0; i < 4; i++) recordAdapterError(name, `f${i}`);
+    const h = getAdapterHealth(name);
+    expect(h.status).toBe("degraded");
+    expect(h.consecutiveFailures).toBe(4);
+  });
+
+  it("stays down when failures continue accumulating beyond DOWN_THRESHOLD", () => {
+    const name = nextName("stays-down");
+    for (let i = 0; i < 7; i++) recordAdapterError(name, `f${i}`);
+    const h = getAdapterHealth(name);
+    expect(h.status).toBe("down");
+    expect(h.consecutiveFailures).toBe(7);
+  });
+
+  it("stale adapter stays degraded even after a single additional error (stale branch)", () => {
+    // Arrange: healthy adapter that goes stale → degraded
+    const name = nextName("stale-err");
+    recordAdapterSuccess(name, 0);
+    recordAdapterStale(name, 45); // ageMinutes=45 > STALE_MINUTES=30
+    expect(getAdapterHealth(name).status).toBe("degraded");
+
+    // Act: 1 error (consecutiveFailures=1, below DEGRADED_THRESHOLD=3)
+    // Without the stale branch, this would flip back to "healthy"
+    recordAdapterError(name, "minor blip");
+
+    // Assert: stale flag keeps it degraded
+    expect(getAdapterHealth(name).status).toBe("degraded");
+    expect(getAdapterHealth(name).consecutiveFailures).toBe(1);
+  });
 });
 
 describe("health: recordAdapterStale", () => {
@@ -99,6 +131,35 @@ describe("health: recordAdapterStale", () => {
     recordAdapterSuccess(name, 0);
     recordAdapterStale(name, 5);
     expect(getAdapterHealth(name).status).toBe("healthy");
+  });
+});
+
+describe("health: totalCalls + totalErrors counters", () => {
+  it("increments totalCalls and totalErrors on each error", () => {
+    const name = nextName("counters");
+    recordAdapterError(name, "e1");
+    recordAdapterError(name, "e2");
+    const h = getAdapterHealth(name);
+    expect(h.totalCalls).toBe(2);
+    expect(h.totalErrors).toBe(2);
+  });
+
+  it("increments totalCalls but not totalErrors on success", () => {
+    const name = nextName("success-counter");
+    recordAdapterError(name, "e1");
+    recordAdapterSuccess(name, 0);
+    const h = getAdapterHealth(name);
+    expect(h.totalCalls).toBe(2);
+    expect(h.totalErrors).toBe(1);
+  });
+
+  it("sets lastErrorAt on each error and lastSuccessAt on success", () => {
+    const name = nextName("timestamps");
+    recordAdapterError(name, "boom");
+    expect(getAdapterHealth(name).lastErrorAt).not.toBeNull();
+    expect(getAdapterHealth(name).lastSuccessAt).toBeNull();
+    recordAdapterSuccess(name, 0);
+    expect(getAdapterHealth(name).lastSuccessAt).not.toBeNull();
   });
 });
 
