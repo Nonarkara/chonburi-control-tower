@@ -53,7 +53,7 @@
 
 .shell {
   display: grid;
-  grid-template-columns: 280px 1fr 280px;
+  grid-template-columns: var(--rail) minmax(0, 1fr) var(--rail);
   grid-template-rows: 44px 72px 26px 26px 1fr 80px;
   grid-template-areas:
     "topbar  topbar  topbar"
@@ -249,13 +249,13 @@ input:focus-visible,
   letter-spacing: 0.06em;
 }
 .clock-date {
-  font-size: 0.69rem;
+  font-size: 0.74rem;
   color: var(--text-3);
   letter-spacing: 0.10em;
   text-transform: uppercase;
 }
 .academic-chip {
-  font-size: 0.67rem;
+  font-size: 0.74rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   padding: 2px 6px;
@@ -358,7 +358,7 @@ input:focus-visible,
 .bottom-bar {
   grid-area: bottom;
   display: grid;
-  grid-template-columns: 280px 1fr 280px;
+  grid-template-columns: var(--rail) minmax(0, 1fr) var(--rail);
   border-top: 1px solid var(--line);
   background: var(--bg-1);
   position: relative;
@@ -603,7 +603,7 @@ input:focus-visible,
   opacity: 0.7;
 }
 .news-score {
-  font-size: 0.69rem;
+  font-size: 0.74rem;
   letter-spacing: 0.06em;
 }
 .news-count {
@@ -820,7 +820,7 @@ input:focus-visible,
   font-size: 0.71rem;
 }
 .bottom-standard {
-  font-size: 0.69rem;
+  font-size: 0.74rem;
   color: var(--text-3);
   letter-spacing: 0.08em;
 }
@@ -1399,7 +1399,7 @@ input:focus-visible,
 }
 .pulse-cell .lbl {
   font-family: var(--font-mono);
-  font-size: 0.69rem;
+  font-size: 0.74rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-3);
@@ -1451,7 +1451,7 @@ input:focus-visible,
   color: var(--text-2);
 }
 .world-day-name {
-  font-size: 0.69rem;
+  font-size: 0.74rem;
   letter-spacing: 0.06em;
   color: var(--text-3);
 }
@@ -1570,7 +1570,7 @@ input:focus-visible,
 }
 .speedtest-stat .lbl {
   font-family: var(--font-mono);
-  font-size: 0.69rem;
+  font-size: 0.74rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-3);
@@ -1932,6 +1932,23 @@ input:focus-visible,
    The 3-column shell collapses into a single column; the left and right
    rails become full-screen sheets controlled by the bottom MobileNav.
    ───────────────────────────────────────────────────────────────────────── */
+/* ── Tablet / small laptop — keep the map dominant by slimming the rails.
+   Applies above the 900px mobile breakpoint. */
+@media (min-width: 901px) and (max-width: 1200px) {
+  :root { --rail: clamp(220px, 17vw, 280px); }
+}
+
+/* ── Large wall display (≥2560px) — the dashboard is read from across a room.
+   The root font already caps at 20px; here we enlarge the header bands and
+   ticker and widen the rails so panels stay proportionate at distance. */
+@media (min-width: 2560px) {
+  :root { --rail: clamp(360px, 17vw, 560px); }
+  .shell {
+    grid-template-rows: 60px 96px 34px 34px 1fr 104px;
+  }
+  .markets-ticker { height: 34px; }
+}
+
 @media (max-width: 900px) {
   .shell.mobile {
     grid-template-columns: 1fr;
@@ -3488,7 +3505,7 @@ input:focus-visible,
 }
 
 .forecast-alert-chip {
-  font-size: 0.6rem;
+  font-size: 0.74rem;
   color: var(--bad, #dc2626);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -3509,7 +3526,7 @@ input:focus-visible,
 }
 
 .forecast-horizon-label {
-  font-size: 0.6rem;
+  font-size: 0.74rem;
   color: var(--text-3);
   flex-shrink: 0;
 }
@@ -3538,8 +3555,8 @@ input:focus-visible,
 .panel-hdr > .eyebrow { flex: 1; }
 
 .panel-source-tag {
-  font-size: 0.5rem;
-  letter-spacing: 0.1em;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
   color: var(--text-3);
   background: var(--bg-2);
   padding: 1px 4px;
@@ -3549,8 +3566,8 @@ input:focus-visible,
 }
 
 .panel-tier-warn {
-  font-size: 0.5rem;
-  letter-spacing: 0.1em;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
   padding: 1px 5px;
   border: 1px solid var(--warn);
   color: var(--warn);
