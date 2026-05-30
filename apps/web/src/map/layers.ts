@@ -4,7 +4,7 @@ import { ScatterplotLayer } from "@deck.gl/layers";
 import { TileLayer } from "@deck.gl/geo-layers";
 import { BitmapLayer } from "@deck.gl/layers";
 import type { Feature, FeatureCollection, Polygon, MultiPolygon, LineString, Point } from "geojson";
-import type { IncidentFeature, CampusZoneProperties } from "@chonburi/shared";
+import type { IncidentFeature, CampusZoneProperties, AirQualityPoint } from "@chonburi/shared";
 import type { HeatPoint } from "../sim/trafficSim";
 import {
   classifyBuilding,
@@ -693,6 +693,36 @@ export function bmaAqStationsLayer(stations: AqStation[]) {
       if (v < 35) return [250, 204, 21, 255];
       if (v < 55) return [249, 115, 22, 255];
       if (v < 150) return [239, 68, 68, 255];
+      return [127, 29, 29, 255];
+    },
+    stroked: true,
+    getLineColor: [10, 14, 20, 255],
+    lineWidthMinPixels: 2,
+    pickable: true,
+  });
+}
+
+/**
+ * Air4Thai PCD stations — official Thai government air-quality monitors inside
+ * Chonburi province. Coloured by PM2.5 (US-EPA bands), labelled with the live
+ * AQI so an operator sees the real sensor readings on the map. Pickable so the
+ * tooltip shows station name + readings.
+ */
+export function air4thaiLayer(stations: AirQualityPoint[]) {
+  return new ScatterplotLayer<AirQualityPoint>({
+    id: "air4thai-stations",
+    data: stations,
+    getPosition: (s) => [s.lng, s.lat],
+    getRadius: 90,
+    radiusMinPixels: 9,
+    radiusMaxPixels: 20,
+    getFillColor: (s) => {
+      const v = s.pm25 ?? -1;
+      if (v < 0) return [148, 163, 184, 200]; // no reading — slate
+      if (v <= 12) return [34, 197, 94, 255];
+      if (v <= 35.4) return [250, 204, 21, 255];
+      if (v <= 55.4) return [249, 115, 22, 255];
+      if (v <= 150.4) return [239, 68, 68, 255];
       return [127, 29, 29, 255];
     },
     stroked: true,

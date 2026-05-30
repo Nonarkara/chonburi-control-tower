@@ -62,6 +62,7 @@ import {
   type TransitLineProps,
   type ClassifiedRoadProps,
   gistdaPoiLayer,
+  air4thaiLayer,
   gistdaSolarLayer,
   gistdaLandUseLayer,
   newsPinsLayer,
@@ -494,6 +495,13 @@ export default function App() {
         title = pick("name", "nameEn") ?? "data.go.th POI";
         sub = `${(p as { category?: string }).category ?? ""} · ${(p as { source?: string }).source ?? ""}`;
         break;
+      case "air4thai-stations": {
+        const pm25 = (p as { pm25?: number | null }).pm25;
+        const aqi = (p as { aqi?: number | null }).aqi;
+        title = (p as { station?: string }).station ?? "Air4Thai station";
+        sub = `PM2.5 ${pm25 ?? "—"} µg/m³ · AQI ${aqi ?? "—"} · PCD`;
+        break;
+      }
       case "gistda-pois":
         title = pick("name", "nameEn") ?? "GISTDA POI";
         sub = `${(p as { category?: string }).category ?? ""} · ${(p as { road?: string }).road ?? ""}`;
@@ -633,6 +641,7 @@ export default function App() {
   const news = useFeed<IntelligenceItem>(`${API_BASE}/api/news`, 3 * 60_000);
   const weather = useFeed<WeatherSnapshot>(`${API_BASE}/api/weather`, 30 * 60_000);
   const airQuality = useFeed<AirQualityPoint>(`${API_BASE}/api/air-quality`, 15 * 60_000);
+  const air4thai = useFeed<AirQualityPoint>(`${API_BASE}/api/air-quality/air4thai`, 30 * 60_000);
   const cctv = useFeed<CctvCamera>(`${API_BASE}/api/cctv/longdo`, 10 * 60_000);
   const aqiTrend = useFeed<AqiTrend>(`${API_BASE}/api/air-quality/trend`, 15 * 60_000);
   const trends = useFeed<TrendsSnapshot>(`${API_BASE}/api/trends`, 15 * 60_000);
@@ -800,6 +809,8 @@ export default function App() {
     if (enabledLayers.has("ais-vessels") && ais.data.length > 0) out.push(aisVesselsLayer(ais.data) as Layer);
     // Open data
     if (enabledLayers.has("datago-points") && datago.data.length > 0) out.push(datagoPointsLayer(datago.data) as Layer);
+    // Air4Thai PCD stations (official Thai government AQ monitors in Chonburi)
+    if (enabledLayers.has("air4thai-stations") && air4thai.data.length > 0) out.push(air4thaiLayer(air4thai.data) as Layer);
     // GISTDA POI Digital Twin (authoritative Thai government POIs)
     if (enabledLayers.has("gistda-pois") && gistdaPois.data.length > 0) out.push(gistdaPoiLayer(gistdaPois.data) as Layer);
     // GISTDA LOD2 Solar Irradiance (building rooftop solar potential)
@@ -886,6 +897,7 @@ export default function App() {
     "incidents-itic":         iticEvents.data.length,
     "incidents-city-reports": cityReports.data.length,
     "datago-points":          datago.data.length,
+    "air4thai-stations":      air4thai.data.length,
     "gistda-pois":            gistdaPois.data.length,
     "gistda-solar":           gistdaSolar.data.length,
     "gistda-landuse":         gistdaLandUse.data.length,
@@ -894,7 +906,7 @@ export default function App() {
     campus, buildings, roads, transitStations, transitLines, civicPoints, waterways,
     fisheries, floodRisk, heritage, maritimePorts, maritimeFerries, maritimeNavAids,
     ais.data, cctv.data, iticEvents.data, cityReports.data, datago.data,
-    gistdaPois.data, gistdaSolar.data, gistdaLandUse.data, news.data,
+    air4thai.data, gistdaPois.data, gistdaSolar.data, gistdaLandUse.data, news.data,
   ]);
 
   // Feed health per map layer — drives the "needs key" pill in the palette and
@@ -905,6 +917,7 @@ export default function App() {
     "incidents-itic":         { tier: iticEvents.fallbackTier, note: iticEvents.note },
     "incidents-city-reports": { tier: cityReports.fallbackTier, note: cityReports.note },
     "datago-points":          { tier: datago.fallbackTier, note: datago.note },
+    "air4thai-stations":      { tier: air4thai.fallbackTier, note: air4thai.note },
     "gistda-pois":            { tier: gistdaPois.fallbackTier, note: gistdaPois.note },
     "gistda-solar":           { tier: gistdaSolar.fallbackTier, note: gistdaSolar.note },
     "gistda-landuse":         { tier: gistdaLandUse.fallbackTier, note: gistdaLandUse.note },
@@ -912,7 +925,8 @@ export default function App() {
   }), [
     ais.fallbackTier, ais.note, cctv.fallbackTier, cctv.note,
     iticEvents.fallbackTier, iticEvents.note, cityReports.fallbackTier, cityReports.note,
-    datago.fallbackTier, datago.note, gistdaPois.fallbackTier, gistdaPois.note,
+    datago.fallbackTier, datago.note, air4thai.fallbackTier, air4thai.note,
+    gistdaPois.fallbackTier, gistdaPois.note,
     gistdaSolar.fallbackTier, gistdaSolar.note, gistdaLandUse.fallbackTier, gistdaLandUse.note,
     news.fallbackTier, news.note,
   ]);

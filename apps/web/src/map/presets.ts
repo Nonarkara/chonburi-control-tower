@@ -31,6 +31,8 @@ export type LayerId =
   | "flood-risk-zones"
   // 3D Tiles
   | "tile3d-buildings"
+  // Air quality
+  | "air4thai-stations"
   // GISTDA
   | "gistda-pois"
   | "gistda-solar"
@@ -169,6 +171,7 @@ export const LENSES: Lens[] = [
       "satellite-esri",
       "flood-risk-zones",
       "waterways",
+      "air4thai-stations",
       "gistda-solar",
     ],
   },
@@ -189,6 +192,7 @@ export const LENSES: Lens[] = [
       "waterways",
       "flood-risk-zones",
       "fisheries",
+      "air4thai-stations",
       "gistda-solar",
       "gistda-landuse",
     ],
@@ -335,6 +339,9 @@ export const ALL_LAYERS: {
     describe: "Coastal fishing economy: Ang Sila oysters · Bang Saen shrimp · Bang Phra mussels · Chonburi Bay artisanal · Koh Si Chang offshore. Click for boat count + yield." },
   { id: "flood-risk-zones",  label: "Coastal flood-risk zones",   swatch: "#EF4444", group: "environment",
     describe: "Hand-authored polygons of historical flood-prone areas (king-tide, storm-surge, drainage-backflow). Hover for severity + household count. Replace with municipal GIS when supplied." },
+
+  { id: "air4thai-stations", label: "Air4Thai PCD stations",     swatch: "#22C55E", group: "environment",
+    describe: "Official Thai government air-quality monitors inside Chonburi province (Laem Chabang, Si Racha / Bo Win, Mueang Chon Buri). Coloured by PM2.5, labelled with live national AQI. Public source, no key. Click a station for its readings." },
 
   // ─── GISTDA ────────────────────────────────────────────────────────────
   { id: "gistda-pois",       label: "GISTDA POI Digital Twin",   swatch: "#F59E0B", group: "open-data",

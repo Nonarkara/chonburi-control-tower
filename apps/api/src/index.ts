@@ -26,6 +26,7 @@ import { fetchGistdaPoi, fetchGistdaSolar, fetchGistdaLandUse } from "./adapters
 import { fetchMarine } from "./adapters/marine.js";
 import { fetchTides } from "./adapters/tides.js";
 import { fetchAqicnChonburi } from "./adapters/aqicn.js";
+import { fetchAir4Thai } from "./adapters/air4thai.js";
 import { fetchNasaEarth } from "./adapters/nasa-power.js";
 import { SOURCE_CATALOG } from "@chonburi/shared";
 import type { NormalizedFeed, AirQualityPoint, IncidentFeature, IntelligenceItem, ExecutiveSnapshot, MarketSnapshot } from "@chonburi/shared";
@@ -94,6 +95,7 @@ app.get("/", (c) =>
       "/api/precip-nowcast",
       "/api/air-quality",
       "/api/air-quality/trend",
+      "/api/air-quality/air4thai",
       "/api/cctv/longdo",
       "/api/trends",
       "/api/markets",
@@ -289,6 +291,7 @@ app.get("/api/precip-nowcast", async (c) => safeFeed(c, fetchPrecipNowcast, "pre
 app.get("/api/air-quality", async (c) => safeFeed(c, fetchAirQuality, "air-quality"));
 app.get("/api/air-quality/trend", async (c) => safeFeed(c, fetchAirQualityTrend, "air-quality-trend"));
 app.get("/api/air-quality/aqicn", async (c) => safeFeed(c, () => fetchAqicnChonburi({ AQICN_TOKEN: c.env.AQICN_TOKEN }), "aqicn"));
+app.get("/api/air-quality/air4thai", async (c) => safeFeed(c, fetchAir4Thai, "air4thai"));
 app.get("/api/cctv/longdo", async (c) => safeFeed(c, fetchCctv, "cctv"));
 app.get("/api/trends", async (c) => safeFeed(c, fetchTrends, "trends"));
 app.get("/api/maritime/ais", async (c) => safeFeed(c, async () => fetchAisVessels(), "ais"));

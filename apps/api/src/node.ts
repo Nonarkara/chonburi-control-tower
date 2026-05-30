@@ -146,6 +146,7 @@ const PREWARM_PATHS = [
   "/api/precip-nowcast",
   "/api/air-quality",
   "/api/air-quality/trend",
+  "/api/air-quality/air4thai",
   "/api/cctv/longdo",
   "/api/trends",
   "/api/markets",
