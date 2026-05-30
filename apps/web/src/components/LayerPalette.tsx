@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { FallbackTier } from "@chonburi/shared";
 import {
   ALL_LAYERS,
   COMPUTED_LAYERS,
@@ -10,6 +11,14 @@ import {
   type LensId,
 } from "../map/presets";
 
+/** Per-layer health for the subset of toggles backed by a live feed. Lets the
+ *  palette show *why* a layer is empty — "needs key" vs simply no features —
+ *  instead of a silent dead toggle. */
+export interface LayerStatus {
+  tier?: FallbackTier | "loading";
+  note?: string;
+}
+
 interface Props {
   lens: LensId;
   onLensChange: (l: LensId) => void;
@@ -18,11 +27,13 @@ interface Props {
   /** Feature counts per layer — when present, shown next to each label so
    *  the operator immediately sees "AIS 0" vs "AIS 14" without looking at the map. */
   counts?: Partial<Record<LayerId, number>>;
+  /** Feed health per layer — drives the "needs key" pill on degraded feeds. */
+  statuses?: Partial<Record<LayerId, LayerStatus>>;
 }
 
 const GROUP_ORDER: LayerGroup[] = ["municipality", "maritime", "mobility", "incidents", "open-data", "environment", "imagery"];
 
-export function LayerPalette({ lens, onLensChange, enabled, onToggleLayer, counts }: Props) {
+export function LayerPalette({ lens, onLensChange, enabled, onToggleLayer, counts, statuses }: Props) {
   // group → list of layers (preserve declaration order within each group)
   const grouped = useMemo(() => {
     const m = new Map<LayerGroup, typeof ALL_LAYERS>();
@@ -95,6 +106,8 @@ export function LayerPalette({ lens, onLensChange, enabled, onToggleLayer, count
                   <div className="layer-toggles">
                     {list.map((l) => {
                       const isOn = enabled.has(l.id);
+                      const status = statuses?.[l.id];
+                      const needsKey = status?.tier === "unavailable";
                       const freshness = satelliteFreshness(l.id);
                       const fullTitle = freshness
                         ? `${l.describe}\n\nImagery date: ${freshness.date} (${freshness.label})`
@@ -120,9 +133,18 @@ export function LayerPalette({ lens, onLensChange, enabled, onToggleLayer, count
                                 {freshness.label}
                               </span>
                             )}
-                            {/* Computed/decorative layers have no feature collection — a "0" count would
-                                falsely suggest a failed feed. Fall back to on/off for those. */}
-                            {!COMPUTED_LAYERS.has(l.id) && counts != null && counts[l.id] != null ? (
+                            {/* Degraded feed (e.g. missing API key) — say so explicitly instead of a
+                                silent "0" that looks like a bug. The note explains what's wrong. */}
+                            {needsKey ? (
+                              <span
+                                className="mono caption layer-needs-key"
+                                title={status?.note ?? "Feed unavailable — check API key / connectivity"}
+                              >
+                                needs key
+                              </span>
+                            ) : /* Computed/decorative layers have no feature collection — a "0" count would
+                                falsely suggest a failed feed. Fall back to on/off for those. */
+                            !COMPUTED_LAYERS.has(l.id) && counts != null && counts[l.id] != null ? (
                               <span
                                 className={`mono caption layer-count ${counts[l.id]! > 0 ? "layer-count-ok" : "layer-count-zero"}`}
                                 title={`${counts[l.id]!.toLocaleString()} features loaded`}

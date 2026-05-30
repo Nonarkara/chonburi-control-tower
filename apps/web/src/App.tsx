@@ -108,7 +108,7 @@ import { ALL_LAYERS, LENSES, layerCanEnable, type LayerId, type LensId, type Map
 
 import { TopBar } from "./components/TopBar";
 import { HourRail } from "./components/HourRail";
-import { LayerPalette } from "./components/LayerPalette";
+import { LayerPalette, type LayerStatus } from "./components/LayerPalette";
 import { KpiStrip } from "./components/KpiStrip";
 import { PmcuBrief } from "./components/PmcuBrief";
 import { NewsDesk } from "./components/NewsDesk";
@@ -683,14 +683,46 @@ export default function App() {
   const handleForecastAlert = useCallback((metric: string) => {
     setForecastAlerts((prev) => prev.has(metric) ? prev : new Set([...prev, metric]));
   }, []);
+  // Transient toast — gives a layer toggle visible feedback when it would
+  // otherwise render nothing (no features yet, or a feed that needs an API key).
+  // Kills the "I clicked it and nothing happened" embarrassment.
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number | null>(null);
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 4200);
+  }, []);
+  useEffect(() => () => { if (toastTimer.current) window.clearTimeout(toastTimer.current); }, []);
+
+  // Latest layer feedback (counts + feed health), read by onToggleLayer without
+  // making the callback depend on every feed poll. Assigned during render below.
+  const layerFeedbackRef = useRef<{
+    counts: Record<string, number>;
+    statuses: Partial<Record<LayerId, LayerStatus>>;
+    enabled: Set<LayerId>;
+  }>({ counts: {}, statuses: {}, enabled: new Set() });
+
   const onToggleLayer = useCallback((id: LayerId) => {
+    const fb = layerFeedbackRef.current;
+    const turningOn = !fb.enabled.has(id);
     setEnabledLayers((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  }, []);
+    if (turningOn) {
+      const label = ALL_LAYERS.find((l) => l.id === id)?.label ?? id;
+      const status = fb.statuses[id];
+      const count = fb.counts[id];
+      if (status?.tier === "unavailable") {
+        showToast(`${label} — no live data (${status.note ?? "needs API key"})`);
+      } else if (count === 0) {
+        showToast(`${label} — no features to show right now`);
+      }
+    }
+  }, [showToast]);
   const restoreLens = useCallback(() => {
     const next = LENSES.find((l) => l.id === lens);
     setMapViewState({ kind: "lens", lensId: lens });
@@ -1048,6 +1080,29 @@ export default function App() {
     gistdaPois.data, gistdaSolar.data, gistdaLandUse.data, news.data,
   ]);
 
+  // Feed health per map layer — drives the "needs key" pill in the palette and
+  // the toast on toggle. Only layers backed by a live feed appear here.
+  const layerStatuses = useMemo<Partial<Record<LayerId, LayerStatus>>>(() => ({
+    "ais-vessels":            { tier: ais.fallbackTier, note: ais.note },
+    "cctv-cameras":           { tier: cctv.fallbackTier, note: cctv.note },
+    "incidents-itic":         { tier: iticEvents.fallbackTier, note: iticEvents.note },
+    "incidents-city-reports": { tier: cityReports.fallbackTier, note: cityReports.note },
+    "datago-points":          { tier: datago.fallbackTier, note: datago.note },
+    "gistda-pois":            { tier: gistdaPois.fallbackTier, note: gistdaPois.note },
+    "gistda-solar":           { tier: gistdaSolar.fallbackTier, note: gistdaSolar.note },
+    "gistda-landuse":         { tier: gistdaLandUse.fallbackTier, note: gistdaLandUse.note },
+    "news-pins":              { tier: news.fallbackTier, note: news.note },
+  }), [
+    ais.fallbackTier, ais.note, cctv.fallbackTier, cctv.note,
+    iticEvents.fallbackTier, iticEvents.note, cityReports.fallbackTier, cityReports.note,
+    datago.fallbackTier, datago.note, gistdaPois.fallbackTier, gistdaPois.note,
+    gistdaSolar.fallbackTier, gistdaSolar.note, gistdaLandUse.fallbackTier, gistdaLandUse.note,
+    news.fallbackTier, news.note,
+  ]);
+
+  // Keep the toggle handler's view of feedback fresh without re-creating it.
+  layerFeedbackRef.current = { counts: layerCounts, statuses: layerStatuses, enabled: enabledLayers };
+
   // Average GISTDA Solar irradiance across all buildings (kWh/m²/month)
   const avgSolarIrrKWh = useMemo(() => {
     const vals = gistdaSolar.data
@@ -1077,6 +1132,11 @@ export default function App() {
       {!online && (
         <div className="offline-banner mono" role="alert" aria-live="assertive">
           ⚠ OFFLINE — feeds are stale until the connection returns
+        </div>
+      )}
+      {toast && (
+        <div className="layer-toast mono" role="status" aria-live="polite">
+          {toast}
         </div>
       )}
       {/* ── Top bar ── */}
@@ -1411,6 +1471,7 @@ export default function App() {
             enabled={enabledLayers}
             onToggleLayer={onToggleLayer}
             counts={layerCounts}
+            statuses={layerStatuses}
           />
         </div>
       </aside>

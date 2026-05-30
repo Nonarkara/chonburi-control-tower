@@ -23,6 +23,34 @@
   font-weight: 600;
 }
 
+/* Transient feedback toast — e.g. "AIS vessels — no live data (needs key)".
+   Bottom-center so it never covers the panels or the map controls. */
+.layer-toast {
+  position: fixed;
+  bottom: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9998;
+  max-width: min(560px, 92vw);
+  padding: 8px 14px;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  color: var(--text, #e6edf3);
+  background: var(--bg-2, #161b22);
+  border: 1px solid var(--line-2, #484f58);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  animation: layer-toast-in 160ms ease-out;
+}
+@keyframes layer-toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .layer-toast { animation: none; }
+}
+
 .shell {
   display: grid;
   grid-template-columns: 280px 1fr 280px;
@@ -770,6 +798,19 @@ input:focus-visible,
 .layer-count      { font-size: 0.60rem; letter-spacing: 0.04em; padding: 0 4px; }
 .layer-count-ok   { color: var(--data); }
 .layer-count-zero { color: var(--bad); opacity: 0.65; }
+
+/* "needs key" pill — a feed is configured but unreachable (e.g. missing token).
+   Honest signal so a toggle is never a silent no-op. */
+.layer-needs-key {
+  font-size: 0.60rem;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--warn, #d97706);
+  border: 1px solid color-mix(in srgb, var(--warn, #d97706) 50%, transparent);
+  background: color-mix(in srgb, var(--warn, #d97706) 12%, transparent);
+  white-space: nowrap;
+}
 
 /* ── Standards alignment ─────────────────────────── */
 .pill-standard {
