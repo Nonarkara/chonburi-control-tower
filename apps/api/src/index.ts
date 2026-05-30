@@ -109,6 +109,7 @@ app.get("/", (c) =>
       "/api/social/facebook",
       "/api/chat",
       "/api/health/detailed",
+      "/api/health/keys",
       "/api/twin/objects",
       "/api/twin/relations",
       "/api/twin/state",
@@ -139,6 +140,33 @@ app.get("/api/health/detailed", (c) => {
     mqtt: getMqttStatus(),
     at: new Date().toISOString(),
   });
+});
+
+/**
+ * Which optional API keys are configured. Drives the "needs key" UX in the
+ * layer palette + SOURCES catalog. Never returns key values — only presence.
+ */
+const API_KEY_REGISTRY: { env: keyof Bindings; label: string; powers: string; getAt: string }[] = [
+  { env: "AISSTREAM_TOKEN",   label: "AISStream",   powers: "Live vessel positions (AIS) in the Gulf of Thailand", getAt: "https://aisstream.io" },
+  { env: "AQICN_TOKEN",       label: "AQICN",       powers: "World Air Quality Index station readings",            getAt: "https://aqicn.org/data-platform/token/" },
+  { env: "GEMINI_API_KEY",    label: "Gemini",      powers: "AI chat assistant + news summarisation",              getAt: "https://aistudio.google.com/apikey" },
+  { env: "FMP_API_KEY",       label: "FMP",         powers: "Market data (executive briefing economic indicators)", getAt: "https://site.financialmodelingprep.com/developer/docs" },
+  { env: "FRED_API_KEY",      label: "FRED",        powers: "US/Thai macro-economic series (executive)",            getAt: "https://fred.stlouisfed.org/docs/api/api_key.html" },
+  { env: "FACEBOOK_PAGE_TOKEN", label: "Facebook",  powers: "Municipal Facebook page posts",                        getAt: "https://developers.facebook.com/docs/pages-api" },
+  { env: "DATA_GO_TH_TOKEN",  label: "data.go.th",  powers: "Thai open-data: reservoirs, disasters, provincial KPIs", getAt: "https://data.go.th" },
+];
+
+app.get("/api/health/keys", (c) => {
+  const keys = API_KEY_REGISTRY.map((k) => ({
+    key: k.env,
+    label: k.label,
+    powers: k.powers,
+    getAt: k.getAt,
+    configured: Boolean(c.env[k.env] && String(c.env[k.env]).trim().length > 0),
+  }));
+  const configured = keys.filter((k) => k.configured).length;
+  c.header("Cache-Control", "no-store");
+  return c.json({ keys, configured, total: keys.length, at: new Date().toISOString() });
 });
 
 app.get("/api/db/status", async (c) => {
