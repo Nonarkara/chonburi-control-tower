@@ -175,6 +175,7 @@ function nowcast(overrides: Partial<PrecipNowcast> = {}): PrecipNowcast {
     firstSignificantAt: null,
     minutesToSignificant: null,
     intensity: "dry",
+    points: [],
     ...overrides,
   };
 }
