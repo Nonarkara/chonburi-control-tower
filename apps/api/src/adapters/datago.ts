@@ -15,7 +15,7 @@
 
 import type { NormalizedFeed } from "@chonburi/shared";
 import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
-import { fetchJsonOrNull } from "./common.js";
+import { fetchJsonOrThrow } from "./common.js";
 
 export interface DatagoPoint {
   id: string;
@@ -134,7 +134,7 @@ export async function fetchDatagoDatasets(): Promise<NormalizedFeed<DatagoDatase
     interface CkanResult {
       result?: { results?: Array<{ id?: string; title?: string; organization?: { title?: string }; notes?: string; tags?: Array<{ name?: string }>; metadata_modified?: string; num_resources?: number; name?: string }> };
     }
-    const live = await fetchJsonOrNull<CkanResult>(ckanUrl);
+    const live = await fetchJsonOrThrow<CkanResult>(ckanUrl);
     let combined = [...CURATED_DATASETS];
     if (live?.result?.results) {
       const liveSet: DatagoDataset[] = live.result.results

@@ -1,7 +1,7 @@
 import type { IncidentFeature, IncidentSeverity, NormalizedFeed } from "@chonburi/shared";
 import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
 import { inBbox } from "../lib/bbox.js";
-import { fetchJsonOrNull } from "./common.js";
+import { fetchJsonOrThrow } from "./common.js";
 
 const EVENT_URL = "https://event.longdo.com/feed/json";
 const TTL_SECONDS = 180;
@@ -50,7 +50,7 @@ function classify(typeCode: number, severity: number): { category: IncidentFeatu
 export async function fetchItic(): Promise<NormalizedFeed<IncidentFeature>> {
   return cached("itic", TTL_SECONDS, async () => {
     const fetchedAt = new Date().toISOString();
-    const payload = await fetchJsonOrNull<{ events?: LongdoEvent[] } | LongdoEvent[]>(EVENT_URL);
+    const payload = await fetchJsonOrThrow<{ events?: LongdoEvent[] } | LongdoEvent[]>(EVENT_URL);
     const events = Array.isArray(payload) ? payload : payload?.events ?? [];
 
     const features: IncidentFeature[] = [];

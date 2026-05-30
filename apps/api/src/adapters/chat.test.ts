@@ -1,5 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { chat, ChatError } from "./chat";
+
+// Mock the live-context snapshot so tests don't touch real adapters
+vi.mock("./chatContext.js", () => ({
+  liveContextSnippet: vi.fn().mockResolvedValue("## Live context\nAQI: 45"),
+}));
 
 /**
  * Chat adapter contract tests.
@@ -164,5 +169,228 @@ describe("chat adapter — additional guardrail branches", () => {
       chat(userMessage("What language is this dashboard written in?"), NO_KEYS),
     ).rejects.toBeInstanceOf(ChatError);
     // ChatError(503) means guardrail passed, credentials check triggered
+  });
+});
+
+// ─── Gemini live path ─────────────────────────────────────────────────────────
+
+describe("chat adapter — Gemini live path (mocked fetch)", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function mockGeminiOk(text: string) {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          candidates: [{ content: { parts: [{ text }] } }],
+        }),
+        { status: 200 },
+      ),
+    );
+  }
+
+  it("returns a reply with the Gemini model name on success", async () => {
+    mockGeminiOk("Chonburi has a population of about 65,000.");
+    const resp = await chat(
+      userMessage("How many people live in Chonburi?"),
+      { geminiApiKey: "test-key" },
+    );
+    expect(resp.model).toMatch(/gemini/i);
+    expect(resp.reply).toBe("Chonburi has a population of about 65,000.");
+    expect(resp.meta.fallbackTier).toBe("live");
+    expect(resp.meta.source).toMatch(/gemini/i);
+  });
+
+  it("throws ChatError(429) when Gemini returns 429 and no Ollama fallback configured", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("quota exceeded", { status: 429 }),
+    );
+    await expect(
+      chat(userMessage("What is the AQI?"), { geminiApiKey: "test-key" }),
+    ).rejects.toMatchObject({ status: 429 });
+  });
+
+  it("throws ChatError(400) when Gemini returns 400 (bad request)", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("bad request", { status: 400 }),
+    );
+    await expect(
+      chat(userMessage("Hello"), { geminiApiKey: "test-key" }),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("throws ChatError(502) when Gemini returns empty candidates", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ candidates: [] }), { status: 200 }),
+    );
+    await expect(
+      chat(userMessage("Hello"), { geminiApiKey: "test-key" }),
+    ).rejects.toMatchObject({ status: 502 });
+  });
+
+  it("throws ChatError(502) when Gemini returns non-OK 5xx", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("internal error", { status: 503 }),
+    );
+    await expect(
+      chat(userMessage("Hello"), { geminiApiKey: "test-key" }),
+    ).rejects.toMatchObject({ status: 502 });
+  });
+});
+
+// ─── Ollama live path ─────────────────────────────────────────────────────────
+// Each test uses a fresh module import to prevent the ollamaAvailable cache
+// (a module-level variable) from leaking between tests.
+
+describe("chat adapter — Ollama-only path (mocked fetch)", () => {
+  type ChatFn = typeof chat;
+  let freshChat: ChatFn;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.restoreAllMocks();
+    const mod = await import("./chat.js") as unknown as { chat: ChatFn };
+    freshChat = mod.chat;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("uses Ollama when only ollamaBaseUrl is configured and Ollama is up", async () => {
+    let callCount = 0;
+    vi.spyOn(globalThis, "fetch").mockImplementation((url) => {
+      callCount++;
+      const urlStr = String(url);
+      if (urlStr.includes("/api/tags")) {
+        return Promise.resolve(new Response("{}", { status: 200 }));
+      }
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({ message: { content: "Laem Chabang is 25 km north." } }),
+          { status: 200 },
+        ),
+      );
+    });
+
+    const resp = await freshChat(
+      userMessage("Where is Laem Chabang?"),
+      { ollamaBaseUrl: "http://localhost:11434" },
+    );
+
+    expect(callCount).toBe(2); // probe + chat
+    expect(resp.reply).toBe("Laem Chabang is 25 km north.");
+    expect(resp.model).toMatch(/qwen/i);
+    expect(resp.meta.source).toMatch(/local/i);
+  });
+
+  it("throws ChatError(503) when Ollama probe fails (unreachable)", async () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("ECONNREFUSED"));
+    await expect(
+      freshChat(userMessage("Hello"), { ollamaBaseUrl: "http://localhost:11434" }),
+    ).rejects.toMatchObject({ status: 503 });
+  });
+
+  it("throws ChatError(503) when Ollama probe returns non-OK", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("not found", { status: 404 }),
+    );
+    await expect(
+      freshChat(userMessage("Hello"), { ollamaBaseUrl: "http://localhost:11434" }),
+    ).rejects.toMatchObject({ status: 503 });
+  });
+
+  it("throws ChatError(502) when Ollama chat returns non-OK", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation((url) => {
+      if (String(url).includes("/api/tags")) {
+        return Promise.resolve(new Response("{}", { status: 200 }));
+      }
+      return Promise.resolve(new Response("error", { status: 500 }));
+    });
+
+    await expect(
+      freshChat(userMessage("Hello"), { ollamaBaseUrl: "http://localhost:11434" }),
+    ).rejects.toMatchObject({ status: 502 });
+  });
+
+  it("throws ChatError(502) when Ollama returns empty message content", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation((url) => {
+      if (String(url).includes("/api/tags")) {
+        return Promise.resolve(new Response("{}", { status: 200 }));
+      }
+      return Promise.resolve(
+        new Response(JSON.stringify({ message: { content: "" } }), { status: 200 }),
+      );
+    });
+
+    await expect(
+      freshChat(userMessage("Hello"), { ollamaBaseUrl: "http://localhost:11434" }),
+    ).rejects.toMatchObject({ status: 502 });
+  });
+});
+
+// ─── Gemini → Ollama fallback path ────────────────────────────────────────────
+
+describe("chat adapter — Gemini 429 → Ollama fallback", () => {
+  type ChatFn = typeof chat;
+  let freshChat: ChatFn;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.restoreAllMocks();
+    const mod = await import("./chat.js") as unknown as { chat: ChatFn };
+    freshChat = mod.chat;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("falls back to Ollama when Gemini returns 429 and Ollama is available", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation((url) => {
+      const urlStr = String(url);
+      if (urlStr.includes("generativelanguage")) {
+        return Promise.resolve(new Response("quota", { status: 429 }));
+      }
+      if (urlStr.includes("/api/tags")) {
+        return Promise.resolve(new Response("{}", { status: 200 }));
+      }
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({ message: { content: "Fallback reply from Ollama." } }),
+          { status: 200 },
+        ),
+      );
+    });
+
+    const resp = await freshChat(
+      userMessage("What is the tide forecast?"),
+      { geminiApiKey: "test-key", ollamaBaseUrl: "http://localhost:11434" },
+    );
+
+    expect(resp.reply).toBe("Fallback reply from Ollama.");
+    expect(resp.model).toMatch(/qwen/i);
+  });
+
+  it("re-throws Gemini 429 when Ollama is configured but unreachable", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation((url) => {
+      const urlStr = String(url);
+      if (urlStr.includes("generativelanguage")) {
+        return Promise.resolve(new Response("quota", { status: 429 }));
+      }
+      return Promise.reject(new Error("ECONNREFUSED"));
+    });
+
+    await expect(
+      freshChat(
+        userMessage("Hello"),
+        { geminiApiKey: "test-key", ollamaBaseUrl: "http://localhost:11434" },
+      ),
+    ).rejects.toMatchObject({ status: 429 });
   });
 });

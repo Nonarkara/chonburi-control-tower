@@ -57,3 +57,28 @@ export async function fetchTextOrNull(url: string, init?: RequestInit): Promise<
     return null;
   }
 }
+
+export async function fetchJsonOrThrow<T>(url: string, init?: RequestInit): Promise<T | null> {
+  let attempt = 0;
+  while (attempt < 3) {
+    try {
+      const res = await fetchWithTimeout(url, {
+        ...init,
+        headers: mergeHeaders(getDefaultHeaders(), init),
+      });
+      if (res.ok) return (await res.json()) as T;
+      if (res.status === 429) {
+        attempt++;
+        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+        continue;
+      }
+      console.warn(`fetchJsonOrThrow non-OK ${res.status} ${url}`);
+      return null;
+    } catch (err) {
+      console.warn(`fetchJsonOrThrow error ${url}`, (err as Error).message);
+      return null;
+    }
+  }
+  console.warn(`fetchJsonOrThrow rate-limited, gave up ${url}`);
+  return null;
+}

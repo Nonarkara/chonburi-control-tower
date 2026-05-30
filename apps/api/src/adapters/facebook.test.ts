@@ -156,7 +156,7 @@ describe("facebook adapter — happy-path parsing (isolated)", () => {
     };
 
     const feed = await fresh({ FACEBOOK_PAGE_ID: "111", FACEBOOK_PAGE_TOKEN: "tok" });
-    // fetchJsonOrNull returns null on 500 → payload is null → posts=[]
+    // fetchJsonOrThrow returns null on 500 → payload is null → posts=[]
     expect(feed.meta.fallbackTier).toBe("unavailable");
     expect(feed.features).toHaveLength(0);
     vi.restoreAllMocks();

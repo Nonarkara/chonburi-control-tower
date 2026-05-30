@@ -7,16 +7,16 @@ import * as common from "./common.js";
  *   - No token → null (never fetches)
  *   - Token present + valid response → vehicle array
  *   - Empty vehicles array → null (caller falls back to scenario)
- *   - Network failure → null (fetchJsonOrNull already swallows it)
+ *   - Network failure → null (fetchJsonOrThrow already swallows it)
  */
 
-// We mock fetchJsonOrNull so no real network traffic is made.
+// We mock fetchJsonOrThrow so no real network traffic is made.
 vi.mock("./common.js", async (importOriginal) => {
   const mod = await importOriginal<typeof common>();
-  return { ...mod, fetchJsonOrNull: vi.fn() };
+  return { ...mod, fetchJsonOrThrow: vi.fn() };
 });
 
-const mockedFetchJson = common.fetchJsonOrNull as ReturnType<typeof vi.fn>;
+const mockedFetchJson = common.fetchJsonOrThrow as ReturnType<typeof vi.fn>;
 
 // Import after mock is registered
 const { fetchViabusCuShuttle } = await import("./viabus.js");
@@ -86,7 +86,7 @@ describe("fetchViabusCuShuttle — response handling", () => {
     expect(result).toBeNull();
   });
 
-  it("returns null when fetchJsonOrNull returns null (network error)", async () => {
+  it("returns null when fetchJsonOrThrow returns null (network error)", async () => {
     mockedFetchJson.mockResolvedValueOnce(null);
     const result = await fetchViabusCuShuttle({ VIABUS_TOKEN: "tok" });
     expect(result).toBeNull();

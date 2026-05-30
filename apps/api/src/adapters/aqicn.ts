@@ -20,7 +20,7 @@
 import type { NormalizedFeed } from "@chonburi/shared";
 import { CHONBURI } from "@chonburi/shared";
 import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
-import { fetchJsonOrNull } from "./common.js";
+import { fetchJsonOrThrow } from "./common.js";
 
 const TTL_SECONDS = 900; // 15 min — AQICN updates every ~1h but check frequently
 
@@ -79,7 +79,7 @@ export async function fetchAqicnByGeo(
   const token = env.AQICN_TOKEN;
   if (!token) return null;
   const url = `https://api.waqi.info/feed/geo:${lat};${lng}/?token=${encodeURIComponent(token)}`;
-  const payload = await fetchJsonOrNull<AqicnResp>(url);
+  const payload = await fetchJsonOrThrow<AqicnResp>(url);
   return payload ? map(payload) : null;
 }
 
@@ -92,7 +92,7 @@ export async function fetchAqicnByStation(
   // station id can be "@1234" or a slug like "bangkok"
   const id = stationId.startsWith("@") ? stationId : `@${stationId.replace(/^@/, "")}`;
   const url = `https://api.waqi.info/feed/${id}/?token=${encodeURIComponent(token)}`;
-  const payload = await fetchJsonOrNull<AqicnResp>(url);
+  const payload = await fetchJsonOrThrow<AqicnResp>(url);
   return payload ? map(payload) : null;
 }
 

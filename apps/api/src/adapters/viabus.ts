@@ -24,7 +24,7 @@
  * then falls back to its own endpoint guesses + scenario data.
  */
 
-import { fetchJsonOrNull } from "./common.js";
+import { fetchJsonOrThrow } from "./common.js";
 
 export interface ViabusVehicle {
   id: string;
@@ -49,7 +49,7 @@ export async function fetchViabusCuShuttle(env: {
   const base = env.VIABUS_BASE_URL || DEFAULT_BASE;
 
   const url = `${base.replace(/\/$/, "")}/v1/operators/${OPERATOR_SLUG}/vehicles`;
-  const payload = await fetchJsonOrNull<{ vehicles?: ViabusVehicle[] }>(url, {
+  const payload = await fetchJsonOrThrow<{ vehicles?: ViabusVehicle[] }>(url, {
     headers: { authorization: `Bearer ${token}` },
   });
   if (!payload?.vehicles || payload.vehicles.length === 0) return null;

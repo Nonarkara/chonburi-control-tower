@@ -1,7 +1,7 @@
 import type { IncidentCategory, IncidentFeature, IncidentSeverity, IncidentStatus, NormalizedFeed } from "@chonburi/shared";
 import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
 import { inBbox } from "../lib/bbox.js";
-import { fetchJsonOrNull } from "./common.js";
+import { fetchJsonOrThrow } from "./common.js";
 
 // Traffy Fondue is the de facto public citizen-report feed for Bangkok.
 // City Reporter v2 (bots/city-reporter-v2) writes to the same shape.
@@ -78,7 +78,7 @@ function inferSeverity(category: IncidentCategory, description?: string): Incide
 export async function fetchCityReports(): Promise<NormalizedFeed<IncidentFeature>> {
   return cached("city-reports", TTL_SECONDS, async () => {
     const fetchedAt = new Date().toISOString();
-    const payload = await fetchJsonOrNull<TraffyRaw[] | { results?: TraffyRaw[] }>(ENDPOINT);
+    const payload = await fetchJsonOrThrow<TraffyRaw[] | { results?: TraffyRaw[] }>(ENDPOINT);
     const raw = Array.isArray(payload) ? payload : payload?.results ?? [];
 
     const features: IncidentFeature[] = [];

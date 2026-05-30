@@ -49,6 +49,8 @@ export const API_PATH_TO_ADAPTER: Array<[RegExp, string]> = [
   [/\/api\/datago\/reservoirs$/, "reservoirs"],
   [/\/api\/datago\/disasters$/, "disasters"],
   [/\/api\/datago\/fahfon$/, "fahfon"],
+  [/\/api\/datago\/points$/, "datago-points"],
+  [/\/api\/datago\/provincial-kpis$/, "datago-provincial-kpis"],
   [/\/api\/marine$/, "marine"],
   [/\/api\/tides$/, "tides"],
   [/\/api\/gistda\/poi$/, "gistda-poi"],

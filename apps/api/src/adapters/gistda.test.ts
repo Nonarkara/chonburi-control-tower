@@ -17,7 +17,7 @@ describe("gistda adapter — upstream-failure contract", () => {
 
   it("fetchGistdaPoi returns 'unavailable' with a note when upstream returns no feature collection", async () => {
     // Simulate ArcGIS returning a response with no features key (e.g., error object)
-    // fetchJsonOrNull will parse this, and `data?.features` will be undefined.
+    // fetchJsonOrThrow will parse this, and `data?.features` will be undefined.
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ error: { code: 500, message: "upstream down" } }), { status: 200 }),
     );

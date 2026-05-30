@@ -9,7 +9,7 @@
 
 import type { MarketSnapshot, MarketTick, NormalizedFeed } from "@chonburi/shared";
 import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
-import { fetchJsonOrNull } from "./common.js";
+import { fetchJsonOrThrow } from "./common.js";
 
 const TTL_SECONDS = 1800;
 
@@ -57,7 +57,7 @@ const FRED_SERIES: Array<{ id: string; name: string; group: MarketTick["group"] 
 
 async function fetchFmpStable(symbol: string, name: string, key: string): Promise<MarketTick | null> {
   const url = `${FMP_BASE}/quote?symbol=${encodeURIComponent(symbol)}&apikey=${encodeURIComponent(key)}`;
-  const payload = await fetchJsonOrNull<FmpStableQuote[]>(url);
+  const payload = await fetchJsonOrThrow<FmpStableQuote[]>(url);
   if (!payload || !Array.isArray(payload) || payload.length === 0) return null;
   const q = payload[0];
   return {
@@ -72,7 +72,7 @@ async function fetchFmpStable(symbol: string, name: string, key: string): Promis
 
 async function fetchFredSeries(id: string, name: string, group: MarketTick["group"], key: string): Promise<MarketTick | null> {
   const url = `${FRED_BASE}/series/observations?series_id=${id}&api_key=${encodeURIComponent(key)}&file_type=json&limit=2&sort_order=desc`;
-  const payload = await fetchJsonOrNull<FredResp>(url);
+  const payload = await fetchJsonOrThrow<FredResp>(url);
   if (!payload?.observations || payload.observations.length === 0) return null;
   const valid = payload.observations.filter((o) => o.value !== ".");
   if (valid.length === 0) return null;

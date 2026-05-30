@@ -1,7 +1,7 @@
 import type { NormalizedFeed, WeatherSnapshot } from "@chonburi/shared";
 import { CHONBURI } from "@chonburi/shared";
 import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
-import { fetchJsonOrNull } from "./common.js";
+import { fetchJsonOrThrow } from "./common.js";
 
 const TTL_SECONDS = 10800; // 3h — Open-Meteo daily quota friendly // 30 min
 
@@ -38,7 +38,7 @@ export async function fetchWeather(): Promise<NormalizedFeed<WeatherSnapshot>> {
     const fetchedAt = new Date().toISOString();
     const [lng, lat] = CHONBURI.center;
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,precipitation,weather_code&timezone=Asia%2FBangkok&wind_speed_unit=kmh`;
-    const payload = await fetchJsonOrNull<OpenMeteoCurrent>(url);
+    const payload = await fetchJsonOrThrow<OpenMeteoCurrent>(url);
     const c = payload?.current;
 
     const features: WeatherSnapshot[] = [];
