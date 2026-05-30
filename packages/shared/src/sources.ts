@@ -218,14 +218,14 @@ export const SOURCE_CATALOG: SourceEntry[] = [
   },
   {
     id: "air4thai",
-    label: "Air4Thai — PCD stations (Chonburi)",
+    label: "Air4Thai — PCD stations (Eastern Seaboard)",
     vendor: "Pollution Control Department",
     category: "environment",
     status: "live",
     endpoint: "http://air4thai.pcd.go.th/services/getNewAQI_JSON.php",
     apiPath: "/api/air-quality/air4thai",
     pollSeconds: 1800,
-    describe: "Official Thai government AQ monitors inside Chonburi province (Laem Chabang, Si Racha, Mueang). Public, no key. Real PM2.5 + national AQI.",
+    describe: "Official Thai government AQ monitors across the Eastern Seaboard — Chonburi (Laem Chabang, Si Racha, Mueang) + Rayong / Map Ta Phut. Public, no key. Real PM2.5 + national AQI.",
     docs: "http://air4thai.pcd.go.th/",
   },
   {

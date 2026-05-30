@@ -341,7 +341,7 @@ export const ALL_LAYERS: {
     describe: "Hand-authored polygons of historical flood-prone areas (king-tide, storm-surge, drainage-backflow). Hover for severity + household count. Replace with municipal GIS when supplied." },
 
   { id: "air4thai-stations", label: "Air4Thai PCD stations",     swatch: "#22C55E", group: "environment",
-    describe: "Official Thai government air-quality monitors inside Chonburi province (Laem Chabang, Si Racha / Bo Win, Mueang Chon Buri). Coloured by PM2.5, labelled with live national AQI. Public source, no key. Click a station for its readings." },
+    describe: "Official Thai government air-quality monitors across the Eastern Seaboard — Chonburi (Laem Chabang, Si Racha / Bo Win, Mueang) plus the Rayong / Map Ta Phut industrial belt. Coloured by PM2.5, labelled with live national AQI. Public source, no key. Click a station for its readings." },
 
   // ─── GISTDA ────────────────────────────────────────────────────────────
   { id: "gistda-pois",       label: "GISTDA POI Digital Twin",   swatch: "#F59E0B", group: "open-data",

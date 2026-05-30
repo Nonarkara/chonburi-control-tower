@@ -4,12 +4,14 @@
  *
  * This is the authoritative ground-truth AQ source for Thailand (AQICN and
  * Open-Meteo both re-publish a subset of it). It carries real PCD monitoring
- * stations inside Chonburi province — Laem Chabang, Si Racha / Bo Win, and the
- * Environment Agency station in Mueang Chon Buri — so the dashboard shows the
- * actual government sensors for this part of Thailand, not a grid estimate.
+ * stations across the Eastern Seaboard — Chonburi (Laem Chabang, Si Racha /
+ * Bo Win, Mueang Chon Buri) plus the neighbouring Rayong / Map Ta Phut
+ * industrial belt — so the dashboard shows the actual government sensors for
+ * this part of Thailand, not a grid estimate.
  *
- * Endpoint returns ~186 nationwide stations; we keep only the Chonburi ones
- * (province name match OR inside the Eastern-Seaboard bbox).
+ * Endpoint returns ~186 nationwide stations; we keep only the Eastern-Seaboard
+ * ones (Chonburi province name match OR inside the Eastern-Seaboard bbox,
+ * which spans Chonburi → Rayong).
  *
  * No key, no fallback-to-unavailable needed — if upstream is down we return an
  * empty "scenario" feed and the caller keeps last-good cache.
@@ -74,7 +76,7 @@ function pm25Category(pm25: number | null): AirQualityPoint["category"] {
   return "hazardous";
 }
 
-function isChonburi(s: Air4ThaiStation, lng: number, lat: number): boolean {
+function inEasternSeaboard(s: Air4ThaiStation, lng: number, lat: number): boolean {
   const area = `${s.areaEN ?? ""} ${s.areaTH ?? ""}`.toLowerCase();
   if (area.includes("chon buri") || area.includes("chonburi") || area.includes("ชลบุรี")) return true;
   return inBbox(lng, lat);
@@ -98,7 +100,7 @@ export async function fetchAir4Thai(): Promise<NormalizedFeed<AirQualityPoint>> 
       const lat = Number(s.lat);
       const lng = Number(s.long);
       if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat === 0 || lng === 0) continue;
-      if (!isChonburi(s, lng, lat)) continue;
+      if (!inEasternSeaboard(s, lng, lat)) continue;
 
       const pm25 = num(s.AQILast?.PM25?.value);
       features.push({
