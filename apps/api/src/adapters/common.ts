@@ -9,9 +9,9 @@ function mergeHeaders(base: Record<string, string>, init?: RequestInit): Headers
   return h;
 }
 
-async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response> {
+async function fetchWithTimeout(url: string, init?: RequestInit, timeoutMs: number = DEFAULT_TIMEOUT_MS): Promise<Response> {
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), DEFAULT_TIMEOUT_MS);
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     return await fetch(url, { ...init, signal: ctrl.signal });
   } finally {
@@ -43,14 +43,14 @@ export async function fetchJsonOrNull<T>(url: string, init?: RequestInit): Promi
   }
 }
 
-export async function fetchTextOrNull(url: string, init?: RequestInit): Promise<string | null> {
+export async function fetchTextOrNull(url: string, init?: RequestInit, timeoutMs?: number): Promise<string | null> {
   try {
     const h: Record<string, string> = {};
     if (typeof navigator === "undefined") h["user-agent"] = USER_AGENT;
     const res = await fetchWithTimeout(url, {
       ...init,
       headers: mergeHeaders(h, init),
-    });
+    }, timeoutMs);
     if (!res.ok) return null;
     return await res.text();
   } catch {

@@ -220,7 +220,10 @@ function actionTags(item: { title: string; summary: string }): string[] {
 }
 
 async function parseFeed(feed: Feed): Promise<IntelligenceItem[]> {
-  const xml = await fetchTextOrNull(feed.url);
+  // 6s per-feed cap. With 6 feeds fanned out in parallel, the worst case is
+  // still ~6s; the prior 25s default meant one slow feed pinned the whole
+  // /api/news response to 25s.
+  const xml = await fetchTextOrNull(feed.url, undefined, 6_000);
   if (!xml) return [];
   const itemRe = /<item>([\s\S]*?)<\/item>/g;
   const items: IntelligenceItem[] = [];
