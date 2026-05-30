@@ -18,7 +18,7 @@
 import type { NasaEarthReadings, NormalizedFeed } from "@chonburi/shared";
 import { CHONBURI } from "@chonburi/shared";
 import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
-import { fetchJsonOrNull } from "./common.js";
+import { fetchJsonOrThrow } from "./common.js";
 
 const TTL_SECONDS = 21_600; // 6 hours — data changes daily, 3-day latency
 
@@ -90,7 +90,7 @@ export async function fetchNasaEarth(): Promise<NormalizedFeed<NasaEarthReadings
       `&start=${yyyymmdd(d4)}&end=${yyyymmdd(d3)}` +
       `&format=JSON`;
 
-    const payload = await fetchJsonOrNull<NasaPowerResponse>(url);
+    const payload = await fetchJsonOrThrow<NasaPowerResponse>(url);
     const params = payload?.properties?.parameter;
 
     const tempC = latest(params?.T2M);

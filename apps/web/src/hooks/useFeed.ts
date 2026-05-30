@@ -7,6 +7,9 @@ interface FeedState<T> {
   fallbackTier: FallbackTier | "loading";
   loadedAt: string | null;
   error: string | null;
+  /** Upstream `meta.note` — explains *why* a feed is degraded (e.g. "Missing
+   *  AISSTREAM_TOKEN"). Surfaced in the UI so a dead toggle is never silent. */
+  note?: string;
 }
 
 const STORAGE_PREFIX = "chonburi:feed:";
@@ -121,6 +124,7 @@ export function useFeed<T>(path: string, pollMs: number): FeedState<T> & { refet
             fallbackTier: json.meta.fallbackTier,
             loadedAt: json.meta.fetchedAt,
             error: null,
+            note: json.meta.note,
           };
           writeLocal(path, next);
           return next;

@@ -26,6 +26,7 @@ import { fetchGistdaPoi, fetchGistdaSolar, fetchGistdaLandUse } from "./adapters
 import { fetchMarine } from "./adapters/marine.js";
 import { fetchTides } from "./adapters/tides.js";
 import { fetchAqicnChonburi } from "./adapters/aqicn.js";
+import { fetchAir4Thai } from "./adapters/air4thai.js";
 import { fetchNasaEarth } from "./adapters/nasa-power.js";
 import { SOURCE_CATALOG } from "@chonburi/shared";
 import type { NormalizedFeed, AirQualityPoint, IncidentFeature, IntelligenceItem, ExecutiveSnapshot, MarketSnapshot } from "@chonburi/shared";
@@ -94,6 +95,7 @@ app.get("/", (c) =>
       "/api/precip-nowcast",
       "/api/air-quality",
       "/api/air-quality/trend",
+      "/api/air-quality/air4thai",
       "/api/cctv/longdo",
       "/api/trends",
       "/api/markets",
@@ -109,6 +111,7 @@ app.get("/", (c) =>
       "/api/social/facebook",
       "/api/chat",
       "/api/health/detailed",
+      "/api/health/keys",
       "/api/twin/objects",
       "/api/twin/relations",
       "/api/twin/state",
@@ -139,6 +142,33 @@ app.get("/api/health/detailed", (c) => {
     mqtt: getMqttStatus(),
     at: new Date().toISOString(),
   });
+});
+
+/**
+ * Which optional API keys are configured. Drives the "needs key" UX in the
+ * layer palette + SOURCES catalog. Never returns key values — only presence.
+ */
+const API_KEY_REGISTRY: { env: keyof Bindings; label: string; powers: string; getAt: string }[] = [
+  { env: "AISSTREAM_TOKEN",   label: "AISStream",   powers: "Live vessel positions (AIS) in the Gulf of Thailand", getAt: "https://aisstream.io" },
+  { env: "AQICN_TOKEN",       label: "AQICN",       powers: "World Air Quality Index station readings",            getAt: "https://aqicn.org/data-platform/token/" },
+  { env: "GEMINI_API_KEY",    label: "Gemini",      powers: "AI chat assistant + news summarisation",              getAt: "https://aistudio.google.com/apikey" },
+  { env: "FMP_API_KEY",       label: "FMP",         powers: "Market data (executive briefing economic indicators)", getAt: "https://site.financialmodelingprep.com/developer/docs" },
+  { env: "FRED_API_KEY",      label: "FRED",        powers: "US/Thai macro-economic series (executive)",            getAt: "https://fred.stlouisfed.org/docs/api/api_key.html" },
+  { env: "FACEBOOK_PAGE_TOKEN", label: "Facebook",  powers: "Municipal Facebook page posts",                        getAt: "https://developers.facebook.com/docs/pages-api" },
+  { env: "DATA_GO_TH_TOKEN",  label: "data.go.th",  powers: "Thai open-data: reservoirs, disasters, provincial KPIs", getAt: "https://data.go.th" },
+];
+
+app.get("/api/health/keys", (c) => {
+  const keys = API_KEY_REGISTRY.map((k) => ({
+    key: k.env,
+    label: k.label,
+    powers: k.powers,
+    getAt: k.getAt,
+    configured: Boolean(c.env[k.env] && String(c.env[k.env]).trim().length > 0),
+  }));
+  const configured = keys.filter((k) => k.configured).length;
+  c.header("Cache-Control", "no-store");
+  return c.json({ keys, configured, total: keys.length, at: new Date().toISOString() });
 });
 
 app.get("/api/db/status", async (c) => {
@@ -261,6 +291,7 @@ app.get("/api/precip-nowcast", async (c) => safeFeed(c, fetchPrecipNowcast, "pre
 app.get("/api/air-quality", async (c) => safeFeed(c, fetchAirQuality, "air-quality"));
 app.get("/api/air-quality/trend", async (c) => safeFeed(c, fetchAirQualityTrend, "air-quality-trend"));
 app.get("/api/air-quality/aqicn", async (c) => safeFeed(c, () => fetchAqicnChonburi({ AQICN_TOKEN: c.env.AQICN_TOKEN }), "aqicn"));
+app.get("/api/air-quality/air4thai", async (c) => safeFeed(c, fetchAir4Thai, "air4thai"));
 app.get("/api/cctv/longdo", async (c) => safeFeed(c, fetchCctv, "cctv"));
 app.get("/api/trends", async (c) => safeFeed(c, fetchTrends, "trends"));
 app.get("/api/maritime/ais", async (c) => safeFeed(c, async () => fetchAisVessels(), "ais"));

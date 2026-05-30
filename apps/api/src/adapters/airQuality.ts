@@ -1,7 +1,7 @@
 import type { AirQualityPoint, NormalizedFeed } from "@chonburi/shared";
 import { CHONBURI } from "@chonburi/shared";
 import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
-import { fetchJsonOrNull } from "./common.js";
+import { fetchJsonOrThrow } from "./common.js";
 
 const TTL_SECONDS = 3600; // 1h // 15 min
 
@@ -41,7 +41,7 @@ export async function fetchAirQuality(): Promise<NormalizedFeed<AirQualityPoint>
     const fetchedAt = new Date().toISOString();
     const [lng, lat] = CHONBURI.center;
     const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lng}&current=us_aqi,pm2_5,pm10&hourly=us_aqi,pm2_5&forecast_hours=8&timezone=Asia%2FBangkok`;
-    const payload = await fetchJsonOrNull<OpenMeteoAQ>(url);
+    const payload = await fetchJsonOrThrow<OpenMeteoAQ>(url);
     const c = payload?.current;
     const features: AirQualityPoint[] = c
       ? [{
@@ -73,7 +73,7 @@ export async function fetchAirQualityTrend(): Promise<NormalizedFeed<AirQualityT
     const fetchedAt = new Date().toISOString();
     const [lng, lat] = CHONBURI.center;
     const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lng}&current=us_aqi,pm2_5&hourly=us_aqi,pm2_5&forecast_hours=8&timezone=Asia%2FBangkok`;
-    const payload = await fetchJsonOrNull<OpenMeteoAQ>(url);
+    const payload = await fetchJsonOrThrow<OpenMeteoAQ>(url);
     const c = payload?.current;
     const h = payload?.hourly;
     if (!c) {

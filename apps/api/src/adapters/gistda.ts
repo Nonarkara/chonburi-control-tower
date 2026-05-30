@@ -15,7 +15,7 @@
 import type { NormalizedFeed } from "@chonburi/shared";
 import { CHONBURI } from "@chonburi/shared";
 import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
-import { fetchJsonOrNull } from "./common.js";
+import { fetchJsonOrThrow } from "./common.js";
 
 const PORTAL = "https://gistdaportal.gistda.or.th/arcgis/rest/services";
 
@@ -102,7 +102,7 @@ export async function fetchGistdaPoi(): Promise<NormalizedFeed<GistdaPoi>> {
     interface ArcGisFeatureSet {
       features?: Array<{ attributes?: Record<string, unknown>; geometry?: { x?: number; y?: number } }>;
     }
-    const data = await fetchJsonOrNull<ArcGisFeatureSet>(url);
+    const data = await fetchJsonOrThrow<ArcGisFeatureSet>(url);
     if (!data?.features) {
       return { features: [], meta: { source: "gistda-poi", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const, note: "GISTDA ArcGIS endpoint returned no features — upstream may be down" } };
     }
@@ -165,7 +165,7 @@ export async function fetchGistdaSolar(month?: number): Promise<NormalizedFeed<G
     interface ArcGisFeatureSet {
       features?: Array<{ attributes?: Record<string, unknown>; geometry?: { x?: number; y?: number } }>;
     }
-    const data = await fetchJsonOrNull<ArcGisFeatureSet>(url);
+    const data = await fetchJsonOrThrow<ArcGisFeatureSet>(url);
     if (!data?.features?.length) {
       return { features: [], meta: { source: "gistda-solar", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const, note: "GISTDA solar dataset unavailable — upstream may be down" } };
     }
@@ -230,7 +230,7 @@ export async function fetchGistdaLandUse(): Promise<NormalizedFeed<GistdaLandUse
     interface ArcGisFeatureSet {
       features?: Array<{ attributes?: Record<string, unknown>; geometry?: { x?: number; y?: number } }>;
     }
-    const data = await fetchJsonOrNull<ArcGisFeatureSet>(url);
+    const data = await fetchJsonOrThrow<ArcGisFeatureSet>(url);
     if (!data?.features?.length) {
       return { features: [], meta: { source: "gistda-landuse", fetchedAt, ageMinutes: 0, fallbackTier: "unavailable" as const, note: "GISTDA land-use dataset unavailable — upstream may be down" } };
     }

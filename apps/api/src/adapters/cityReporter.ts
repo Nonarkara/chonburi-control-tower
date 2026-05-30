@@ -1,7 +1,7 @@
 import type { IncidentCategory, IncidentFeature, IncidentSeverity, IncidentStatus, NormalizedFeed } from "@chonburi/shared";
 import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
 import { inBbox } from "../lib/bbox.js";
-import { fetchJsonOrNull } from "./common.js";
+import { fetchJsonOrThrow } from "./common.js";
 
 // Traffy Fondue is the de facto public citizen-report feed for Bangkok.
 // City Reporter v2 (bots/city-reporter-v2) writes to the same shape.
@@ -14,6 +14,13 @@ const ENDPOINT =
   "https://publicapi.traffy.in.th/share/teamchadchart/search?limit=500&keyword=ชลบุรี";
 
 const TTL_SECONDS = 300; // 5 min
+
+// Public Traffy Fondue ticket viewer. Matches the `share/teamchadchart` data
+// source so an operator can click an incident and open the original report.
+function traffyReportUrl(ticketId?: string): string | undefined {
+  if (!ticketId) return undefined;
+  return `https://share.traffy.in.th/teamchadchart?case_id=${encodeURIComponent(ticketId)}`;
+}
 
 interface TraffyRaw {
   ticket_id?: string;
@@ -78,7 +85,7 @@ function inferSeverity(category: IncidentCategory, description?: string): Incide
 export async function fetchCityReports(): Promise<NormalizedFeed<IncidentFeature>> {
   return cached("city-reports", TTL_SECONDS, async () => {
     const fetchedAt = new Date().toISOString();
-    const payload = await fetchJsonOrNull<TraffyRaw[] | { results?: TraffyRaw[] }>(ENDPOINT);
+    const payload = await fetchJsonOrThrow<TraffyRaw[] | { results?: TraffyRaw[] }>(ENDPOINT);
     const raw = Array.isArray(payload) ? payload : payload?.results ?? [];
 
     const features: IncidentFeature[] = [];
@@ -109,6 +116,7 @@ export async function fetchCityReports(): Promise<NormalizedFeed<IncidentFeature
         description: r.description,
         reportedAt: r.timestamp ?? fetchedAt,
         imageUrl: r.photo_url,
+        sourceUrl: traffyReportUrl(r.ticket_id),
         reporterPlatform: "traffy",
       });
     }

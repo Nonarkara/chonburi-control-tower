@@ -44,16 +44,27 @@
   --font-thai:
     "IBM Plex Sans Thai", "IBM Plex Sans", "Noto Sans Thai", sans-serif;
 
-  /* ── Type scale ──────────────────────────────────────────────────── */
-  --size-eyebrow: 0.66rem;
-  --size-caption: 0.78rem;
-  --size-body:    0.92rem;
-  --size-h3:      1.06rem;
-  --size-h2:      1.32rem;
-  --size-h1:      1.84rem;
-  --size-display: 2.5rem;
+  /* ── Type scale ──────────────────────────────────────────────────────
+     Sizes are in rem and scale with the fluid html root (see tokens below),
+     so the whole scale grows on a wall display and shrinks on a phone while
+     staying legible. Floor: nothing renders below ~12px effective on a
+     laptop. --size-body == 1rem (tracks the root). */
+  --size-eyebrow: 0.76rem;
+  --size-caption: 0.84rem;
+  --size-body:    1rem;
+  --size-h3:      1.14rem;
+  --size-h2:      1.4rem;
+  --size-h1:      1.92rem;
+  --size-display: 2.6rem;
 
-  --tracking-eyebrow: 0.10em;
+  /* Tight tracking compresses glyphs on tiny eyebrows — keep it gentle. */
+  --tracking-eyebrow: 0.07em;
+
+  /* ── Responsive sidebar rail width ───────────────────────────────────
+     Map must always dominate, so rails are clamped: narrow enough on a
+     laptop, wider on a big display where there's room. Overridden per
+     breakpoint below. */
+  --rail: clamp(248px, 19vw, 460px);
 
   /* ── Spacing — 4 px Vignelli grid ────────────────────────────────── */
   --s-1: 4px;
@@ -138,7 +149,13 @@
   -webkit-backdrop-filter: none !important;
 }
 
-html, body {
+/* Fluid root: drives the whole rem scale. Grows from phone → 100" wall.
+   At ~1280px laptop ≈ 15.6px, 1440 ≈ 16px, caps at 20px for distance reading. */
+html {
+  font-size: clamp(15px, 0.28vw + 12px, 20px);
+}
+
+body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
@@ -201,7 +218,8 @@ button {
   letter-spacing: 0.01em;
   transition: color 0.12s, border-color 0.12s, background 0.12s;
 }
-button:hover { color: var(--text); border-color: var(--text-2); }
+button:hover { color: var(--text); border-color: var(--data); background: rgba(37, 99, 235, 0.1); }
+button:active { transform: scale(0.98); opacity: 0.8; }
 button[aria-pressed="true"], button.active {
   color: #fff;
   background: var(--accent);

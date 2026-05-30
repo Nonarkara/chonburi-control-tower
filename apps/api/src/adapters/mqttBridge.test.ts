@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 /**
  * mqttBridge.ts contract tests.
@@ -240,5 +240,175 @@ describe("stopMqttBridge — lifecycle", () => {
     const { stopMqttBridge, getMqttStatus } = await import("./mqttBridge.js");
     stopMqttBridge();
     expect(getMqttStatus().connected).toBe(false);
+  });
+});
+
+// ─── startMqttBridge — with mocked WebSocket ─────────────────────────────────
+
+describe("startMqttBridge — WebSocket lifecycle (mocked)", () => {
+  /** Lightweight mock WebSocket that captures event listeners. */
+  class MockWebSocket {
+    url: string;
+    protocol: string;
+    private listeners: Record<string, Array<(e?: unknown) => void>> = {};
+    readonly sentPackets: Uint8Array[] = [];
+    closed = false;
+
+    constructor(url: string) {
+      this.url = url;
+      this.protocol = "mqtt";
+    }
+
+    addEventListener(event: string, fn: (e?: unknown) => void) {
+      if (!this.listeners[event]) this.listeners[event] = [];
+      this.listeners[event].push(fn);
+    }
+
+    send(data: Uint8Array) {
+      this.sentPackets.push(new Uint8Array(data));
+    }
+
+    close() {
+      this.closed = true;
+      this.emit("close", {});
+    }
+
+    emit(event: string, arg?: unknown) {
+      (this.listeners[event] ?? []).forEach((fn) => fn(arg));
+    }
+  }
+
+  let mockWs: MockWebSocket;
+
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    // Replace global WebSocket with our mock factory
+    vi.stubGlobal("WebSocket", class extends MockWebSocket {
+      constructor(url: string) {
+        super(url);
+        mockWs = this as unknown as MockWebSocket;
+      }
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("connects to the broker URL and sends a CONNECT packet on open", async () => {
+    const { startMqttBridge, getMqttStatus } = await import("./mqttBridge.js");
+
+    startMqttBridge({
+      brokerUrl: "wss://broker.example.com:8084/mqtt",
+      clientId: "test-client",
+      topics: ["chonburi/sensors/#"],
+    });
+
+    expect(mockWs).toBeDefined();
+    expect(mockWs.url).toBe("wss://broker.example.com:8084/mqtt");
+
+    // Trigger the "open" event
+    mockWs.emit("open");
+
+    const status = getMqttStatus();
+    expect(status.connected).toBe(true);
+    // Should have sent at least 2 packets: CONNECT + SUBSCRIBE
+    expect(mockWs.sentPackets.length).toBeGreaterThanOrEqual(2);
+    // First packet: CONNECT (0x10)
+    expect(mockWs.sentPackets[0][0]).toBe(0x10);
+    // Second packet: SUBSCRIBE (0x82)
+    expect(mockWs.sentPackets[1][0]).toBe(0x82);
+  });
+
+  it("handles a string message by routing it via handlePayload", async () => {
+    const { startMqttBridge } = await import("./mqttBridge.js");
+    const ts = await import("../lib/twinStore.js") as unknown as {
+      hydrateSensorFromFahfon: ReturnType<typeof vi.fn>;
+    };
+
+    startMqttBridge({ brokerUrl: "wss://b", clientId: "c", topics: ["t"] });
+    mockWs.emit("open");
+
+    const sensorPayload = JSON.stringify({ station: "S01", pm25: 12, tempC: 30 });
+    mockWs.emit("message", { data: sensorPayload });
+
+    expect(ts.hydrateSensorFromFahfon).toHaveBeenCalledOnce();
+    const arg = ts.hydrateSensorFromFahfon.mock.calls[0][0];
+    expect(arg.station).toBe("S01");
+    expect(arg.pm25).toBe(12);
+  });
+
+  it("handles an ArrayBuffer message by parsing MQTT PUBLISH and routing payload", async () => {
+    const { startMqttBridge } = await import("./mqttBridge.js");
+    const ts = await import("../lib/twinStore.js") as unknown as {
+      writeTwinState: ReturnType<typeof vi.fn>;
+    };
+
+    startMqttBridge({ brokerUrl: "wss://b", clientId: "c", topics: ["t"] });
+    mockWs.emit("open");
+
+    // Build a QoS-0 PUBLISH for /twin/state/obj-7/humidity
+    const topic = "/twin/state/obj-7/humidity";
+    const payloadStr = JSON.stringify({ value: 72.5 });
+    const topicBytes = new TextEncoder().encode(topic);
+    const payloadBytes = new TextEncoder().encode(payloadStr);
+    const remaining = 2 + topicBytes.length + payloadBytes.length;
+    const buf = new ArrayBuffer(2 + remaining);
+    const view = new DataView(buf);
+    const u8 = new Uint8Array(buf);
+    view.setUint8(0, 0x30); // PUBLISH QoS 0
+    view.setUint8(1, remaining);
+    let pos = 2;
+    view.setUint16(pos, topicBytes.length); pos += 2;
+    u8.set(topicBytes, pos); pos += topicBytes.length;
+    u8.set(payloadBytes, pos);
+
+    mockWs.emit("message", { data: buf });
+
+    expect(ts.writeTwinState).toHaveBeenCalledOnce();
+    const call = ts.writeTwinState.mock.calls[0][0];
+    expect(call.objectId).toBe("obj-7");
+    expect(call.metric).toBe("humidity");
+    expect(call.value).toBe(72.5);
+  });
+
+  it("sets lastError and schedules reconnect when WebSocket emits error", async () => {
+    const { startMqttBridge, getMqttStatus } = await import("./mqttBridge.js");
+    startMqttBridge({ brokerUrl: "wss://b", clientId: "c", topics: [] });
+    mockWs.emit("error");
+    expect(getMqttStatus().lastError).toBe("WebSocket error");
+  });
+
+  it("is idempotent — second call while already connected does nothing", async () => {
+    const { startMqttBridge } = await import("./mqttBridge.js");
+    let constructCount = 0;
+    vi.stubGlobal("WebSocket", class extends MockWebSocket {
+      constructor(url: string) {
+        super(url);
+        constructCount++;
+        mockWs = this as unknown as MockWebSocket;
+      }
+    });
+
+    startMqttBridge({ brokerUrl: "wss://b", clientId: "c", topics: [] });
+    startMqttBridge({ brokerUrl: "wss://b", clientId: "c", topics: [] });
+
+    expect(constructCount).toBe(1); // only one WebSocket created
+  });
+
+  it("stopMqttBridge closes the active WebSocket and resets state", async () => {
+    const { startMqttBridge, stopMqttBridge, getMqttStatus } = await import("./mqttBridge.js");
+
+    startMqttBridge({ brokerUrl: "wss://b", clientId: "c", topics: [] });
+    mockWs.emit("open"); // mark as connected
+    expect(getMqttStatus().connected).toBe(true);
+
+    stopMqttBridge();
+
+    expect(mockWs.closed).toBe(true);
+    expect(getMqttStatus().connected).toBe(false);
+    expect(getMqttStatus().brokerUrl).toBeNull();
   });
 });

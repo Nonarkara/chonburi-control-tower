@@ -146,6 +146,7 @@ const PREWARM_PATHS = [
   "/api/precip-nowcast",
   "/api/air-quality",
   "/api/air-quality/trend",
+  "/api/air-quality/air4thai",
   "/api/cctv/longdo",
   "/api/trends",
   "/api/markets",
@@ -157,6 +158,14 @@ const PREWARM_PATHS = [
   "/api/datago/datasets",
   "/api/datago/reservoirs",
   "/api/datago/provincial-kpis",
+  // Newer feeds — keep their in-memory cache warm so a browser opening cold
+  // gets last-good data immediately. cached() still honors each adapter's TTL,
+  // so a 6h-TTL feed only refetches upstream every 6h despite the 5-min poll.
+  "/api/gistda/poi",
+  "/api/gistda/solar",
+  "/api/gistda/landuse",
+  "/api/nasa/earth-readings",
+  "/api/social/facebook",
 ];
 
 async function prewarmOnce() {

@@ -221,7 +221,9 @@ test.describe("HourRail — weekday/weekend toggle", () => {
     const weekdayBtn = page.getByRole("button", { name: /Show weekday traffic pattern/i });
     const weekendBtn = page.getByRole("button", { name: /Show weekend traffic pattern/i });
 
-    // Default is weekday
+    // Establish a known state — the default tracks the real calendar day
+    // (weekend on Sat/Sun), so don't assume it. Click weekday first.
+    await weekdayBtn.click();
     await expect(weekdayBtn).toHaveAttribute("aria-pressed", "true");
     await expect(weekendBtn).toHaveAttribute("aria-pressed", "false");
 
@@ -256,6 +258,37 @@ test.describe("EO layer toggles", () => {
 
     // State must have flipped
     expect(newState).not.toBe(initialState);
+  });
+});
+
+test.describe("Responsive layout", () => {
+  test("collapses to a single-column mobile shell at phone width", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 }); // iPhone 12/13/14
+    await page.goto("/");
+
+    const shell = page.locator(".shell");
+    await expect(shell).toBeVisible({ timeout: 20_000 });
+    // Below the 900px breakpoint the shell gets the .mobile modifier (single column).
+    await expect(shell).toHaveClass(/mobile/, { timeout: 10_000 });
+    // Map must still be present and dominant on mobile.
+    await expect(page.locator(".map-host")).toBeVisible({ timeout: 20_000 });
+  });
+
+  test("holds a three-column shell with a dominant map at ultra-wide width", async ({ page }) => {
+    await page.setViewportSize({ width: 2880, height: 1620 }); // ~100" wall / 4K-ish
+    await page.goto("/");
+
+    const shell = page.locator(".shell");
+    await expect(shell).toBeVisible({ timeout: 20_000 });
+    await expect(shell).not.toHaveClass(/mobile/);
+    await expect(page.locator(".map-host")).toBeVisible({ timeout: 20_000 });
+
+    // The map column must dominate: wider than either rail.
+    const map = page.locator(".map-area, .map-host").first();
+    const mapBox = await map.boundingBox();
+    expect(mapBox).not.toBeNull();
+    // On a 2880px-wide display the map area should be well over half the width.
+    expect(mapBox!.width).toBeGreaterThan(1400);
   });
 });
 

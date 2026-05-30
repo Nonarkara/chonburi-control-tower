@@ -11,7 +11,7 @@
 import type { NormalizedFeed, PrecipNowcast } from "@chonburi/shared";
 import { CHONBURI } from "@chonburi/shared";
 import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
-import { fetchJsonOrNull } from "./common.js";
+import { fetchJsonOrThrow } from "./common.js";
 
 const TTL_SECONDS = 1800; // 30min // 10 min — nowcasts update fast
 
@@ -33,7 +33,7 @@ export async function fetchPrecipNowcast(): Promise<NormalizedFeed<PrecipNowcast
       `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}` +
       `&minutely_15=precipitation,precipitation_probability` +
       `&timezone=Asia%2FBangkok&forecast_minutely_15=24`;
-    const payload = await fetchJsonOrNull<OpenMeteoMinutely>(url);
+    const payload = await fetchJsonOrThrow<OpenMeteoMinutely>(url);
     const series = payload?.minutely_15;
     if (!series?.time || !series.precipitation) {
       return {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { AcademicSnapshot, FallbackTier } from "@chonburi/shared";
+import { type AcademicSnapshot, type FallbackTier, CHONBURI } from "@chonburi/shared";
 import { useTheme } from "../hooks/useTheme";
 import { formatDate } from "../lib/time";
 
@@ -70,7 +70,7 @@ export function TopBar({ feeds, onOpenCatalog, catalogCount, viewMode, onCycleVi
                 fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.5"/>
         </svg>
         <div className="brand-stack">
-          <strong>Chonburi Town Center</strong>
+          <strong>{CHONBURI.name.en}</strong>
           <span className="brand-sub mono">
             CTM-01 · Eastern Seaboard
           </span>

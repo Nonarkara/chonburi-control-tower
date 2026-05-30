@@ -1,5 +1,13 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fetchAisVessels, shipType, aisStatus } from "./ais";
+
+// Prevent the dynamic import of "ws" in startAisStream from opening a real WebSocket.
+vi.mock("ws", () => ({
+  default: class MockWS {
+    on() {}
+    send() {}
+  },
+}));
 
 /**
  * AIS adapter contract tests.
@@ -72,6 +80,36 @@ describe("shipType — ITU/AIS code mapping", () => {
     expect(shipType(99)).toBe("unknown");
     expect(shipType(50)).toBe("unknown");
     expect(shipType(40)).toBe("unknown");
+  });
+});
+
+// ─── fetchAisVessels note variants ────────────────────────────────────────────
+
+describe("fetchAisVessels — note variants via startAisStream (isolated)", () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.resetModules();
+  });
+
+  it("returns 'disconnected' note when token is configured but WS not yet connected", async () => {
+    const { fetchAisVessels: freshFetch, startAisStream } = await import("./ais.js") as unknown as {
+      fetchAisVessels: () => { meta: { fallbackTier: string; note?: string }; features: unknown[] };
+      startAisStream: (token: string) => void;
+    };
+
+    // Calling startAisStream sets wsTokenConfigured=true synchronously before the async ws import
+    startAisStream("test-token-abc");
+
+    // Immediately call fetchAisVessels — wsConnected is still false at this point
+    const feed = freshFetch();
+
+    expect(feed.meta.fallbackTier).toBe("unavailable");
+    expect(feed.meta.note).toMatch(/disconnected|reconnecting/i);
+    expect(feed.meta.note).not.toMatch(/AISSTREAM_TOKEN/);
   });
 });
 

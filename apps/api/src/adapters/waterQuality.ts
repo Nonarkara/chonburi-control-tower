@@ -99,7 +99,7 @@ const MOCK_STATIONS: WaterQualityReading[] = [
 export async function fetchWaterQuality(): Promise<NormalizedFeed<WaterQualityReading>> {
   // TODO: replace with live PCD/DMCR endpoint once API key + endpoint confirmed.
   // Pattern when live:
-  //   const data = await fetchJsonOrNull<PcdApiResponse>(PCD_ENDPOINT);
+  //   const data = await fetchJsonOrThrow<PcdApiResponse>(PCD_ENDPOINT);
   //   return { features: normalise(data), meta: { ... fallbackTier: "live" } };
 
   const fetchedAt = new Date().toISOString();

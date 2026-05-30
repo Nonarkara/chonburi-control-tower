@@ -1,6 +1,15 @@
 import { useEffect } from "react";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 
+/** Transit line swatch colors — fixed identity colors, not theme tokens. */
+const BUS_LINE_COLORS: Record<number, string> = {
+  1: "#EF4444",
+  2: "#38BDF8",
+  3: "#34D399",
+  4: "#FBBF24",
+  5: "#A78BFA",
+} as const;
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -142,11 +151,11 @@ export function Manual({ open, onClose }: Props) {
               <div>
                 <h4 className="manual-h4">Transit lines</h4>
                 <ul className="manual-swatches">
-                  <li><span className="sw" style={{ background: "#EF4444" }}/> Bus line 1 — runs Saturday</li>
-                  <li><span className="sw" style={{ background: "#38BDF8" }}/> Bus line 2 — runs Saturday</li>
-                  <li><span className="sw" style={{ background: "#34D399" }}/> Bus line 3 — weekday only</li>
-                  <li><span className="sw" style={{ background: "#FBBF24" }}/> Bus line 4 — weekday only</li>
-                  <li><span className="sw" style={{ background: "#A78BFA" }}/> Bus line 5 — weekday only</li>
+                  <li><span className="sw" style={{ background: BUS_LINE_COLORS[1] }}/> Bus line 1 — runs Saturday</li>
+                  <li><span className="sw" style={{ background: BUS_LINE_COLORS[2] }}/> Bus line 2 — runs Saturday</li>
+                  <li><span className="sw" style={{ background: BUS_LINE_COLORS[3] }}/> Bus line 3 — weekday only</li>
+                  <li><span className="sw" style={{ background: BUS_LINE_COLORS[4] }}/> Bus line 4 — weekday only</li>
+                  <li><span className="sw" style={{ background: BUS_LINE_COLORS[5] }}/> Bus line 5 — weekday only</li>
                 </ul>
               </div>
               <div>

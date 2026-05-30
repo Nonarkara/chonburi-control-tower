@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { SOURCE_CATALOG, type SourceEntry, type AdapterHealth } from "@chonburi/shared";
+import {
+  SOURCE_CATALOG,
+  type SourceEntry,
+  type AdapterHealth,
+  type SourceStatus,
+  type SourceCategory,
+} from "@chonburi/shared";
 import {
   STATUS_COLOR, CATEGORY_LABEL, adapterNameFor,
 } from "../lib/sourceCatalog";

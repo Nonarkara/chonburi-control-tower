@@ -20,7 +20,7 @@
 
 import type { NormalizedFeed } from "@chonburi/shared";
 import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
-import { fetchJsonOrNull } from "./common.js";
+import { fetchJsonOrThrow } from "./common.js";
 
 export interface FacebookPost {
   id: string;
@@ -76,7 +76,7 @@ export async function fetchFacebookPosts(env: {
 
     const fields = "id,message,story,created_time,permalink_url,full_picture,reactions.summary(true),comments.summary(true),shares";
     const url = `https://graph.facebook.com/v22.0/${env.FACEBOOK_PAGE_ID}/posts?fields=${encodeURIComponent(fields)}&limit=20&access_token=${env.FACEBOOK_PAGE_TOKEN}`;
-    const payload = await fetchJsonOrNull<GraphResponse>(url);
+    const payload = await fetchJsonOrThrow<GraphResponse>(url);
 
     const posts: FacebookPost[] = (payload?.data ?? []).map((p) => ({
       id: p.id,

@@ -1,7 +1,7 @@
 import type { NormalizedFeed } from "@chonburi/shared";
 import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
 import { inBbox } from "../lib/bbox.js";
-import { fetchJsonOrNull } from "./common.js";
+import { fetchJsonOrThrow } from "./common.js";
 
 const ENDPOINT = "https://camera.longdo.com/feed/?command=json";
 const TTL_SECONDS = 600; // 10 min — camera list rarely changes
@@ -37,7 +37,7 @@ function num(v: string | number | undefined): number | null {
 export async function fetchCctv(): Promise<NormalizedFeed<CctvCamera>> {
   return cached("cctv-longdo", TTL_SECONDS, async () => {
     const fetchedAt = new Date().toISOString();
-    const payload = await fetchJsonOrNull<{ cameras?: LongdoCamera[] } | LongdoCamera[]>(ENDPOINT);
+    const payload = await fetchJsonOrThrow<{ cameras?: LongdoCamera[] } | LongdoCamera[]>(ENDPOINT);
     const cameras = Array.isArray(payload) ? payload : payload?.cameras ?? [];
 
     const features: CctvCamera[] = [];

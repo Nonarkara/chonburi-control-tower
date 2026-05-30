@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fetchJsonOrNull, fetchTextOrNull } from "./common";
+import { fetchJsonOrThrow, fetchTextOrNull } from "./common";
 
 /**
  * common.ts utility contract tests.
  *
- * fetchJsonOrNull and fetchTextOrNull are used by every single adapter.
+ * fetchJsonOrThrow and fetchTextOrNull are used by every single adapter.
  * Getting them wrong would silently break all feeds.
  */
 
-describe("fetchJsonOrNull", () => {
+describe("fetchJsonOrThrow", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -21,7 +21,7 @@ describe("fetchJsonOrNull", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ key: "value" }), { status: 200 }),
     );
-    const result = await fetchJsonOrNull<{ key: string }>("https://example.com/api");
+    const result = await fetchJsonOrThrow<{ key: string }>("https://example.com/api");
     expect(result).toEqual({ key: "value" });
   });
 
@@ -29,7 +29,7 @@ describe("fetchJsonOrNull", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response("Not Found", { status: 404 }),
     );
-    const result = await fetchJsonOrNull("https://example.com/api");
+    const result = await fetchJsonOrThrow("https://example.com/api");
     expect(result).toBeNull();
   });
 
@@ -37,13 +37,13 @@ describe("fetchJsonOrNull", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(null, { status: 500 }),
     );
-    const result = await fetchJsonOrNull("https://example.com/api");
+    const result = await fetchJsonOrThrow("https://example.com/api");
     expect(result).toBeNull();
   });
 
   it("returns null on network error (fetch throws)", async () => {
     vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Network error"));
-    const result = await fetchJsonOrNull("https://example.com/api");
+    const result = await fetchJsonOrThrow("https://example.com/api");
     expect(result).toBeNull();
   });
 
@@ -51,7 +51,7 @@ describe("fetchJsonOrNull", () => {
     vi.spyOn(globalThis, "fetch").mockRejectedValue(
       Object.assign(new Error("Aborted"), { name: "AbortError" }),
     );
-    const result = await fetchJsonOrNull("https://example.com/api");
+    const result = await fetchJsonOrThrow("https://example.com/api");
     expect(result).toBeNull();
   });
 
@@ -62,7 +62,7 @@ describe("fetchJsonOrNull", () => {
       return Promise.resolve(new Response(JSON.stringify({}), { status: 200 }));
     });
 
-    await fetchJsonOrNull("https://example.com/api", {
+    await fetchJsonOrThrow("https://example.com/api", {
       method: "POST",
       headers: { "x-custom": "header" },
     });
@@ -79,7 +79,7 @@ describe("fetchJsonOrNull", () => {
       return Promise.resolve(new Response(JSON.stringify({}), { status: 200 }));
     });
 
-    await fetchJsonOrNull("https://example.com/api");
+    await fetchJsonOrThrow("https://example.com/api");
 
     expect(capturedHeaders?.get("accept")).toBe("application/json");
   });
@@ -91,11 +91,32 @@ describe("fetchJsonOrNull", () => {
       return Promise.resolve(new Response(JSON.stringify({}), { status: 200 }));
     });
 
-    await fetchJsonOrNull("https://example.com/api", {
+    await fetchJsonOrThrow("https://example.com/api", {
       headers: { accept: "text/csv" },
     });
 
     expect(capturedHeaders?.get("accept")).toBe("text/csv");
+  });
+
+  it("retries on 429 and eventually returns null after max attempts", async () => {
+    vi.useFakeTimers();
+    let callCount = 0;
+    vi.spyOn(globalThis, "fetch").mockImplementation(() => {
+      callCount++;
+      return Promise.resolve(new Response("rate limited", { status: 429 }));
+    });
+
+    const promise = fetchJsonOrThrow("https://example.com/api");
+
+    // Attempt 1 gets 429, increments attempt, waits 2^1 = 2s
+    await vi.runAllTimersAsync();
+
+    const result = await promise;
+    expect(result).toBeNull();
+    // Should have tried 3 times (attempt 0, 1, 2 — exhausting the while loop)
+    expect(callCount).toBe(3);
+
+    vi.useRealTimers();
   });
 
   it("returns null when response body is malformed JSON (res.json() throws)", async () => {
@@ -103,7 +124,7 @@ describe("fetchJsonOrNull", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response("not-valid-json{{{", { status: 200 }),
     );
-    const result = await fetchJsonOrNull("https://example.com/api");
+    const result = await fetchJsonOrThrow("https://example.com/api");
     expect(result).toBeNull();
   });
 
@@ -114,7 +135,7 @@ describe("fetchJsonOrNull", () => {
       return Promise.resolve(new Response(JSON.stringify({}), { status: 200 }));
     });
 
-    await fetchJsonOrNull("https://example.com/api");
+    await fetchJsonOrThrow("https://example.com/api");
 
     // In Node.js test environment, navigator is undefined → user-agent is added
     if (typeof navigator === "undefined") {
@@ -176,7 +197,7 @@ describe("fetchTextOrNull", () => {
 
     await fetchTextOrNull("https://example.com/page");
 
-    // fetchTextOrNull does NOT add accept: application/json (unlike fetchJsonOrNull)
+    // fetchTextOrNull does NOT add accept: application/json (unlike fetchJsonOrThrow)
     // The accept header should be absent unless set via init
     expect(capturedHeaders?.get("accept")).toBeNull();
   });

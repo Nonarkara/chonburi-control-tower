@@ -17,7 +17,7 @@
 
 import type { NormalizedFeed } from "@chonburi/shared";
 import { cacheAgeMinutes, cachedWithStale as cached } from "../lib/cache.js";
-import { fetchJsonOrNull } from "./common.js";
+import { fetchJsonOrThrow } from "./common.js";
 
 // Open-water Gulf of Thailand point — ~10 km offshore from Si Racha shipping lane.
 // Previously [100.95, 13.34] which is shallow Chonburi Bay; Open-Meteo Marine API
@@ -123,7 +123,7 @@ export async function fetchMarine(): Promise<NormalizedFeed<MarineSnapshot>> {
       `&hourly=wave_height,wind_speed_10m,sea_surface_temperature` +
       `&forecast_days=2&timezone=Asia%2FBangkok&wind_speed_unit=kmh`;
 
-    const data = await fetchJsonOrNull<OpenMeteoMarine>(url);
+    const data = await fetchJsonOrThrow<OpenMeteoMarine>(url);
     const c = data?.current;
     const h = data?.hourly;
 

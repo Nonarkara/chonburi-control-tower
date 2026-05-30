@@ -68,6 +68,14 @@ describe("city reporter adapter (Traffy Fondue)", () => {
     expect(item).toHaveProperty("severity");
     expect(item).toHaveProperty("status");
   });
+
+  it("populates a public sourceUrl deep-link from ticket_id", async () => {
+    const feed = await fetchCityReports();
+    const item = feed.features.find((f) => f.ticketNumber === "TEST-001");
+    expect(item?.sourceUrl).toBe(
+      "https://share.traffy.in.th/teamchadchart?case_id=TEST-001",
+    );
+  });
 });
 
 describe("city reporter adapter — scenario fallback (isolated)", () => {
