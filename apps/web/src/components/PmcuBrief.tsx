@@ -1,6 +1,3 @@
-import { useMemo } from "react";
-import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
-import type { CuLandProperties } from "../map/layers";
 import type { IncidentFeature } from "@chonburi/shared";
 import { PanelHeader } from "./PanelHeader";
 import { hourlyLoad, zoneOccupancy, type ParkingZone } from "../lib/pmcu";
@@ -11,7 +8,6 @@ interface Props {
   iticEvents: IncidentFeature[];
   cityReports: IncidentFeature[];
   trafficSampleCount: number;
-  cuLands: FeatureCollection<Polygon | MultiPolygon, CuLandProperties> | null;
 }
 
 interface Corridor {
@@ -67,18 +63,8 @@ const DEV_COLOR: Record<Development["status"], string> = {
   planned: "var(--text-3)",
 };
 
-export function PmcuBrief({ hour, isWeekend, iticEvents, cityReports, trafficSampleCount, cuLands }: Props) {
+export function PmcuBrief({ hour, isWeekend, iticEvents, cityReports, trafficSampleCount }: Props) {
   const load = hourlyLoad(hour, isWeekend);
-
-  const portfolio = useMemo(() => {
-    if (!cuLands) return { resolved: 0, byKind: new Map<string, number>() };
-    const byKind = new Map<string, number>();
-    for (const f of cuLands.features) {
-      const k = (f as Feature<Polygon | MultiPolygon, CuLandProperties>).properties.kind;
-      byKind.set(k, (byKind.get(k) ?? 0) + 1);
-    }
-    return { resolved: cuLands.features.length, byKind };
-  }, [cuLands]);
 
   const totalParkingCapacity = PARKING_ZONES.reduce((s, z) => s + z.capacity, 0);
   const totalOccupied = PARKING_ZONES.reduce((s, z) => s + Math.round(z.capacity * zoneOccupancy(z, hour, isWeekend)), 0);
@@ -91,7 +77,7 @@ export function PmcuBrief({ hour, isWeekend, iticEvents, cityReports, trafficSam
       <PanelHeader
         title="MUNICIPALITY OPS"
         fallbackTier="scenario"
-        source="live-incidents·cu-lands·model"
+        source="live-incidents·model"
         actions={
           <span
             className="mono caption data-age--warn"
@@ -110,8 +96,8 @@ export function PmcuBrief({ hour, isWeekend, iticEvents, cityReports, trafficSam
         </header>
         <div className="pmcu-kv-grid">
           <div className="pmcu-kv">
-            <div className="num">{portfolio.resolved || "—"}</div>
-            <div className="lbl">ZONES MAPPED</div>
+            <div className="num">{trafficSampleCount || "—"}</div>
+            <div className="lbl">ROAD SAMPLES</div>
           </div>
           <div className="pmcu-kv">
             <div className="num">{openIncidents}</div>

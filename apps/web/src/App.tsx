@@ -3,7 +3,7 @@ import DeckGL from "@deck.gl/react";
 import type { Layer, ControllerProps } from "@deck.gl/core";
 import { Map as MapLibreMap, Source, Layer as MapLayer } from "react-map-gl/maplibre";
 import maplibregl from "maplibre-gl";
-import type { FeatureCollection, Geometry, LineString, Point, Polygon, MultiPolygon } from "geojson";
+import type { FeatureCollection, LineString, Point, Polygon, MultiPolygon } from "geojson";
 import { CHONBURI } from "@chonburi/shared";
 import type {
   AcademicSnapshot,
@@ -21,49 +21,21 @@ import type {
 } from "@chonburi/shared";
 
 import { useFeed } from "./hooks/useFeed";
-import { useBmaStatic } from "./hooks/useBmaStatic";
 import { buildTrafficSamples, type RoadProps } from "./sim/trafficSim";
 import {
-  bmaAqStationsLayer,
-  bmaParksLayer,
-  bmaPoiLayer,
   buildingRoofsLayer,
   buildingsLayer,
   campusBoundaryLayer,
   cctvLayer,
-  cuLandsLayer,
-  cuMapOverlay,
   devicePresenceLayer,
-  districtBoundariesLayer,
-  districtLabelsLayer,
-  drainageLineLayer,
-  drainagePathLayer,
-  electricityPathLayer,
-  floodProneAreasLayer,
-  waterPathLayer,
-  drainageNodeLayer,
-  electricityLineLayer,
-  electricityNodeLayer,
   esriSatelliteLayer,
-  gibsLayer,
   himawariInfraredLayer,
   openTopoTerrainLayer,
   incidentLayer,
-  shuttleRouteLineLayer,
-  shuttleRoutesLayer,
-  shuttleStopsLayer,
-  shuttleVehiclesLayer,
-  surroundingBuildingsLayer,
   trafficHeatmapLayer,
   transitStationsLayer,
   transitLinesLayer,
-  campusGatesLayer,
   roadNetworkLayer,
-  neighborhoodBuildingsLayer,
-  waterLineLayer,
-  waterNodeLayer,
-  wifiHeatmapLayer,
-  wifiPointsLayer,
   maritimeOverlayLayer,
   portInfrastructureLayer,
   ferryTerminalsLayer,
@@ -83,21 +55,12 @@ import {
   type CivicKind,
   type AisVessel,
   type DatagoPoint,
-  type AqStation,
   type BuildingProperties,
   type CctvCamera,
-  type CuLandProperties,
-  type DistrictProperties,
-  type FloodAreaProperties,
   type ShuttleVehicle,
-  type RouteProps,
-  type StopProps,
   type StationProps,
   type TransitLineProps,
-  type GateProps,
   type ClassifiedRoadProps,
-  type NeighborhoodBuildingProps,
-  type SurroundingBuildingProperties,
   gistdaPoiLayer,
   gistdaSolarLayer,
   gistdaLandUseLayer,
@@ -283,8 +246,11 @@ export default function App() {
   const { theme } = useTheme();
   const mapStyle = useMemo(() => basemapStyle(theme), [theme]);
   const { health: systemHealth, error: systemHealthError } = useSystemHealth(60_000);
+  // Municipal boundary — real Mueang Chon Buri District perimeter (OSM relation
+  // 18997107). Replaces the forked chula-campus.geojson, which held Chulalongkorn
+  // University (Bangkok) geometry and was invisible in the Chonburi viewport.
   const campus = useGeoJson<FeatureCollection<Polygon | MultiPolygon, CampusZoneProperties>>(
-    "/geo/chula-campus.geojson",
+    "/geo/chonburi-district.geojson",
   );
   const buildings = useGeoJson<FeatureCollection<Polygon | MultiPolygon, BuildingProperties>>(
     "/geo/chonburi-buildings.geojson",
@@ -292,21 +258,11 @@ export default function App() {
   // surrounding-buildings, bangkok-districts, flood-prone-areas removed —
   // all three files contain Chula/Bangkok coordinates and are invisible in
   // the Chonburi viewport. Use chonburi-flood-risk.geojson for flood zones.
-  const cuLands = useGeoJson<FeatureCollection<Polygon | MultiPolygon, CuLandProperties>>(
-    "/geo/cu-lands.geojson",
-  );
+  // Forked Chula campus layers (cu-lands, cu-shuttle-*, chula-gates, cu-electricity/
+  // water/drainage/wifi) archived under public/geo/_archive — see ARCHIVE.md.
   const roads = useGeoJson<FeatureCollection<LineString, RoadProps>>("/geo/chonburi-roads.geojson");
-  const shuttleRoutes = useGeoJson<FeatureCollection<LineString, RouteProps>>("/geo/cu-shuttle-routes.geojson");
-  const shuttleStops = useGeoJson<FeatureCollection<Point, StopProps>>("/geo/cu-shuttle-stops.geojson");
   const transitStations = useGeoJson<FeatureCollection<Point, StationProps>>("/geo/transit-stations.geojson");
   const transitLines = useGeoJson<FeatureCollection<LineString, TransitLineProps>>("/geo/transit-lines.geojson");
-  const campusGates = useGeoJson<FeatureCollection<Point, GateProps>>("/geo/chula-gates.geojson");
-  // neighborhood-tall-buildings.geojson is at Chula coordinates — removed.
-  // Underground utilities + WiFi survey (hand-authored, see /public/geo/*)
-  const electricityFc = useGeoJson<FeatureCollection<Geometry, Record<string, unknown>>>("/geo/cu-electricity.geojson");
-  const waterFc = useGeoJson<FeatureCollection<Geometry, Record<string, unknown>>>("/geo/cu-water.geojson");
-  const drainageFc = useGeoJson<FeatureCollection<Geometry, Record<string, unknown>>>("/geo/cu-drainage.geojson");
-  const wifiFc = useGeoJson<FeatureCollection<Geometry, Record<string, unknown>>>("/geo/cu-wifi.geojson");
 
   // Hour + weekend state for the traffic simulation
   const [hour, setHour] = useState<number>(() => new Date().getHours());
@@ -492,48 +448,14 @@ export default function App() {
           return null;
         })();
         break;
-      case "cu-lands":
-        title = (() => {
-          const n = (p as { name?: { en?: string } | string }).name;
-          if (typeof n === "string") return n;
-          if (n && typeof n === "object") return n.en ?? null;
-          return null;
-        })() ?? "Municipal land";
-        sub = pick("describe", "operator");
-        break;
       case "incidents-itic":
       case "incidents-city-reports":
         title = pick("title") ?? "Incident";
         sub = pick("category", "severity", "status");
         break;
-      case "bma-pois":
-        title = pick("name") ?? "BMA POI";
-        sub = pick("kind", "description");
-        break;
-      case "bma-aq-stations":
-        title = pick("name") ?? "AQ station";
-        sub = `PM2.5 ${pick("pm25") ?? "—"} µg/m³`;
-        break;
       case "cctv-cameras":
         title = pick("name") ?? "CCTV";
         sub = pick("vendor");
-        break;
-      case "cu-shuttle-vehicles":
-        title = `Shuttle Line ${pick("line") ?? ""}`;
-        sub = `${pick("occupancy") ?? "—"} occupancy`;
-        break;
-      case "cu-shuttle-stops":
-        title = pick("name") ?? "Shuttle stop";
-        sub = `Stop · ${pick("id") ?? ""}`;
-        break;
-      case "cu-shuttle-routes":
-      case "cu-shuttle-line-1":
-      case "cu-shuttle-line-2":
-      case "cu-shuttle-line-3":
-      case "cu-shuttle-line-4":
-      case "cu-shuttle-line-5":
-        title = pick("label") ?? "Shuttle";
-        sub = pick("ref");
         break;
       case "transit-stations":
         title = pick("name") ?? "Transit station";
@@ -600,50 +522,6 @@ export default function App() {
       case "flood-risk-zones":
         title = pick("name") ?? "Flood-prone area";
         sub = `${(pick("severity") ?? "").toUpperCase()} · ${pick("type") ?? ""}${pick("households") ? ` · ${pick("households")} households` : ""}`;
-        break;
-      case "cu-electricity-nodes":
-        title = pick("name") ?? "Electricity";
-        sub = (() => {
-          const v = (p as { voltage?: number }).voltage;
-          const c = (p as { capacityMva?: number; capacityKw?: number; capacityMwh?: number });
-          const parts: string[] = [];
-          if (v) parts.push(`${v} kV`);
-          if (c.capacityMva) parts.push(`${c.capacityMva} MVA`);
-          if (c.capacityKw) parts.push(`${c.capacityKw} kW PV`);
-          if (c.capacityMwh) parts.push(`${c.capacityMwh} MWh BESS`);
-          return parts.join(" · ");
-        })();
-        break;
-      case "cu-electricity-lines":
-      case "cu-electricity-paths-3ds":
-        title = pick("name") ?? "Electricity line";
-        sub = `${pick("voltage") ?? "—"} kV · buried ~2 m`;
-        break;
-      case "cu-water-nodes":
-        title = pick("name") ?? "Water node";
-        sub = pick("diameter") ? `Ø ${pick("diameter")} mm` : pick("kind");
-        break;
-      case "cu-water-lines":
-      case "cu-water-paths-3ds":
-        title = pick("name") ?? "Water pipe";
-        sub = `Ø ${pick("diameter") ?? "—"} mm · buried ~3 m`;
-        break;
-      case "cu-drainage-nodes":
-        title = pick("name") ?? "Drainage node";
-        sub = (() => {
-          const k = (p as { kind?: string }).kind;
-          if (k === "retention-basin") return `Retention · ${pick("capacityM3") ?? "—"} m³`;
-          return pick("describe");
-        })();
-        break;
-      case "cu-drainage-lines":
-      case "cu-drainage-paths-3ds":
-        title = pick("name") ?? "Storm drain";
-        sub = `Ø ${pick("diameter") ?? "—"} mm · buried ~4 m`;
-        break;
-      case "cu-wifi-points":
-        title = pick("name") ?? "WiFi point";
-        sub = `${pick("mbps") ?? "—"} Mbps · ${pick("rttMs") ?? "—"} ms`;
         break;
       default:
         return null;
@@ -839,22 +717,6 @@ export default function App() {
     };
   }, [iticEvents.data, cityReports.data, news.data, shuttle.data]);
 
-  // BMA POIs are bundled static GeoJSON (Workers TLS can't reach bmagis.bangkok.go.th
-  // from local workerd; production CF edge may, but static is robust either way).
-  const bma = useBmaStatic();
-  const bmaAqStationList: AqStation[] = useMemo(() => {
-    if (!bma) return [];
-    return bma.aqStations.features.map((f) => ({
-      id: f.properties.AIRSTATION_ID ?? "aq",
-      name: f.properties.NAME_T ?? "AQ station",
-      address: f.properties.ADDRESS ?? "",
-      pm25: f.properties.PM25 ?? null,
-      pm10: f.properties.PM10 ?? null,
-      lng: (f.geometry.coordinates as [number, number])[0],
-      lat: (f.geometry.coordinates as [number, number])[1],
-    }));
-  }, [bma]);
-
   // Traffic samples — recomputed when hour or roads change
   const trafficSamples = useMemo(() => {
     if (!roads) return [];
@@ -899,14 +761,9 @@ export default function App() {
     // Only Esri HD (maxZoom:19), Himawari (WMS), and terrain stay in deck.gl.
     if (enabledLayers.has("satellite-terrain")) out.push(openTopoTerrainLayer(0.6) as Layer);
     if (enabledLayers.has("satellite-himawari")) out.push(himawariInfraredLayer(0.55) as Layer);
-    // Municipal paper map (raster) — sits above satellites, below vectors so it can be read alongside building outlines.
-    if (enabledLayers.has("cu-map-2015")) out.push(cuMapOverlay() as Layer);
-    if (enabledLayers.has("bma-parks") && bma?.parks) out.push(bmaParksLayer(bma.parks) as Layer);
-    if (enabledLayers.has("cu-lands") && cuLands) out.push(cuLandsLayer(cuLands) as Layer);
     const showBoundaryFill =
       enabledLayers.has("municipality-boundary-fill") ||
-      enabledLayers.has("municipality-boundary") ||
-      enabledLayers.has("campus-boundary");
+      enabledLayers.has("municipality-boundary");
     const showBoundaryLine = enabledLayers.has("municipality-boundary-line") || showBoundaryFill;
     if ((showBoundaryLine || showBoundaryFill) && campus)
       out.push(campusBoundaryLayer(campus, { filled: showBoundaryFill, stroked: showBoundaryLine }) as Layer);
@@ -920,23 +777,7 @@ export default function App() {
       out.push(roadNetworkLayer(roads as unknown as FeatureCollection<LineString, ClassifiedRoadProps>) as Layer);
     if (enabledLayers.has("transit-lines") && transitLines)
       out.push(transitLinesLayer(transitLines) as Layer);
-    if (enabledLayers.has("campus-gates") && campusGates)
-      out.push(campusGatesLayer(campusGates) as Layer);
-    if (enabledLayers.has("bma-pois") && bma && bma.pois.length > 0) out.push(bmaPoiLayer(bma.pois) as Layer);
-    if (enabledLayers.has("bma-aq-stations") && bmaAqStationList.length > 0) out.push(bmaAqStationsLayer(bmaAqStationList) as Layer);
     if (enabledLayers.has("traffic-heatmap") && trafficSamples.length > 0) out.push(trafficHeatmapLayer(trafficSamples) as Layer);
-    if (enabledLayers.has("cu-shuttle-routes") && shuttleRoutes) out.push(shuttleRoutesLayer(shuttleRoutes) as Layer);
-    if (shuttleRoutes) {
-      for (const id of ["1", "2", "3", "4", "5"] as const) {
-        const key = `cu-shuttle-${id}` as LayerId;
-        if (enabledLayers.has(key)) {
-          const l = shuttleRouteLineLayer(id, shuttleRoutes);
-          if (l) out.push(l as Layer);
-        }
-      }
-    }
-    if (enabledLayers.has("cu-shuttle-stops") && shuttleStops) out.push(shuttleStopsLayer(shuttleStops) as Layer);
-    if (enabledLayers.has("cu-shuttle-vehicles") && shuttle.data.length > 0) out.push(shuttleVehiclesLayer(shuttle.data) as Layer);
     if (enabledLayers.has("transit-stations") && transitStations) out.push(transitStationsLayer(transitStations) as Layer);
     if (enabledLayers.has("cctv-cameras")) out.push(cctvLayer(cctv.data) as Layer);
     if (enabledLayers.has("incidents-city-reports")) out.push(incidentLayer("incidents-city-reports", cityReports.data) as Layer);
@@ -989,40 +830,6 @@ export default function App() {
       out.push(distanceGridLabelsLayer(CHONBURI.center, [1, 5, 10]) as Layer);
     }
 
-    // Underground utilities. In 3DS we force-enable them and render the lines
-    // as PathLayer at burial depth so they sit visibly under the ghosted
-    // buildings. In 2D/3D the toggle controls visibility and lines stay flat.
-    const showElectricity = enabledLayers.has("utility-electricity") || isSubstructure;
-    const showWater = enabledLayers.has("utility-water") || isSubstructure;
-    const showDrainage = enabledLayers.has("utility-drainage") || isSubstructure;
-    if (showWater && waterFc) {
-      if (isSubstructure) {
-        const wp = waterPathLayer(waterFc);
-        if (Array.isArray(wp)) out.push(...wp as Layer[]);
-        else out.push(wp as Layer);
-      } else out.push(waterLineLayer(waterFc) as Layer);
-      out.push(waterNodeLayer(waterFc) as Layer);
-    }
-    if (showDrainage && drainageFc) {
-      if (isSubstructure) {
-        const dp = drainagePathLayer(drainageFc);
-        if (Array.isArray(dp)) out.push(...dp as Layer[]);
-        else out.push(dp as Layer);
-      } else out.push(drainageLineLayer(drainageFc) as Layer);
-      out.push(drainageNodeLayer(drainageFc) as Layer);
-    }
-    if (showElectricity && electricityFc) {
-      if (isSubstructure) {
-        const ep = electricityPathLayer(electricityFc);
-        if (Array.isArray(ep)) out.push(...ep as Layer[]);
-        else out.push(ep as Layer);
-      } else out.push(electricityLineLayer(electricityFc) as Layer);
-      out.push(electricityNodeLayer(electricityFc) as Layer);
-    }
-    // WiFi sits at the top so it's never occluded by other layers
-    if (enabledLayers.has("utility-wifi-heat") && wifiFc) out.push(wifiHeatmapLayer(wifiFc) as Layer);
-    if (enabledLayers.has("utility-wifi-points") && wifiFc) out.push(wifiPointsLayer(wifiFc) as Layer);
-
     // Device GPS pulse — always above everything else when a fix is available.
     if (presence.lng != null && presence.lat != null) {
       const [accDisk, dot] = devicePresenceLayer(presence.lng, presence.lat, presence.accuracyM);
@@ -1033,10 +840,10 @@ export default function App() {
   }, [
     enabledLayers, zoomBucket, is3D, isSubstructure, campus, buildings,
     memoizedBuildingsLayer, memoizedRoofsLayer,
-    cuLands, trafficSamples,
-    shuttleRoutes, shuttleStops, transitStations, transitLines, campusGates, roads,
-    shuttle.data, cctv.data, cityReports.data,
-    iticEvents.data, bma, bmaAqStationList, electricityFc, waterFc, drainageFc, wifiFc,
+    trafficSamples,
+    transitStations, transitLines, roads,
+    cctv.data, cityReports.data,
+    iticEvents.data,
     civicPoints, waterways, fisheries, floodRisk, heritage,
     maritimePorts, maritimeFerries, maritimeNavAids, ais.data, datago.data,
     gistdaPois.data, gistdaSolar.data, gistdaLandUse.data, news.data,
@@ -1310,7 +1117,6 @@ export default function App() {
           iticEvents={iticEvents.data}
           cityReports={cityReports.data}
           trafficSampleCount={trafficSamples.length}
-          cuLands={cuLands}
         />
         <div className="left-section">
           <DeviceCheckIn presence={presence} onRequest={requestDevice} onClear={clearDevice} />
