@@ -67,6 +67,10 @@ export interface IncidentFeature {
   reportedAt: string;
   resolvedAt?: string;
   imageUrl?: string;
+  /** Public URL of the original report, so an operator can click an incident
+   *  and jump to where it was reported (e.g. the Traffy Fondue ticket page) to
+   *  go fix it. Omitted when the source exposes no public permalink. */
+  sourceUrl?: string;
   reporterPlatform: "traffy" | "city-reporter" | "itic" | "internal";
   zoneId?: string;
   raw?: Record<string, unknown>;

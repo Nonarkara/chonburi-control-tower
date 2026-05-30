@@ -94,6 +94,7 @@ const SituationDigest = lazy(() => import("./components/SituationDigest").then((
 const SHEETS_STORAGE_KEY = "chonburi:sheets-url-v1";
 import { AqiBadge, type AqiTrend } from "./components/AqiBadge";
 import { BuildingCard } from "./components/BuildingCard";
+import { IncidentCard } from "./components/IncidentCard";
 import { BuildingSearch } from "./components/BuildingSearch";
 import { MapOverlayControls } from "./components/MapOverlayControls";
 import { WorldStrip } from "./components/WorldStrip";
@@ -341,6 +342,8 @@ export default function App() {
 
   // Selected building for the popup card.
   const [selectedBuilding, setSelectedBuilding] = useState<BuildingProperties | null>(null);
+  // Selected incident — drives the IncidentCard with its "Open report ↗" link.
+  const [selectedIncident, setSelectedIncident] = useState<IncidentFeature | null>(null);
 
   // Camera helpers
   const flyTo = useCallback((longitude: number, latitude: number, zoom = 17) => {
@@ -358,12 +361,18 @@ export default function App() {
   const handleMapClick = useCallback((info: { layer?: { id?: string } | null; object?: unknown; coordinate?: number[] }) => {
     if ((info.layer?.id === "municipality-buildings" || info.layer?.id === "campus-buildings") && info.object) {
       const f = info.object as { properties: BuildingProperties; geometry: { coordinates: number[][][] | number[][][][] } };
+      setSelectedIncident(null);
       setSelectedBuilding(f.properties);
       const vs = viewStateRef.current;
       const [lng, lat] = info.coordinate ?? [vs.longitude, vs.latitude];
       flyTo(lng, lat, Math.max(vs.zoom, 17));
+    } else if ((info.layer?.id === "incidents-city-reports" || info.layer?.id === "incidents-itic") && info.object) {
+      // Click an incident → open its card with a deep-link back to the report.
+      setSelectedBuilding(null);
+      setSelectedIncident(info.object as IncidentFeature);
     } else if (!info.layer) {
       setSelectedBuilding(null);
+      setSelectedIncident(null);
     }
   }, [flyTo]);
 
@@ -414,11 +423,12 @@ export default function App() {
       if (manualOpen) setManualOpen(false);
       else if (whitepaperOpen) setWhitepaperOpen(false);
       else if (catalogOpen) setCatalogOpen(false);
+      else if (selectedIncident) setSelectedIncident(null);
       else if (selectedBuilding) setSelectedBuilding(null);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [catalogOpen, selectedBuilding, manualOpen]);
+  }, [catalogOpen, selectedBuilding, selectedIncident, manualOpen, whitepaperOpen]);
 
   // Lookup table for hover tooltips — keeps DeckGL declarative.
   const tooltipForPickMemo = useCallback((info: { layer?: { id?: string } | null; object?: unknown }) => {
@@ -1224,6 +1234,10 @@ export default function App() {
           <BuildingCard
             building={selectedBuilding}
             onClose={() => setSelectedBuilding(null)}
+          />
+          <IncidentCard
+            incident={selectedIncident}
+            onClose={() => setSelectedIncident(null)}
           />
           {forecastAlerts.size > 0 && (
             <div style={{

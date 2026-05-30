@@ -15,6 +15,13 @@ const ENDPOINT =
 
 const TTL_SECONDS = 300; // 5 min
 
+// Public Traffy Fondue ticket viewer. Matches the `share/teamchadchart` data
+// source so an operator can click an incident and open the original report.
+function traffyReportUrl(ticketId?: string): string | undefined {
+  if (!ticketId) return undefined;
+  return `https://share.traffy.in.th/teamchadchart?case_id=${encodeURIComponent(ticketId)}`;
+}
+
 interface TraffyRaw {
   ticket_id?: string;
   type?: string | string[];
@@ -109,6 +116,7 @@ export async function fetchCityReports(): Promise<NormalizedFeed<IncidentFeature
         description: r.description,
         reportedAt: r.timestamp ?? fetchedAt,
         imageUrl: r.photo_url,
+        sourceUrl: traffyReportUrl(r.ticket_id),
         reporterPlatform: "traffy",
       });
     }
